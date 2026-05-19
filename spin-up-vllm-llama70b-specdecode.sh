@@ -70,6 +70,13 @@
 #
 set -euo pipefail
 
+# Pick up HF_TOKEN from ~/.bashrc if not already in the env. SSH
+# non-interactive does NOT source .bashrc, so we extract just the
+# export line ourselves.
+if [ -z "${HF_TOKEN:-}" ] && [ -f "${HOME}/.bashrc" ]; then
+    eval "$(grep -E '^[[:space:]]*export[[:space:]]+HF_TOKEN=' "${HOME}/.bashrc" | tail -1)" 2>/dev/null || true
+fi
+
 LLAMA_MODEL="${LLAMA_MODEL:-casperhansen/llama-3.3-70b-instruct-awq}"
 DRAFT_MODEL="${DRAFT_MODEL:-unsloth/Llama-3.2-1B-Instruct}"
 SPEC_TOKENS="${SPEC_TOKENS:-5}"
@@ -112,6 +119,7 @@ docker run -d \
     --name "${CONTAINER_NAME}" \
     -p "${LLAMA_PORT}:${LLAMA_PORT}" \
     --ipc=host \
+    -e HF_TOKEN="${HF_TOKEN:-}" \
     -v ~/.cache/huggingface:/root/.cache/huggingface \
     "${IMAGE}" \
     "${LLAMA_MODEL}" \

@@ -1,8 +1,17 @@
 # Current DGX Spark Setup
 
-Snapshot of what's actually running on the Spark as of 2026-05-17. Use
+Snapshot of what's actually running on the Spark as of 2026-05-18. Use
 this as a "rebuild from scratch" reference if the box wipes, or as
 inventory when debugging.
+
+> **Experimental state warning**: `vllm-chat` is currently serving
+> **Nemotron 3 Nano 30B A3B** (BF16), swapped in from Gemma 4 26B MoE
+> on 2026-05-18. Phase A serving behaviour validated (see
+> `nemotron3-nano-30b-observations.md`); Phase B real-workflow
+> validation still pending. **Client configs in §6 below still point
+> at Gemma 4** — they will send 400s against the current Nemotron
+> deployment until updated, OR you can revert with `bash
+> ~/spin-up-vllm-gemma4-26b-moe-longctx.sh` (~10 min warm restart).
 
 > **Drift note for Claude**: if you change anything in this list
 > (swap a model, add a flag, replace a container), update this file
@@ -22,26 +31,35 @@ inventory when debugging.
 |---:|---|---|
 | 11434 | Ollama (systemd) | LLM serving (legacy, kept for fallback) |
 | 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` |
-| 8001 | vllm-chat (docker) | Chat completions — `Gemma 4 26B MoE (A4B)` BF16, 128K context, tool calling on |
+| 8001 | vllm-chat (docker) | Chat completions — `Nemotron 3 Nano 30B A3B` BF16, 256K context, reasoning + tool calling on |
 
 ## VRAM budget (steady state)
 
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
 | vllm-embed | ~6 GB (0.05 × 128) | ~600 MB | KV cache fits in cap |
-| vllm-chat | ~96 GB (0.75 × 128) | ~48.5 GiB BF16 weights + ~40.5 GiB KV cache @ 128K context | KV cache holds ~557K tokens total (~4 concurrent 128K sessions). 32K variant gives ~17 sessions in the same pool — see §3. |
+| vllm-chat | ~102 GB (0.80 × 128) | ~60 GB BF16 weights + 34.32 GiB KV cache @ 256K context | KV cache holds **5,769,184 tokens** (vLLM-measured). At `--max-num-seqs 8` × 256K = 2.1M tokens used, 36% pool utilisation. Theoretical headroom: 22.01× concurrent 256K sessions if uncapped. See §3. |
 | Ollama (idle) | ~0 | unloads after `OLLAMA_KEEP_ALIVE` | 5 min default |
 | Ollama (loaded) | varies | qwen2.5:14b ≈ 14.5 GB, nomic ≈ 600 MB | only when actively serving |
 
 Both vLLM containers stay resident; Ollama unloads on idle (different
 design — see `spark-llm-serving-learnings.md`). Combined steady-state
-reservation: ~102 GB (the vLLM allocator's view of its own budget).
-**Measured `free -h` while vllm-chat is fully warmed shows only ~4 GiB
-available with 7.9 GiB of swap in use** — the 26 GB nominal headroom is
-the allocator's bookkeeping, not host-free RAM. Any third vLLM sidecar
-(e.g. the optional `vllm-gemma` gemma-2-9b-it container on port 8002)
-will need vllm-chat's `--gpu-memory-utilization` dropped before it can
-fit cleanly.
+reservation: ~108 GB (the vLLM allocator's view of its own budget).
+**Per-token KV cost on Nemotron is ~6 KB vs Gemma 4's ~73 KB** — a
+~12× reduction driven by Nemotron having only 6 attention layers (of
+52 total) compared to Gemma 4's ~60. Any third vLLM sidecar (e.g. the
+optional `vllm-gemma` gemma-2-9b-it container on port 8002) will need
+vllm-chat's `--gpu-memory-utilization` dropped before it can fit
+cleanly.
+
+**Padding waste**: vLLM logs `Add 1 padding layers, may waste at most
+4.35% KV cache memory` for Nemotron — the 6 attention layers get
+padded to 7 for alignment. Minor; not actionable.
+
+**CUDA-graph memory deduction**: vLLM 0.21+ deducts CUDA-graph memory
+from `--gpu-memory-utilization`. At 0.80 set, effective is 0.7924. To
+restore nominal KV size, bump to 0.8076 — but with 64% of the pool
+free at the recipe's design point, no point.
 
 ---
 
@@ -163,121 +181,178 @@ the same model on the same hardware).
 
 ## 3. vllm-chat (Docker container, port 8001)
 
-Chat completions + tool calling service. Backs llm_wiki, CampaignGenerator,
-opencode, future chat clients (see `desktop-chat-clients.md`), and any
-code calling `/v1/chat/completions`.
+Chat completions + tool calling + reasoning service. Backs llm_wiki,
+CampaignGenerator, opencode, future chat clients (see
+`desktop-chat-clients.md`), and any code calling
+`/v1/chat/completions`.
 
-Currently serving **Gemma 4 26B MoE (A4B)** in BF16. The slot has held
-Qwen 2.5 14B AWQ and Llama 3.3 70B AWQ + spec-decode in earlier
-experiments; vllm-chat swap-in scripts are `spin-up-vllm-llama70b.sh`
-and `spin-up-vllm-llama70b-specdecode.sh`. (Note: `spin-up-vllm-gemma.sh`
-is a *different* slot — it spins up the optional gemma-2-9b-it sidecar
-on port 8002 as container `vllm-gemma`, not a replacement for vllm-chat.)
+Currently serving **NVIDIA Nemotron 3 Nano 30B A3B** in BF16.
+Architecture is a **hybrid Mamba-Transformer MoE**: 52 total layers
+comprising 23 Mamba-2 layers + 23 MoE layers (128 routed experts + 1
+shared, 6 active per token) + 6 attention layers with GQA. ~30B total
+params / ~3.5B active per token. Native 256K context (1M with
+`VLLM_ALLOW_LONG_MAX_MODEL_LEN=1`).
+
+Slot history: previously served Qwen 2.5 14B AWQ → Llama 3.3 70B AWQ
++ spec-decode → Gemma 4 26B MoE (A4B). Swap-in scripts are
+`spin-up-vllm-llama70b.sh`, `spin-up-vllm-llama70b-specdecode.sh`,
+`spin-up-vllm-gemma4-26b-moe.sh`, and
+`spin-up-vllm-gemma4-26b-moe-longctx.sh`. (Note: `spin-up-vllm-gemma.sh`
+is a *different* slot — it spins up the optional gemma-2-9b-it
+sidecar on port 8002 as container `vllm-gemma`, not a replacement for
+vllm-chat.)
 
 ### Run command
 
-Currently launched via `./spin-up-vllm-gemma4-26b-moe-longctx.sh` (the
-128K variant, chosen for opencode plan-driven sessions where context
-pressure dominates). Effective command:
+Launched via `./spin-up-vllm-nemotron3-nano-30b.sh`. The script now
+auto-extracts `HF_TOKEN` from the user's `~/.bashrc` and passes it
+into the container (`-e HF_TOKEN=...`) so HF downloads happen at
+authenticated rate. Effective command:
 
 ```bash
 docker run -d --runtime nvidia --gpus all \
   --name vllm-chat \
   -p 8001:8001 \
   --ipc=host \
+  -e HF_TOKEN="${HF_TOKEN}" \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
+  -v ~/vllm-plugins:/plugins:ro \
   vllm/vllm-openai:latest \
-  google/gemma-4-26b-a4b-it \
-  --max-model-len 131072 \
-  --max-num-batched-tokens 8192 \
-  --gpu-memory-utilization 0.75 \
+  nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 \
+  --tensor-parallel-size 1 \
+  --max-model-len 262144 \
+  --max-num-seqs 8 \
+  --gpu-memory-utilization 0.80 \
+  --kv-cache-dtype auto \
   --dtype bfloat16 \
   --trust-remote-code \
   --enable-auto-tool-choice \
-  --tool-call-parser gemma4 \
+  --tool-call-parser qwen3_coder \
+  --reasoning-parser-plugin /plugins/nano_v3_reasoning_parser.py \
+  --reasoning-parser nano_v3 \
   --host 0.0.0.0 --port 8001
 ```
 
-To swap to the 32K / high-concurrency variant: `bash ~/spin-up-vllm-gemma4-26b-moe.sh`.
-Same model and flags, different `--max-model-len` (32768 instead of 131072).
+The custom `nano_v3_reasoning_parser.py` is fetched once from the HF
+repo into `~/vllm-plugins/` and mounted into the container at
+`/plugins:ro`. The spin-up script handles the wget.
 
 ### Why these flags
 
-- **`google/gemma-4-26b-a4b-it`**: ~26B total params, ~4B active per token
-  via MoE routing. Resolved architecture is
-  `Gemma4ForConditionalGeneration` — Gemma 4 is multimodal (vision-language),
-  not text-only. We only use the text path today but the vision encoder
-  loads and warms at startup either way (~20s extra).
-- **`--max-model-len 131072`** (128K): Chosen as the operating point
-  for opencode plan-driven sessions where context fills up as tool-call
-  results accumulate. Native is 256K but a 256K KV cache for a 26B-class
-  model would be ~130 GB — infeasible. The current 128K cap leaves ~4
-  concurrent maxed sessions in the KV cache, plenty for the single-user
-  Spark. Tradeoff: bigger context = more prefill per turn, and Gemma 4
-  MoE already pays the no-tuned-MoE-kernel + TRITON_ATTN prefill
-  penalty. Sessions get slightly slower as they grow. If turn latency
-  starts dominating, revert to the 32K variant. Concurrency scaling
-  reference (from the longctx script header): 32K → ~17 sessions,
-  65K → ~8, 128K → ~4 (current), 200K → ~2-3, 256K → ~2.
-- **`--max-num-batched-tokens 8192`**: Required, not optional. Without
-  it, vLLM fails at startup with `Chunked MM input disabled but
-  max_tokens_per_mm_item (2496) is larger than max_num_batched_tokens
-  (2048)` because Gemma 4 is multimodal-bidirectional.
-- **`--gpu-memory-utilization 0.75`**: ~96 GB cap. 48.5 GiB weights leave
-  ~40.5 GiB for KV cache. Drop to 0.70 if startup OOMs.
-- **`--dtype bfloat16`**: native Gemma 4 dtype. Don't let vLLM auto-pick FP16.
-- **`--trust-remote-code`**: Gemma 4 ships custom modeling code (PLE,
-  routing).
-- **`--enable-auto-tool-choice` + `--tool-call-parser gemma4`**: vLLM
-  0.20.2+ ships a Gemma 4-specific tool-call parser. Required for
-  opencode and any other agentic client that needs OpenAI-style
-  `tool_calls` in the response. Verify the parser is still available
-  in your image with:
-  `docker exec vllm-chat vllm serve --help=Frontend | grep tool-call-parser`.
+These follow NVIDIA's [vLLM recipe for DGX Spark / Jetson Thor](https://docs.vllm.ai/projects/recipes/en/latest/NVIDIA/Nemotron-3-Nano-30B-A3B.html).
+Unlike Gemma 4, this is a tuned-for-hardware recipe rather than a
+generic config we adapted.
 
-### Known perf ceilings (Spark-specific)
+- **`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`**: ~30B total /
+  ~3.5B active per token. Hybrid Mamba-2 + MoE — only 6 of 52 layers
+  are quadratic attention, so long context is structurally cheap
+  (KV pool holds 5.77M tokens at the current config).
+- **`--max-model-len 262144`** (256K): NVIDIA recipe default for DGX
+  Spark. Bumping to 1M requires `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1`;
+  not enabled here.
+- **`--max-num-seqs 8`**: NVIDIA recipe default. Caps concurrent
+  sequences at 8 × 256K = 2.1M tokens in the KV pool (36%
+  utilisation). Theoretical headroom is 22.01× per vLLM's startup
+  report.
+- **`--gpu-memory-utilization 0.80`**: ~102 GB cap. ~60 GB weights
+  leave 34.32 GiB measured KV pool. Drop to 0.75 if startup OOMs;
+  the recipe doesn't specify a util value so this is our pick.
+- **`--kv-cache-dtype auto`**: BF16 KV cache (matches the model
+  dtype). Flip to `fp8` only if you also swap to the `-FP8` weight
+  variant.
+- **`--dtype bfloat16`**: native Nemotron 3 Nano dtype.
+- **`--trust-remote-code`**: Nemotron ships custom modeling code
+  (`configuration_nemotron_h.py` + the hybrid Mamba kernels).
+- **`--enable-auto-tool-choice` + `--tool-call-parser qwen3_coder`**:
+  NVIDIA reused the Qwen 3 coder tool-call parser for Nemotron 3.
+  Tested working — see `test-gemma4-toolcall.sh` (override `MODEL=`).
+- **`--reasoning-parser-plugin /plugins/nano_v3_reasoning_parser.py`
+  + `--reasoning-parser nano_v3`**: custom parser plugin shipped in
+  the HF repo. Strips `<think>...</think>` blocks from `content`
+  into a separate `reasoning` field on the response. **Required for
+  any client that expects clean `content`** — without this, the
+  reasoning text appears inline in the response.
+  - **Important field-name quirk**: the parser emits `reasoning`,
+    NOT the OpenAI-convention `reasoning_content`. Clients that
+    inspect reasoning need to check both field names. Our
+    `bench-prefill.sh` and `bench-decode.sh` scripts handle this.
 
-- **No tuned fused-MoE kernel for this hardware**: vLLM looks for
-  `configs/E=128,N=704,device_name=NVIDIA_GB10.json` and doesn't find it.
-  Performance is on the fallback. This is the biggest single ceiling lever.
-- **Heterogeneous attention head dims** (`head_dim=256, global_head_dim=512`)
-  force `TRITON_ATTN` instead of FlashAttention.
-- **CUDA-graph memory**: vLLM 0.21+ deducts CUDA-graph memory from the
-  `--gpu-memory-utilization` budget. With 0.75 set, effective is ~0.741.
+### Known perf characteristics (Spark-specific)
+
+Unlike Gemma 4, Nemotron's startup picks **tuned kernels** on GB10:
+
+- **MoE backend**: `Using FlashInfer CUTLASS Unquantized MoE backend
+  out of potential backends: ['FlashInfer TRTLLM', 'FlashInfer
+  CUTLASS', 'TRITON', 'BATCHED_TRITON']` — the tuned path. (Gemma 4
+  got the TRITON fallback on the same hardware.)
+- **Attention backend**: `Using FLASH_ATTN attention backend out of
+  potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN',
+  'FLEX_ATTENTION']` + `Using FlashAttention version 2`. (Gemma 4
+  was forced to `TRITON_ATTN` by mismatched head dims.)
+- **Padding waste**: 4.35% of KV cache wasted on 6→7 attention-layer
+  padding. Logged at startup, not actionable.
+- **Reasoning overhead**: the model emits reasoning tokens before the
+  final answer. Smoke test of "Reply with OK" cost 21 prompt tokens
+  + 234 completion tokens (232 reasoning + 2 content). A 116:1
+  reasoning:content ratio on trivial prompts. Real workloads have
+  smaller ratios (reasoning is bounded by problem complexity, not
+  output length) but it's a meaningful token-cost multiplier vs
+  Gemma 4. Latency per tool-call turn: ~5s wallclock under reasoning.
 
 ### Smoke test
 
 ```bash
 curl -sS http://localhost:8001/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"google/gemma-4-26b-a4b-it","messages":[{"role":"user","content":"Say only OK"}],"max_tokens":10}'
-# expect: {"id":"chatcmpl-...","choices":[{"message":{"role":"assistant","content":"OK","tool_calls":[],...}}],...}
+  -d '{"model":"nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16","messages":[{"role":"user","content":"Reply only with OK."}],"max_tokens":2048}'
+# expect: choices[0].message.content == "\nOK"
+#         choices[0].message.reasoning is a non-empty string
+#         usage.completion_tokens >> length(content) (mostly reasoning)
 ```
 
-Tool-calling end-to-end probe: `./test-gemma4-toolcall.sh`.
+**Don't use `max_tokens=10`** — the reasoning phase will consume the
+budget before any content tokens are emitted. 2048 is the safe floor
+for smoke tests.
 
-### Measured behaviour
+Tool-calling end-to-end probe (works with reasoning enabled):
 
-**Headline production finding**: Gemma 4 MoE wins decisively on
-read-heavy workloads (opencode reading files, RAG, document
-summarization) vs the Llama 3.3 70B + spec-decode alternative — because
-prefill is compute-bound and scales with active params (4B vs 70B,
-~17× gap). Decode tok/s ties on synthetic benchmarks. For short-input
-long-code-output workloads, Llama 70B + spec decode wins on its
-~91% draft acceptance on code at T=0. **Default backend choice should be
-driven by prefill axis, not decode axis.**
+```bash
+ssh kostadis@192.168.1.147 'MODEL=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 bash ~/test-gemma4-toolcall.sh'
+```
 
-Synthetic measurements:
+### Measured behaviour (Phase A only — Phase B pending)
 
-- Single-sequence decode (262 tokens, T=0 code prompt): **~23 tok/s**
-  (matches Llama 70B AWQ + spec-decode on the same prompt).
-- 4-parallel concurrency (identical prompts): aggregate **~54.6 tok/s**,
-  per-stream **~13.65 tok/s**. Sub-linear scaling (2.35×) — expected for
-  bandwidth-bound decode; identical prompts route to identical experts
-  so we get no expert-parallelism win.
-- Full prefill-vs-decode write-up: `dgx-spark-calibration-report.md` §
-  "Cross-cutting finding: prefill vs decode" and
-  `gemma4-26b-moe-observations.md` §"Post-experiment correction".
+Phase A serving-behaviour measurements captured 2026-05-18 (see
+`nemotron3-nano-30b-observations.md` for the full record):
+
+- **Init engine** (post-load): 73.11s total, 11.98s compile. Warm
+  restarts will be much faster than Gemma 4's ~10 min — most of
+  Nemotron's ~18 min cold-start was the HF download itself.
+- **Cold-start wallclock**: ~18 min on first run (download ~60 GB
+  weights + 73 s init). With `HF_TOKEN` set, future cold starts
+  should be substantially faster.
+- **Decode tok/s** (organic, from vLLM stats logger during an
+  ad-hoc probe): **~23.4 tok/s** single-stream — basically identical
+  to Gemma 4's ~23 tok/s. Decode is bandwidth-bound and dominated by
+  active params (3.5B vs 4B — comparable).
+- **Tool calling**: PASS with reasoning enabled. The open HF
+  discussion #3 about tool-call + reasoning being broken does NOT
+  reproduce on the current vLLM image.
+- **Prefill calibration synthetic probe was attempted but data was
+  too noisy to publish.** Both Gemma 4 baseline and Nemotron runs
+  showed non-monotonic curves consistent with first-call CUDA-graph
+  JIT effects. Phase B real-workflow comparisons supersede the
+  synthetic probe as the authoritative measurement.
+
+**Pending Phase B validation:**
+- CampaignGenerator session run (matched-pair vs Gemma 4 baseline)
+- opencode session under reasoning + tool-call loop
+- Subjective voice-fidelity check on narrative output
+- Whether reasoning leaks into narrative (a known failure mode for
+  reasoning models)
+
+Decision criteria for promoting Nemotron permanently or reverting
+are in `nemotron3-nano-30b-test-plan.md` §"Decision criteria".
 
 ### Restart cost
 
@@ -327,6 +402,27 @@ these ports past the router.
 
 ## 6. Client-side configuration
 
+> **State drift warning (2026-05-18)**: vllm-chat now serves Nemotron 3
+> Nano, but most client configs below still list Gemma 4 model ids. vLLM
+> returns 400 on model-id mismatch, so **any client config still on
+> Gemma 4 will be broken against the current Nemotron deployment until
+> you either**:
+>
+> 1. **Update the client config** to use
+>    `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`, OR
+> 2. **Revert vllm-chat to Gemma 4**:
+>    `ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh'`
+>
+> **Updated for Nemotron as of 2026-05-18**: the
+> `opencode-spark-longctx.sh` wrapper script (see opencode section
+> below) defaults to the Nemotron model id + 256K. It's the
+> recommended way to drive opencode during Phase B validation. All
+> other client configs (MemPalace, llm_wiki, CampaignGenerator, and
+> the opencode `opencode.json` provider config) remain in Gemma 4
+> form intentionally — don't promote them to Nemotron ids until
+> Phase B of `nemotron3-nano-30b-test-plan.md` has been completed and
+> the decision criteria say to promote.
+
 ### MemPalace (`~/.mempalace/config.json` on laptop)
 
 ```json
@@ -365,9 +461,31 @@ DGX_MODEL=google/gemma-4-26b-a4b-it python session_doc.py ... \
 
 ### opencode
 
-opencode reads its provider config from
+Two ways to point opencode at the Spark — pick one:
+
+**Option A — wrapper script (preferred for Phase B Nemotron testing)**:
+`./opencode-spark-longctx.sh` in this repo. As of 2026-05-18 it
+targets the current Nemotron 3 Nano 30B A3B deployment by default
+(`MODEL_ID=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`, `MIN_CTX=262144`)
+and exports `OPENAI_API_BASE` / `OPENAI_MODEL` / `OPENAI_API_KEY` before
+exec'ing opencode. It prechecks that vllm-chat is actually serving the
+expected model at >= MIN_CTX before launching, so a server/wrapper
+mismatch fails loud rather than silently spending a session.
+
+To use the wrapper with Gemma 4 (after reverting vllm-chat):
+
+```bash
+MODEL_ID=google/gemma-4-26b-a4b-it MIN_CTX=131072 \
+  ./opencode-spark-longctx.sh
+```
+
+**Option B — opencode's own provider config**: opencode also reads
 `~/.config/opencode/opencode.json`. The DGX provider plus the two
-currently-supported chat models are defined there:
+previously-validated chat models are defined there. **This file has
+not been updated for Nemotron** (the model id below is still Gemma 4)
+— if you launch with bare `opencode` instead of the wrapper, you'll
+hit a 400 against the current Nemotron deployment until either this
+file is updated or vllm-chat is reverted to Gemma 4.
 
 ```json
 {
@@ -436,17 +554,23 @@ in this order so the VRAM budgeting works:
    ```
    Wait for `Application startup complete.` in `docker logs -f vllm-embed`.
 
-4. **Start vllm-chat SECOND** via the spin-up script (longctx variant
-   is the current default — 128K context):
+4. **Start vllm-chat SECOND** via the current spin-up script
+   (Nemotron 3 Nano 30B):
    ```bash
-   scp spin-up-vllm-gemma4-26b-moe-longctx.sh kostadis@192.168.1.147:~/
-   ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh'
+   # Ensure HF_TOKEN is set on the Spark before this — the script will
+   # auto-pick it up from ~/.bashrc:
+   ssh kostadis@192.168.1.147 'echo "export HF_TOKEN=hf_..." >> ~/.bashrc'
+
+   scp spin-up-vllm-nemotron3-nano-30b.sh kostadis@192.168.1.147:~/
+   ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'
    ```
-   Expect ~30 min on first run (HF pulls ~52 GB on a fresh box).
-   Script waits for `Application startup complete` and smoke-tests on
-   its own. If you don't need long context and would rather have higher
-   concurrency in the KV pool, use `spin-up-vllm-gemma4-26b-moe.sh`
-   instead (32K variant).
+   Expect ~18-30 min on first run (HF pulls ~60 GB on a fresh box;
+   authenticated downloads with `HF_TOKEN` are substantially faster).
+   The script downloads `nano_v3_reasoning_parser.py` from the HF repo
+   into `~/vllm-plugins/` and mounts it into the container. Waits for
+   `Application startup complete` and smoke-tests on its own. To
+   revert to Gemma 4 (e.g., if Phase B validation rejects Nemotron),
+   use `spin-up-vllm-gemma4-26b-moe-longctx.sh` instead.
 
 5. **Smoke-test both** with the curl commands above.
 
@@ -499,7 +623,8 @@ nvidia-smi dmon -s u -c 30
 du -sh ~/.cache/huggingface
 
 # Swap vllm-chat to a different model on port 8001 (one-liner each):
-ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh' # Gemma 4 26B MoE @ 128K context (CURRENT)
+ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'     # Nemotron 3 Nano 30B A3B @ 256K (CURRENT — experimental, Phase A only)
+ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh' # Gemma 4 26B MoE @ 128K context (last validated default)
 ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma4-26b-moe.sh'         # Gemma 4 26B MoE @ 32K (high-concurrency variant)
 ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-llama70b-specdecode.sh'    # Llama 3.3 70B AWQ + 1B draft (spec decode)
 ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-llama70b.sh'               # Llama 3.3 70B AWQ alone (no spec decode)
@@ -513,14 +638,24 @@ ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma.sh'
 
 ## See also
 
+- `nemotron3-nano-30b-test-plan.md` — methodology + decision criteria
+  for the current Phase A/B experiment. Source of truth for the
+  current `vllm-chat` swap.
+- `nemotron3-nano-30b-observations.md` — experimental record for
+  Nemotron 3 Nano 30B. Phase A complete; Phase B pending.
 - `spark-llm-serving-learnings.md` — the "why" and the hardware ceiling
   math behind the choices in this doc.
 - `gemma4-26b-moe-observations.md` — full experimental record of the
-  Gemma 4 26B MoE deployment (Phase A serving behavior, Phase B1
-  CampaignGenerator, Phase B2 opencode + tool calling).
+  Gemma 4 26B MoE deployment (the last validated default; Phase A
+  serving behavior, Phase B1 CampaignGenerator, Phase B2 opencode +
+  tool calling). Baseline for the current Nemotron comparison.
 - `gemma4-26b-moe-runbook.md` — the original plan + runbook for the
-  swap, including the parser-identification step and revert path.
+  Gemma 4 swap, including the parser-identification step and revert
+  path.
 - `desktop-chat-clients.md` — Windows-side recipes for chatting with
   vllm-chat from a desktop GUI.
+- `bench-prefill.sh` / `bench-decode.sh` — synthetic throughput
+  probes used in Phase A measurements. Run from the laptop, point at
+  the Spark.
 - `CLAUDE.md` — instruction to Claude about keeping this file in sync
   with reality.

@@ -30,6 +30,13 @@
 #
 set -euo pipefail
 
+# Pick up HF_TOKEN from ~/.bashrc if not already in the env. SSH
+# non-interactive does NOT source .bashrc, so we extract just the
+# export line ourselves.
+if [ -z "${HF_TOKEN:-}" ] && [ -f "${HOME}/.bashrc" ]; then
+    eval "$(grep -E '^[[:space:]]*export[[:space:]]+HF_TOKEN=' "${HOME}/.bashrc" | tail -1)" 2>/dev/null || true
+fi
+
 GEMMA_MODEL="${GEMMA_MODEL:-google/gemma-2-9b-it}"
 GEMMA_PORT="${GEMMA_PORT:-8002}"
 GPU_UTIL="${GPU_UTIL:-0.15}"
@@ -63,6 +70,7 @@ docker run -d \
     --name "${CONTAINER_NAME}" \
     -p "${GEMMA_PORT}:${GEMMA_PORT}" \
     --ipc=host \
+    -e HF_TOKEN="${HF_TOKEN:-}" \
     -v ~/.cache/huggingface:/root/.cache/huggingface \
     "${IMAGE}" \
     "${GEMMA_MODEL}" \
