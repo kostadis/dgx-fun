@@ -189,9 +189,144 @@ smarter" and you're willing to give up ~5 tok/s.
 
 ---
 
+---
+
+## Nemotron 3 family (released 2026, NVIDIA)
+
+Added 2026-05-18 after deploying Nemotron 3 Nano 30B A3B to the
+`vllm-chat` slot (replacing Gemma 4 26B MoE pending Phase B
+validation — see `nemotron3-nano-30b-observations.md`).
+
+### The key distinguisher
+
+**First model family where NVIDIA publishes a vLLM recipe with a
+specific "DGX Spark / Jetson Thor" section.** Every other model
+we've deployed runs on the GB10 (sm_121) fallback path because vLLM
+doesn't ship tuned kernel configs for this hardware. Nemotron 3 on
+the same hardware lands on the **tuned** path:
+
+| | Gemma 4 26B MoE | Nemotron 3 Nano 30B |
+|---|---|---|
+| MoE backend | TRITON (fallback) | **FlashInfer CUTLASS** (tuned) |
+| Attention backend | TRITON_ATTN (forced by head-dim mismatch) | **FlashAttention 2** |
+
+This makes Nemotron 3 the first calibration data point we have for
+"what does the tuned path actually look like on a Spark."
+
+### Architecture (the second distinguisher)
+
+Hybrid Mamba-2 + Transformer MoE. 30B Nano variant:
+- 52 layers total
+- 23 Mamba-2 layers (linear in context, constant per-sequence state)
+- 23 MoE layers (128 experts, 6 active per token, +1 shared)
+- **6** attention layers with GQA (2 groups)
+- 30B total / 3.5B active per token (A3B)
+- Native 256K context, 1M via env override
+- Reasoning baked in (`<think>...</think>` blocks emitted before
+  the final answer)
+
+The 6-of-52 attention ratio means traditional quadratic KV cost
+applies to only ~12% of layers. **Per-token KV is ~6 KB vs Gemma 4's
+~73 KB on the same hardware** — measured at deploy, not estimated.
+
+### Variants worth knowing
+
+| variant | params | precision | weights size | notes |
+|---|---:|---|---:|---|
+| Nano 30B A3B BF16 | 30B / 3.5B | bfloat16 | ~60 GB | **currently deployed** |
+| Nano 30B A3B FP8 | 30B / 3.5B | FP8 | ~30 GB | Faster decode on Blackwell FP8 cores. Try if BF16 is promising. |
+| Nano 30B A3B NVFP4 | 30B / 3.5B | NVFP4 | ~15 GB | More lossy. Skip unless fitting alongside another model. |
+| Nano 4B BF16 | 4B dense | bfloat16 | ~8 GB | Dense small sibling. Different shape; not a substitute. |
+| Nano Omni 30B A3B | 30B / 3.5B | various | varies | Multimodal (text + image + audio + video). Separate experiment. |
+| Super, Ultra | TBD | TBD | TBD | "Available in H1 2026" per NVIDIA's launch post. |
+
+### Tradeoffs vs Gemma 4 26B MoE baseline
+
+| dimension | Gemma 4 26B MoE | Nemotron 3 Nano 30B |
+|---|---|---|
+| Active params | ~4B | 3.5B |
+| MoE kernel on Spark | TRITON fallback | **FlashInfer CUTLASS (tuned)** |
+| Attention kernel on Spark | TRITON_ATTN (forced) | **FA2 (fast path)** |
+| Single-stream decode tok/s | ~23 | **~23** (wash — bandwidth-bound) |
+| Per-token KV cost | ~73 KB | **~6 KB** (12× cheaper) |
+| Practical context | 128K @ ~4 sessions | **256K @ 8 sessions** (recipe) |
+| Native max context | 256K | 1M (env-gated) |
+| Reasoning behavior | none | **baked in** — `reasoning` field on responses |
+| Tool calling | dedicated `gemma4` parser | `qwen3_coder` parser + reasoning plugin |
+| Multimodal | vision (encoder loads even when unused) | text only (Omni variant is separate) |
+| Cold start | ~16.5 min | ~18 min |
+| Warm-restart init | ~10 min | ~1.2 min (post-load init 73 s) |
+
+### Where Nemotron 3 wins
+
+- **Prefill at long context** — fewer attention layers AND tuned
+  kernel. Both effects compound; the architectural one grows with
+  context length. The synthetic probe didn't produce clean enough
+  data to publish a number, but the qualitative case is settled by
+  the startup logs.
+- **Long-context capacity** — 22× theoretical concurrency at 256K
+  on the same KV budget that constrains Gemma 4 to 4 sessions at
+  128K.
+- **Warm restart cost** — ~1.2 min for the init phase vs Gemma 4's
+  ~10 min compile cost. Once weights are cached, swapping in is much
+  cheaper.
+
+### Where Nemotron 3 loses (or is uncertain)
+
+- **Time-to-first-useful-token under reasoning.** Even on "say OK",
+  the model spends 232 tokens thinking before emitting 2 content
+  tokens. Each opencode tool-call turn costs ~5 s under reasoning.
+  For interactive feel this is a real regression vs Gemma 4.
+- **Token economics worsen.** You pay for the reasoning tokens
+  whether you read them or not. Smoke-test ratios are extreme
+  (116:1); real workloads less extreme but still meaningful.
+- **Tool-call + reasoning has an open HF bug.** Doesn't reproduce in
+  the single-turn probe but might bite on long sessions. Phase B2
+  will test.
+- **Quality on real workloads is unmeasured.** Phase B1
+  (CampaignGenerator) and Phase B2 (opencode) are still pending.
+  Until then, "Nemotron is better" is a hypothesis from kernel
+  selection, not a measurement on the workloads that matter.
+
+### Operational status
+
+- **Currently deployed in `vllm-chat` slot** as of 2026-05-18.
+- **Client configs not yet flipped** — MemPalace, llm_wiki,
+  CampaignGenerator, opencode still send `google/gemma-4-26b-a4b-it`
+  and will 400 against the current deployment. Don't promote client
+  ids until Phase B clears.
+- **Revert path**:
+  `ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh'`
+
+### Open questions for follow-up experiments
+
+- [ ] How big is the FlashInfer CUTLASS vs TRITON-fallback prefill
+      gap on real workloads? (Phase B1 wallclock comparison answers
+      this.)
+- [ ] Does the reasoning overhead net positive or negative for D&D
+      narration workloads (multi-character voice consistency might
+      genuinely benefit)?
+- [ ] Does FP8 variant produce comparable quality at half the
+      weights footprint? (Defer to a follow-up if BF16 lands well.)
+- [ ] Does 1M context mode actually work with the recipe-stock
+      `--max-num-seqs 8`? (Would need `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1`
+      and roughly 2× the current KV pool — fits at the current util
+      since pool is only 36% used.)
+- [ ] How does the Omni multimodal variant compare for desktop chat
+      use cases involving images?
+- [ ] How does Super / Ultra (when released) change the picture?
+
+---
+
 ## See also
 
 - `current-setup.md` — what's actually running on the Spark today
+- `nemotron3-nano-30b-observations.md` — detailed experimental
+  record for the current deployment
+- `nemotron3-nano-30b-test-plan.md` — methodology + decision
+  criteria for the active Phase A/B comparison
+- `gemma4-26b-moe-observations.md` — full record for the prior
+  vllm-chat default (baseline for the Nemotron comparison)
 - `spark-llm-serving-learnings.md` — bandwidth ceiling math and the
   reasoning behind current model choices
 - `desktop-chat-clients.md` — Windows-side wiring for vllm-chat
