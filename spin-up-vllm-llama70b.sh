@@ -12,8 +12,8 @@
 #   4. Smoke-test /v1/models and a tiny chat completion.
 #
 # USAGE
-#   scp spin-up-vllm-llama70b.sh kostadis@192.168.1.147:~/
-#   ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-llama70b.sh'
+#   scp spin-up-vllm-llama70b.sh lib-vllm-spinup.sh spark:~/
+#   ssh spark 'bash ~/spin-up-vllm-llama70b.sh'
 #
 # CONFIGURATION
 #   LLAMA_MODEL    HF model id; default casperhansen/llama-3.3-70b-instruct-awq
@@ -35,12 +35,7 @@
 #
 set -euo pipefail
 
-# Pick up HF_TOKEN from ~/.bashrc if not already in the env. SSH
-# non-interactive does NOT source .bashrc, so we extract just the
-# export line ourselves.
-if [ -z "${HF_TOKEN:-}" ] && [ -f "${HOME}/.bashrc" ]; then
-    eval "$(grep -E '^[[:space:]]*export[[:space:]]+HF_TOKEN=' "${HOME}/.bashrc" | tail -1)" 2>/dev/null || true
-fi
+source "$(dirname "$0")/lib-vllm-spinup.sh"
 
 LLAMA_MODEL="${LLAMA_MODEL:-casperhansen/llama-3.3-70b-instruct-awq}"
 LLAMA_PORT="${LLAMA_PORT:-8001}"
@@ -49,6 +44,18 @@ MAX_LEN="${MAX_LEN:-65536}"
 CONTAINER_NAME="vllm-chat"
 IMAGE="vllm/vllm-openai:latest"
 
+llama70b_failure_hints() {
+    cat <<EOF
+  Common causes:
+   - 'Repository Not Found': the AWQ repo name has changed.
+     Try: LLAMA_MODEL=<other-repo> bash $0
+   - OOM: lower MAX_LEN or GPU_UTIL.
+   - AWQ-Marlin kernel mismatch: try vllm/vllm-openai:v0.6.x pinned.
+EOF
+}
+
+vllm_load_hf_token
+
 echo "=== spin-up-vllm-llama70b ==="
 echo "  model:    ${LLAMA_MODEL}"
 echo "  port:     ${LLAMA_PORT}"
@@ -56,19 +63,9 @@ echo "  gpu_util: ${GPU_UTIL}  (~$(awk -v u="${GPU_UTIL}" 'BEGIN{printf "%.0f", 
 echo "  max_len:  ${MAX_LEN}"
 echo ""
 
-# Stop existing vllm-chat (the Qwen 14B container).
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "→ stopping existing ${CONTAINER_NAME} (Qwen 14B)..."
-    docker stop "${CONTAINER_NAME}" 2>&1 || true
-    docker rm "${CONTAINER_NAME}" 2>&1 || true
-fi
+vllm_stop_container "${CONTAINER_NAME}"
+vllm_gpu_healthcheck
 
-# GPU healthcheck before we ask vLLM to grab ~77 GB of it.
-echo "→ GPU status pre-launch:"
-nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv | head -3
-echo ""
-
-# Start the new container.
 echo "→ starting ${CONTAINER_NAME} with ${LLAMA_MODEL}..."
 docker run -d \
     --runtime nvidia --gpus all \
@@ -83,59 +80,10 @@ docker run -d \
     --gpu-memory-utilization "${GPU_UTIL}" \
     --host 0.0.0.0 --port "${LLAMA_PORT}"
 
-# Wait for healthy. 20-min budget — first run includes ~40 GB HF download.
-echo ""
-echo "→ waiting for 'Application startup complete' in container logs..."
-echo "  (first run includes ~40 GB HF download — be patient)"
-echo ""
-DEADLINE=$(( $(date +%s) + 1200 ))  # 20 min
-while [ "$(date +%s)" -lt "${DEADLINE}" ]; do
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Application startup complete"; then
-        echo "  ✓ ready"
-        break
-    fi
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -qE "Error|CUDA error|out of memory|Traceback|404 Client Error|Repository Not Found"; then
-        echo ""
-        echo "  ✗ container errored during startup. Last 40 log lines:"
-        docker logs --tail 40 "${CONTAINER_NAME}" 2>&1
-        echo ""
-        echo "  Common causes:"
-        echo "   - 'Repository Not Found': the AWQ repo name has changed."
-        echo "     Try: LLAMA_MODEL=<other-repo> bash $0"
-        echo "   - OOM: lower MAX_LEN or GPU_UTIL."
-        echo "   - AWQ-Marlin kernel mismatch: try vllm/vllm-openai:v0.6.x pinned."
-        exit 1
-    fi
-    sleep 15
-    elapsed=$(( 1200 - (DEADLINE - $(date +%s)) ))
-    last=$(docker logs --tail 1 "${CONTAINER_NAME}" 2>&1 | tr -d '\r' | cut -c1-100)
-    echo "  [${elapsed}s] ${last}"
-done
+# 20-min budget — first run includes ~40 GB HF download.
+vllm_wait_ready "${CONTAINER_NAME}" 1200 "" llama70b_failure_hints 40
 
-if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
-    echo ""
-    echo "  ✗ 20-minute startup budget exceeded. Last 40 log lines:"
-    docker logs --tail 40 "${CONTAINER_NAME}" 2>&1
-    exit 1
-fi
-
-# Smoke-test endpoints.
-echo ""
-echo "→ smoke-test: GET /v1/models"
-curl -sS --max-time 5 "http://localhost:${LLAMA_PORT}/v1/models" | python3 -m json.tool 2>&1 | head -20
-
-echo ""
-echo "→ smoke-test: tiny chat completion"
-curl -sS --max-time 60 "http://localhost:${LLAMA_PORT}/v1/chat/completions" \
-    -H 'Content-Type: application/json' \
-    -d "$(cat <<EOF
-{
-  "model": "${LLAMA_MODEL}",
-  "messages": [{"role": "user", "content": "Reply only with the word OK."}],
-  "max_tokens": 10
-}
-EOF
-)" | python3 -m json.tool 2>&1 | head -30
+vllm_smoke_test localhost "${LLAMA_PORT}" "${LLAMA_MODEL}"
 
 echo ""
 echo "=== done ==="

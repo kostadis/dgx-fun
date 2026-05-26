@@ -12,8 +12,8 @@
 #   Copy this script onto the Spark and run:
 #     bash spin-up-vllm-gemma.sh
 #   Or scp it over and run:
-#     scp spin-up-vllm-gemma.sh kostadis@192.168.1.147:~/
-#     ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma.sh'
+#     scp spin-up-vllm-gemma.sh lib-vllm-spinup.sh spark:~/
+#     ssh spark 'bash ~/spin-up-vllm-gemma.sh'
 #
 # CONFIGURATION
 #   Tweak the values below or override via env vars:
@@ -30,12 +30,7 @@
 #
 set -euo pipefail
 
-# Pick up HF_TOKEN from ~/.bashrc if not already in the env. SSH
-# non-interactive does NOT source .bashrc, so we extract just the
-# export line ourselves.
-if [ -z "${HF_TOKEN:-}" ] && [ -f "${HOME}/.bashrc" ]; then
-    eval "$(grep -E '^[[:space:]]*export[[:space:]]+HF_TOKEN=' "${HOME}/.bashrc" | tail -1)" 2>/dev/null || true
-fi
+source "$(dirname "$0")/lib-vllm-spinup.sh"
 
 GEMMA_MODEL="${GEMMA_MODEL:-google/gemma-2-9b-it}"
 GEMMA_PORT="${GEMMA_PORT:-8002}"
@@ -44,6 +39,8 @@ MAX_LEN="${MAX_LEN:-8192}"
 CONTAINER_NAME="vllm-gemma"
 IMAGE="vllm/vllm-openai:latest"
 
+vllm_load_hf_token
+
 echo "=== spin-up-vllm-gemma ==="
 echo "  model:    ${GEMMA_MODEL}"
 echo "  port:     ${GEMMA_PORT}"
@@ -51,19 +48,9 @@ echo "  gpu_util: ${GPU_UTIL}"
 echo "  max_len:  ${MAX_LEN}"
 echo ""
 
-# Stop any existing container with the same name.
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "→ stopping existing ${CONTAINER_NAME}..."
-    docker stop "${CONTAINER_NAME}" 2>&1 || true
-    docker rm "${CONTAINER_NAME}" 2>&1 || true
-fi
+vllm_stop_container "${CONTAINER_NAME}"
+vllm_gpu_healthcheck
 
-# Confirm GPU is healthy before we ask vLLM to grab some of it.
-echo "→ GPU status pre-launch:"
-nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv | head -3
-echo ""
-
-# Start vllm-gemma.
 echo "→ starting ${CONTAINER_NAME}..."
 docker run -d \
     --runtime nvidia --gpus all \
@@ -78,55 +65,9 @@ docker run -d \
     --gpu-memory-utilization "${GPU_UTIL}" \
     --host 0.0.0.0 --port "${GEMMA_PORT}"
 
-# Wait for healthy.
-echo ""
-echo "→ waiting for 'Application startup complete' in container logs..."
-echo "  (this includes model download on first run — could be 5+ min for a fresh 9B)"
-echo ""
-DEADLINE=$(( $(date +%s) + 600 ))  # 10 min budget
-while [ "$(date +%s)" -lt "${DEADLINE}" ]; do
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Application startup complete"; then
-        echo "  ✓ ready"
-        break
-    fi
-    # Watch for early-failure signals.
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -qE "Error|CUDA error|out of memory|Traceback"; then
-        echo ""
-        echo "  ✗ container errored during startup. Last 30 log lines:"
-        docker logs --tail 30 "${CONTAINER_NAME}" 2>&1
-        exit 1
-    fi
-    # Print a heartbeat every 30s so we know we're alive.
-    sleep 15
-    elapsed=$(( $(date +%s) - DEADLINE + 600 ))
-    last=$(docker logs --tail 1 "${CONTAINER_NAME}" 2>&1 | tr -d '\r' | cut -c1-100)
-    echo "  [${elapsed}s] ${last}"
-done
-
-if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
-    echo ""
-    echo "  ✗ 10-minute startup budget exceeded. Last 30 log lines:"
-    docker logs --tail 30 "${CONTAINER_NAME}" 2>&1
-    exit 1
-fi
-
-# Smoke-test the endpoint.
-echo ""
-echo "→ smoke-test: GET /v1/models"
-curl -sS --max-time 5 "http://localhost:${GEMMA_PORT}/v1/models" | python3 -m json.tool 2>&1 | head -20
-
-echo ""
-echo "→ smoke-test: tiny chat completion"
-curl -sS --max-time 30 "http://localhost:${GEMMA_PORT}/v1/chat/completions" \
-    -H 'Content-Type: application/json' \
-    -d "$(cat <<EOF
-{
-  "model": "${GEMMA_MODEL}",
-  "messages": [{"role": "user", "content": "Reply only with the word OK."}],
-  "max_tokens": 10
-}
-EOF
-)" | python3 -m json.tool 2>&1 | head -30
+# 10-minute budget — first run includes the model download.
+vllm_wait_ready "${CONTAINER_NAME}" 600 "" "" 30
+vllm_smoke_test localhost "${GEMMA_PORT}" "${GEMMA_MODEL}"
 
 echo ""
 echo "=== done ==="

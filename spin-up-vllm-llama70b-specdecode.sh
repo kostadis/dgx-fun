@@ -29,8 +29,8 @@
 #   …and timing the same chat completion against each.
 #
 # USAGE
-#   scp spin-up-vllm-llama70b-specdecode.sh kostadis@192.168.1.147:~/
-#   ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-llama70b-specdecode.sh'
+#   scp spin-up-vllm-llama70b-specdecode.sh lib-vllm-spinup.sh spark:~/
+#   ssh spark 'bash ~/spin-up-vllm-llama70b-specdecode.sh'
 #
 # CONFIGURATION
 #   LLAMA_MODEL    target HF model id; default casperhansen/llama-3.3-70b-instruct-awq
@@ -70,12 +70,7 @@
 #
 set -euo pipefail
 
-# Pick up HF_TOKEN from ~/.bashrc if not already in the env. SSH
-# non-interactive does NOT source .bashrc, so we extract just the
-# export line ourselves.
-if [ -z "${HF_TOKEN:-}" ] && [ -f "${HOME}/.bashrc" ]; then
-    eval "$(grep -E '^[[:space:]]*export[[:space:]]+HF_TOKEN=' "${HOME}/.bashrc" | tail -1)" 2>/dev/null || true
-fi
+source "$(dirname "$0")/lib-vllm-spinup.sh"
 
 LLAMA_MODEL="${LLAMA_MODEL:-casperhansen/llama-3.3-70b-instruct-awq}"
 DRAFT_MODEL="${DRAFT_MODEL:-unsloth/Llama-3.2-1B-Instruct}"
@@ -86,9 +81,27 @@ MAX_LEN="${MAX_LEN:-65536}"
 CONTAINER_NAME="vllm-chat"
 IMAGE="vllm/vllm-openai:latest"
 
-# Build the --speculative-config JSON. printf %s/%d gives us proper escaping.
+# Build the --speculative-config JSON. printf %s/%d gives proper escaping.
 SPEC_CONFIG=$(printf '{"model": "%s", "num_speculative_tokens": %d}' \
     "${DRAFT_MODEL}" "${SPEC_TOKENS}")
+
+specdecode_failure_hints() {
+    cat <<EOF
+  Common causes:
+   - 'unrecognized arguments: --speculative-config': vLLM image is too old.
+       Fix: docker pull vllm/vllm-openai:latest && re-run this script,
+       OR switch to the old flag form by replacing the --speculative-config
+       line with: --speculative-model "${DRAFT_MODEL}" \\
+                  --num-speculative-tokens "${SPEC_TOKENS}"
+   - 'Repository Not Found' for draft: try meta-llama/Llama-3.2-1B-Instruct
+       with HF_TOKEN passed via '-e HF_TOKEN=...' in docker run.
+   - 'tokenizer mismatch' / 'vocab_size' error: draft and target tokenizers
+       diverged. Stick to same Llama 3.1+ family.
+   - OOM: lower MAX_LEN or GPU_UTIL.
+EOF
+}
+
+vllm_load_hf_token
 
 echo "=== spin-up-vllm-llama70b-specdecode ==="
 echo "  target:    ${LLAMA_MODEL}"
@@ -100,19 +113,9 @@ echo "  max_len:   ${MAX_LEN}"
 echo "  spec_cfg:  ${SPEC_CONFIG}"
 echo ""
 
-# Stop existing vllm-chat.
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "→ stopping existing ${CONTAINER_NAME}..."
-    docker stop "${CONTAINER_NAME}" 2>&1 || true
-    docker rm "${CONTAINER_NAME}" 2>&1 || true
-fi
+vllm_stop_container "${CONTAINER_NAME}"
+vllm_gpu_healthcheck
 
-# GPU healthcheck.
-echo "→ GPU status pre-launch:"
-nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv | head -3
-echo ""
-
-# Start the new container with speculative decoding.
 echo "→ starting ${CONTAINER_NAME} with spec decode (${LLAMA_MODEL} + ${DRAFT_MODEL})..."
 docker run -d \
     --runtime nvidia --gpus all \
@@ -130,49 +133,10 @@ docker run -d \
     --tool-call-parser llama3_json \
     --host 0.0.0.0 --port "${LLAMA_PORT}"
 
-# Wait for healthy. 25-min budget — target download + draft download + warm-up.
-echo ""
-echo "→ waiting for 'Application startup complete' in container logs..."
-echo "  (first run includes ~40 GB target + ~2.5 GB draft download)"
-echo ""
-DEADLINE=$(( $(date +%s) + 1500 ))  # 25 min
-while [ "$(date +%s)" -lt "${DEADLINE}" ]; do
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Application startup complete"; then
-        echo "  ✓ ready"
-        break
-    fi
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -qE "Error|CUDA error|out of memory|Traceback|404 Client Error|Repository Not Found|unrecognized arguments"; then
-        echo ""
-        echo "  ✗ container errored during startup. Last 50 log lines:"
-        docker logs --tail 50 "${CONTAINER_NAME}" 2>&1
-        echo ""
-        echo "  Common causes:"
-        echo "   - 'unrecognized arguments: --speculative-config': vLLM image is too old."
-        echo "       Fix: docker pull vllm/vllm-openai:latest && re-run this script,"
-        echo "       OR switch to the old flag form by replacing the --speculative-config"
-        echo "       line with: --speculative-model \"${DRAFT_MODEL}\" \\"
-        echo "                  --num-speculative-tokens \"${SPEC_TOKENS}\""
-        echo "   - 'Repository Not Found' for draft: try meta-llama/Llama-3.2-1B-Instruct"
-        echo "       with HF_TOKEN passed via '-e HF_TOKEN=...' in docker run."
-        echo "   - 'tokenizer mismatch' / 'vocab_size' error: draft and target tokenizers"
-        echo "       diverged. Stick to same Llama 3.1+ family."
-        echo "   - OOM: lower MAX_LEN or GPU_UTIL."
-        exit 1
-    fi
-    sleep 15
-    elapsed=$(( 1500 - (DEADLINE - $(date +%s)) ))
-    last=$(docker logs --tail 1 "${CONTAINER_NAME}" 2>&1 | tr -d '\r' | cut -c1-100)
-    echo "  [${elapsed}s] ${last}"
-done
+# 25-min budget — target download + draft download + warm-up.
+vllm_wait_ready "${CONTAINER_NAME}" 1500 "" specdecode_failure_hints 50
 
-if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
-    echo ""
-    echo "  ✗ 25-minute startup budget exceeded. Last 50 log lines:"
-    docker logs --tail 50 "${CONTAINER_NAME}" 2>&1
-    exit 1
-fi
-
-# Verify spec decode actually engaged.
+# Verify spec decode actually engaged (vLLM can silently fall back).
 echo ""
 echo "→ verifying spec decode is active (not silently disabled)..."
 if docker logs "${CONTAINER_NAME}" 2>&1 | grep -qiE "speculative.*(enabled|config|model)"; then
@@ -183,23 +147,7 @@ else
     echo "    Check 'docker logs ${CONTAINER_NAME} | grep -i spec' manually."
 fi
 
-# Smoke-test endpoints.
-echo ""
-echo "→ smoke-test: GET /v1/models"
-curl -sS --max-time 5 "http://localhost:${LLAMA_PORT}/v1/models" | python3 -m json.tool 2>&1 | head -20
-
-echo ""
-echo "→ smoke-test: tiny chat completion (warms up spec decode for the metrics check)"
-curl -sS --max-time 60 "http://localhost:${LLAMA_PORT}/v1/chat/completions" \
-    -H 'Content-Type: application/json' \
-    -d "$(cat <<EOF
-{
-  "model": "${LLAMA_MODEL}",
-  "messages": [{"role": "user", "content": "Write one short paragraph about coffee."}],
-  "max_tokens": 200
-}
-EOF
-)" | python3 -m json.tool 2>&1 | head -40
+vllm_smoke_test localhost "${LLAMA_PORT}" "${LLAMA_MODEL}" 200
 
 # Check the spec-decode acceptance rate from /metrics.
 echo ""
