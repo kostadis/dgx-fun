@@ -362,13 +362,80 @@ The "rough edges of local hardware" list, Nemotron-specific:
 
 ---
 
+## Phase B verdict — reject (2026-05-19)
+
+After real-workflow use over 2026-05-18 → 2026-05-19, Nemotron 3 Nano
+30B A3B is **rejected** as the `vllm-chat` default. Reverted to Gemma 4
+26B MoE longctx on 2026-05-19 via `bash
+~/spin-up-vllm-gemma4-26b-moe-longctx.sh`.
+
+**Primary failure mode**: **llm_wiki client incompatibility with
+reasoning traces.** llm_wiki (Tauri app on Windows) has no parser for
+the `<think>...</think>` blocks Nemotron emits. The vLLM server side
+worked fine — the `--reasoning-parser nano_v3` plugin correctly splits
+reasoning into the `reasoning` response field on the chat completions
+API — but llm_wiki reads `content` and renders it directly, so the chat
+box filled with raw thinking output. There is no server-side flag to
+disable reasoning on Nemotron 3 Nano; it's how the model is trained.
+
+This is a **client-compatibility failure, not a model-quality
+failure**. The hybrid Mamba-2 + MoE architecture, FlashAttention v2
+backend, 5.77M-token KV pool, and tool-call parity (HF #3 did not
+reproduce) all remained intact. The deployment is technically sound;
+the workflow it needed to serve isn't.
+
+### What this means for re-trying Nemotron
+
+Don't re-promote Nemotron without one of:
+
+1. **Adding `<think>` stripping in llm_wiki** (probably a regex pass in
+   the Tauri client before render). This is the cleanest fix because it
+   makes llm_wiki tolerant of *any* thinking-by-default model
+   (DeepSeek-R1, QwQ, etc.), not just Nemotron 3.
+2. **A vLLM-side flag or model variant that suppresses
+   `<think>` generation entirely.** None known to exist for Nemotron 3
+   Nano as of this writing — the reasoning is bound into the model
+   weights, not an inference-time option.
+3. **Restricting Nemotron to clients that already handle reasoning**
+   (opencode does — handles the `reasoning` field; Anthropic / OpenAI
+   clients do). Not viable if llm_wiki is part of the workflow.
+
+### What stays from the experiment
+
+- `nemotron3-nano-30b` model entry in `~/.config/opencode/opencode.json`
+  is preserved as an alternate (not default). opencode handles the
+  reasoning field cleanly.
+- `~/spin-up-vllm-nemotron3-nano-30b.sh` stays on the Spark; not
+  checked into the repo since the experiment concluded reject. If you
+  want to re-try, the script + this observations file + the test plan
+  are enough to rebuild.
+- `current-setup.md` top-of-doc Nemotron note documents the rejection
+  for future readers.
+- All Phase A measurements above (kernel selection, KV pool sizing,
+  tok/s, tool-call probe) remain valid characterisation work even
+  though the model didn't ship.
+
+### What the experiment was good for
+
+Calibration: Nemotron is the first reasoning-by-default model tried on
+this Spark, and the failure surfaces a real workflow constraint —
+*reasoning verbosity is a client-side compatibility axis, not just a
+token-cost concern*. Future model selection on this hardware should
+filter for client compatibility before perf characterisation. This
+matches the global "Local AI Hardware Exploration" doctrine: the
+exercise is calibration, not optimisation, and a rejected experiment
+that clarifies a constraint is a successful exercise.
+
+---
+
 ## Related files
 
-- `current-setup.md` — live deployment state (Nemotron currently in
-  `vllm-chat` slot, experimental).
+- `current-setup.md` — live deployment state (Gemma 4 26B MoE longctx
+  re-installed 2026-05-19 after Nemotron rejection).
 - `nemotron3-nano-30b-test-plan.md` — methodology + decision
   criteria for this experiment.
-- `spin-up-vllm-nemotron3-nano-30b.sh` — deployment script (auto
+- `~/spin-up-vllm-nemotron3-nano-30b.sh` — deployment script (lives
+  on the Spark only after experiment concluded; not in repo. Auto
   picks up `HF_TOKEN` from `~/.bashrc`).
 - `bench-prefill.sh` / `bench-decode.sh` — synthetic probes (used in
   Phase A, deferred for Phase B in favour of real workflow

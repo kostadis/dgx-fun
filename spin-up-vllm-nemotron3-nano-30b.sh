@@ -50,8 +50,8 @@
 #   5. Smoke-test /v1/models and a tiny chat completion.
 #
 # USAGE
-#   scp spin-up-vllm-nemotron3-nano-30b.sh kostadis@192.168.1.147:~/
-#   ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'
+#   scp spin-up-vllm-nemotron3-nano-30b.sh lib-vllm-spinup.sh spark:~/
+#   ssh spark 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'
 #
 # CONFIGURATION
 #   NEMO_MODEL     HF model id; default nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
@@ -74,13 +74,7 @@
 #
 set -euo pipefail
 
-# Pick up HF_TOKEN from ~/.bashrc if not already in the env. SSH
-# non-interactive does NOT source .bashrc, so we extract just the
-# export line ourselves (safer than sourcing the whole file under
-# `set -euo pipefail`).
-if [ -z "${HF_TOKEN:-}" ] && [ -f "${HOME}/.bashrc" ]; then
-    eval "$(grep -E '^[[:space:]]*export[[:space:]]+HF_TOKEN=' "${HOME}/.bashrc" | tail -1)" 2>/dev/null || true
-fi
+source "$(dirname "$0")/lib-vllm-spinup.sh"
 
 NEMO_MODEL="${NEMO_MODEL:-nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16}"
 NEMO_PORT="${NEMO_PORT:-8001}"
@@ -93,6 +87,26 @@ IMAGE="vllm/vllm-openai:latest"
 PLUGIN_DIR="${HOME}/vllm-plugins"
 PLUGIN_FILE="nano_v3_reasoning_parser.py"
 PLUGIN_URL="https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16/resolve/main/${PLUGIN_FILE}"
+
+nemotron_failure_hints() {
+    cat <<'EOF'
+  Common causes:
+   - OOM at startup: drop MAX_LEN (try 131072 first) and/or
+     GPU_UTIL (0.75 → 0.70). Mamba states + 256K KV may exceed
+     the 0.80 budget on the first run; the recipe doesn't
+     specify a util value, so this is a guess we may need to
+     correct.
+   - 'reasoning-parser' / 'plugin' errors: vLLM image too old
+     to support --reasoning-parser-plugin. Pull a newer image
+     or pin a tag that includes the plugin interface.
+   - 'tool-call-parser qwen3_coder' unrecognized: same fix —
+     newer vllm/vllm-openai image.
+   - 'Repository Not Found': model may be gated; export HF_TOKEN
+     and re-add it via -e HF_TOKEN=… to the docker run.
+EOF
+}
+
+vllm_load_hf_token
 
 echo "=== spin-up-vllm-nemotron3-nano-30b ==="
 echo "  model:     ${NEMO_MODEL}"
@@ -113,17 +127,8 @@ fi
 echo "→ plugin present: ${PLUGIN_DIR}/${PLUGIN_FILE}"
 echo ""
 
-# 2. Stop existing vllm-chat (whatever's in the slot).
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "→ stopping existing ${CONTAINER_NAME}..."
-    docker stop "${CONTAINER_NAME}" 2>&1 || true
-    docker rm "${CONTAINER_NAME}" 2>&1 || true
-fi
-
-# 3. GPU healthcheck before allocating ~100 GB.
-echo "→ GPU status pre-launch:"
-nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv | head -3
-echo ""
+vllm_stop_container "${CONTAINER_NAME}"
+vllm_gpu_healthcheck
 
 echo "→ starting ${CONTAINER_NAME} with ${NEMO_MODEL}..."
 docker run -d \
@@ -149,64 +154,16 @@ docker run -d \
     --reasoning-parser nano_v3 \
     --host 0.0.0.0 --port "${NEMO_PORT}"
 
-# 4. Wait for healthy. 30-min budget — first run pulls ~60 GB weights.
-echo ""
-echo "→ waiting for 'Application startup complete' in container logs..."
-echo "  (first run includes ~60 GB BF16 download — be patient)"
-echo ""
-DEADLINE=$(( $(date +%s) + 1800 ))  # 30 min
-while [ "$(date +%s)" -lt "${DEADLINE}" ]; do
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Application startup complete"; then
-        echo "  ✓ ready"
-        break
-    fi
-    # Be strict — the args-dump line legitimately contains the words
-    # "plugin", "reasoning_parser", "tool_call_parser" etc. Only match
-    # patterns that are unlikely to appear in benign startup logs.
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -qE "Traceback \(most recent call last\)|CUDA error|CUDA out of memory|RuntimeError:|ValueError:|ImportError:|AttributeError:|OSError:|out of memory|404 Client Error|Repository Not Found|^error: unrecognized arguments"; then
-        echo ""
-        echo "  ✗ container errored during startup. Last 80 log lines:"
-        docker logs --tail 80 "${CONTAINER_NAME}" 2>&1
-        echo ""
-        echo "  Common causes:"
-        echo "   - OOM at startup: drop MAX_LEN (try 131072 first) and/or"
-        echo "     GPU_UTIL (0.75 → 0.70). Mamba states + 256K KV may exceed"
-        echo "     the 0.80 budget on the first run; the recipe doesn't"
-        echo "     specify a util value, so this is a guess we may need to"
-        echo "     correct."
-        echo "   - 'reasoning-parser' / 'plugin' errors: vLLM image too old"
-        echo "     to support --reasoning-parser-plugin. Pull a newer image"
-        echo "     or pin a tag that includes the plugin interface."
-        echo "   - 'tool-call-parser qwen3_coder' unrecognized: same fix —"
-        echo "     newer vllm/vllm-openai image."
-        echo "   - 'Repository Not Found': model may be gated; export HF_TOKEN"
-        echo "     and re-add it via -e HF_TOKEN=… to the docker run."
-        exit 1
-    fi
-    sleep 15
-    elapsed=$(( 1800 - (DEADLINE - $(date +%s)) ))
-    last=$(docker logs --tail 1 "${CONTAINER_NAME}" 2>&1 | tr -d '\r' | cut -c1-100)
-    echo "  [${elapsed}s] ${last}"
-done
+# 30-min budget — first run pulls ~60 GB weights. Stricter error
+# regex (anchored on actual exception classes) avoids matching the
+# benign "plugin"/"reasoning_parser" mentions in the args-dump line.
+vllm_wait_ready "${CONTAINER_NAME}" 1800 \
+    "Traceback \(most recent call last\)|CUDA error|CUDA out of memory|RuntimeError:|ValueError:|ImportError:|AttributeError:|OSError:|out of memory|404 Client Error|Repository Not Found|^error: unrecognized arguments" \
+    nemotron_failure_hints \
+    80
 
-if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
-    echo ""
-    echo "  ✗ 30-minute startup budget exceeded. Last 80 log lines:"
-    docker logs --tail 80 "${CONTAINER_NAME}" 2>&1
-    exit 1
-fi
-
-# 5. Smoke tests.
-echo ""
-echo "→ smoke-test: GET /v1/models"
-curl -sS --max-time 5 "http://localhost:${NEMO_PORT}/v1/models" | python3 -m json.tool 2>&1 | head -20
-
-echo ""
-echo "→ smoke-test: tiny chat completion"
-printf '%s' "{\"model\":\"${NEMO_MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply only with the word OK.\"}],\"max_tokens\":2048}" > /tmp/req_smoke.json
-curl -sS --max-time 120 "http://localhost:${NEMO_PORT}/v1/chat/completions" \
-    -H 'Content-Type: application/json' \
-    -d @/tmp/req_smoke.json | python3 -m json.tool 2>&1 | head -40
+# Reasoning models need budget for <think> before producing content.
+vllm_smoke_test localhost "${NEMO_PORT}" "${NEMO_MODEL}" 2048
 
 echo ""
 echo "=== done ==="
@@ -217,7 +174,7 @@ echo "10 makes the smoke test return empty content. Inspect both the"
 echo "'content' and 'reasoning_content' fields in the response."
 echo ""
 echo "Next step — verify tool calling works with the reasoning parser:"
-echo "  ./test-gemma4-toolcall.sh   # patch MODEL_ID to ${NEMO_MODEL}"
+echo "  MODEL=${NEMO_MODEL} ./test-toolcall.sh"
 echo ""
 echo "Reasoning parser known-flaky combo (HF discussion #3):"
 echo "  https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16/discussions/3"

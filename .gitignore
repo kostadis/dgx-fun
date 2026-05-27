@@ -1,0 +1,9 @@
+# Tool caches / IDE-local state
+.antigravitycli/
+
+# D&D / RPG experiments that live in this dir but belong to other projects.
+# Kept out of git history; move to ~/src/CampaignGenerator or ~/src/mempalace
+# if they should be tracked elsewhere.
+5e-mempalace/
+lora-stormgiants/
+my_quest.md

@@ -50,6 +50,8 @@
 #
 set -euo pipefail
 
+source "$(dirname "$0")/lib-precheck.sh"
+
 SPARK_HOST="${SPARK_HOST:-192.168.1.147}"
 SPARK_PORT="${SPARK_PORT:-8001}"
 MIN_CTX="${MIN_CTX:-262144}"
@@ -57,48 +59,23 @@ MODEL_ID="${MODEL_ID:-nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16}"
 ENDPOINT="http://${SPARK_HOST}:${SPARK_PORT}/v1"
 
 # Precheck: is the server up, on the right model, and at >= MIN_CTX?
-if [ "${MIN_CTX}" -gt 0 ]; then
-    echo "→ checking ${ENDPOINT}/models ..."
-    models_json="$(curl -sS --max-time 5 "${ENDPOINT}/models" 2>&1 || true)"
-    if ! printf '%s' "${models_json}" | grep -q '"data"'; then
-        echo "  ✗ ${ENDPOINT}/models did not respond with a model list."
-        echo "    response was:"
-        printf '%s\n' "${models_json}" | head -5
-        echo "    is vllm-chat running on the Spark? try:"
-        echo "      ssh kostadis@${SPARK_HOST} 'docker ps | grep vllm-chat'"
-        exit 1
-    fi
+if ! precheck_vllm_endpoint "${ENDPOINT}" "${MODEL_ID}" "${MIN_CTX}"; then
+    cat >&2 <<EOF
 
-    served_model="$(printf '%s' "${models_json}" | python3 -c '
-import json, sys
-data = json.load(sys.stdin)
-ids = [m.get("id") for m in data.get("data", [])]
-print(ids[0] if ids else "")
-' 2>/dev/null || true)"
-    if [ "${served_model}" != "${MODEL_ID}" ]; then
-        echo "  ✗ expected model ${MODEL_ID}, got '${served_model}'."
-        echo "    swap vllm-chat to the matching model first. For the default"
-        echo "    (Nemotron 3 Nano 30B A3B):"
-        echo "      ssh kostadis@${SPARK_HOST} 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'"
-        echo "    Or to use the served model, re-run with:"
-        echo "      MODEL_ID='${served_model}' MIN_CTX=0 $0"
-        exit 1
-    fi
+    To swap vllm-chat to the expected model on the Spark:
+      # Nemotron 3 Nano 30B A3B (256K):
+      ssh kostadis@${SPARK_HOST} 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'
+      # Gemma 4 26B MoE longctx (128K):
+      ssh kostadis@${SPARK_HOST} 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh'
 
-    ctx="$(printf '%s' "${models_json}" | python3 -c '
-import json, sys
-data = json.load(sys.stdin)
-items = data.get("data", [])
-print(items[0].get("max_model_len", 0) if items else 0)
-' 2>/dev/null || echo 0)"
-    if [ "${ctx}" -lt "${MIN_CTX}" ]; then
-        echo "  ✗ max_model_len=${ctx} is below MIN_CTX=${MIN_CTX}."
-        echo "    the server is running a shorter-context spin-up. To get 256K:"
-        echo "      ssh kostadis@${SPARK_HOST} 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'"
-        echo "    or rerun this wrapper with a lower MIN_CTX to accept the current server."
-        exit 1
-    fi
-    echo "  ✓ ${served_model} @ max_model_len=${ctx}"
+    Or to accept whatever the server is serving (skip precheck):
+      MODEL_ID='<served_id>' MIN_CTX=0 $0
+
+    To check what's actually running:
+      curl -sS ${ENDPOINT}/models | python3 -m json.tool
+      ssh kostadis@${SPARK_HOST} 'docker ps | grep vllm-chat'
+EOF
+    exit 1
 fi
 
 export OPENAI_API_KEY="${OPENAI_API_KEY:-dummy}"

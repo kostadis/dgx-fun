@@ -30,8 +30,8 @@
 #   slightly worse. If turn latency dominates, revert to the 32K script.
 #
 # USAGE
-#   scp spin-up-vllm-gemma4-26b-moe-longctx.sh kostadis@192.168.1.147:~/
-#   ssh kostadis@192.168.1.147 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh'
+#   scp spin-up-vllm-gemma4-26b-moe-longctx.sh lib-vllm-spinup.sh spark:~/
+#   ssh spark 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh'
 #
 # CONFIGURATION
 #   GEMMA_MODEL    HF model id; default google/gemma-4-26b-a4b-it
@@ -49,12 +49,7 @@
 #
 set -euo pipefail
 
-# Pick up HF_TOKEN from ~/.bashrc if not already in the env. SSH
-# non-interactive does NOT source .bashrc, so we extract just the
-# export line ourselves.
-if [ -z "${HF_TOKEN:-}" ] && [ -f "${HOME}/.bashrc" ]; then
-    eval "$(grep -E '^[[:space:]]*export[[:space:]]+HF_TOKEN=' "${HOME}/.bashrc" | tail -1)" 2>/dev/null || true
-fi
+source "$(dirname "$0")/lib-vllm-spinup.sh"
 
 GEMMA_MODEL="${GEMMA_MODEL:-google/gemma-4-26b-a4b-it}"
 GEMMA_PORT="${GEMMA_PORT:-8001}"
@@ -63,6 +58,23 @@ MAX_LEN="${MAX_LEN:-131072}"
 CONTAINER_NAME="vllm-chat"
 IMAGE="vllm/vllm-openai:latest"
 
+gemma4_longctx_failure_hints() {
+    cat <<'EOF'
+  Common causes:
+   - OOM at startup: most likely the 128K KV cache. Drop MAX_LEN
+     to 65536, then to 32768. If 65536 still OOMs, also drop
+     GPU_UTIL to 0.7.
+   - 'Repository Not Found': verify the model is publicly accessible
+     and (if gated) HF_TOKEN is set in the container env.
+   - MoE / expert routing errors: vLLM Gemma 4 MoE support may be
+     incomplete on this image tag. Try a pinned older or newer tag.
+   - PLE / custom modeling errors: --trust-remote-code is already on;
+     check that the HF repo includes the modeling_*.py files.
+EOF
+}
+
+vllm_load_hf_token
+
 echo "=== spin-up-vllm-gemma4-26b-moe-longctx ==="
 echo "  model:    ${GEMMA_MODEL}"
 echo "  port:     ${GEMMA_PORT}"
@@ -70,17 +82,8 @@ echo "  gpu_util: ${GPU_UTIL}  (~$(awk -v u="${GPU_UTIL}" 'BEGIN{printf "%.0f", 
 echo "  max_len:  ${MAX_LEN}  (long-context variant — lower concurrency)"
 echo ""
 
-# Stop existing vllm-chat (whatever's in the slot).
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "→ stopping existing ${CONTAINER_NAME}..."
-    docker stop "${CONTAINER_NAME}" 2>&1 || true
-    docker rm "${CONTAINER_NAME}" 2>&1 || true
-fi
-
-# GPU healthcheck before allocating ~96 GB.
-echo "→ GPU status pre-launch:"
-nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv | head -3
-echo ""
+vllm_stop_container "${CONTAINER_NAME}"
+vllm_gpu_healthcheck
 
 echo "→ starting ${CONTAINER_NAME} with ${GEMMA_MODEL}..."
 docker run -d \
@@ -101,59 +104,11 @@ docker run -d \
     --tool-call-parser gemma4 \
     --host 0.0.0.0 --port "${GEMMA_PORT}"
 
-# Wait for healthy. 30-min budget — bigger weights download + possible
-# extra torch.compile passes for the PLE / MoE paths.
-echo ""
-echo "→ waiting for 'Application startup complete' in container logs..."
-echo "  (first run includes ~52 GB BF16 download — be patient)"
-echo ""
-DEADLINE=$(( $(date +%s) + 1800 ))  # 30 min
-while [ "$(date +%s)" -lt "${DEADLINE}" ]; do
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -q "Application startup complete"; then
-        echo "  ✓ ready"
-        break
-    fi
-    if docker logs "${CONTAINER_NAME}" 2>&1 | grep -qE "Error|CUDA error|out of memory|Traceback|404 Client Error|Repository Not Found|unrecognized arguments|expert.*error|routing.*error"; then
-        echo ""
-        echo "  ✗ container errored during startup. Last 60 log lines:"
-        docker logs --tail 60 "${CONTAINER_NAME}" 2>&1
-        echo ""
-        echo "  Common causes:"
-        echo "   - OOM at startup: most likely the 128K KV cache. Drop MAX_LEN"
-        echo "     to 65536, then to 32768. If 65536 still OOMs, also drop"
-        echo "     GPU_UTIL to 0.7."
-        echo "   - 'Repository Not Found': verify the model is publicly accessible"
-        echo "     and (if gated) HF_TOKEN is set in the container env."
-        echo "   - MoE / expert routing errors: vLLM Gemma 4 MoE support may be"
-        echo "     incomplete on this image tag. Try a pinned older or newer tag."
-        echo "   - PLE / custom modeling errors: --trust-remote-code is already on;"
-        echo "     check that the HF repo includes the modeling_*.py files."
-        exit 1
-    fi
-    sleep 15
-    elapsed=$(( 1800 - (DEADLINE - $(date +%s)) ))
-    last=$(docker logs --tail 1 "${CONTAINER_NAME}" 2>&1 | tr -d '\r' | cut -c1-100)
-    echo "  [${elapsed}s] ${last}"
-done
+vllm_wait_ready "${CONTAINER_NAME}" 1800 \
+    "Error|CUDA error|out of memory|Traceback|404 Client Error|Repository Not Found|unrecognized arguments|expert.*error|routing.*error" \
+    gemma4_longctx_failure_hints
 
-if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
-    echo ""
-    echo "  ✗ 30-minute startup budget exceeded. Last 60 log lines:"
-    docker logs --tail 60 "${CONTAINER_NAME}" 2>&1
-    exit 1
-fi
-
-# Smoke tests.
-echo ""
-echo "→ smoke-test: GET /v1/models"
-curl -sS --max-time 5 "http://localhost:${GEMMA_PORT}/v1/models" | python3 -m json.tool 2>&1 | head -20
-
-echo ""
-echo "→ smoke-test: tiny chat completion"
-printf '%s' "{\"model\":\"${GEMMA_MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply only with the word OK.\"}],\"max_tokens\":10}" > /tmp/req_smoke.json
-curl -sS --max-time 60 "http://localhost:${GEMMA_PORT}/v1/chat/completions" \
-    -H 'Content-Type: application/json' \
-    -d @/tmp/req_smoke.json | python3 -m json.tool 2>&1 | head -30
+vllm_smoke_test localhost "${GEMMA_PORT}" "${GEMMA_MODEL}"
 
 echo ""
 echo "=== done ==="
