@@ -8,7 +8,7 @@ spark2 (192.168.1.69:8001):   nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
 ```
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-05-26. Use this as a "rebuild from scratch" reference if either
+2026-05-28. Use this as a "rebuild from scratch" reference if either
 box wipes, or as inventory when debugging.
 
 > **Two-box layout.** `spark1` is the primary box that backs production
