@@ -4,11 +4,11 @@
 
 ```
 spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
-spark2 (192.168.1.69:8001):   casperhansen/deepseek-r1-distill-qwen-32b-awq
+spark2 (192.168.1.69:8001):   nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
 ```
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-05-25. Use this as a "rebuild from scratch" reference if either
+2026-05-26. Use this as a "rebuild from scratch" reference if either
 box wipes, or as inventory when debugging.
 
 > **Two-box layout.** `spark1` is the primary box that backs production
@@ -31,15 +31,18 @@ box wipes, or as inventory when debugging.
 > budget from fitting). Instruct variant chosen (not Thinking) to
 > avoid the Nemotron `<think>`-leak failure mode.
 >
-> **Nemotron 3 Nano experiment: rejected.** `vllm-chat` ran Nemotron 3
-> Nano 30B A3B from 2026-05-18 to 2026-05-19 (Phase A/B per
-> `nemotron3-nano-30b-test-plan.md`). Phase B real-workflow validation
-> failed: llm_wiki has no parser for Nemotron's `<think>` reasoning
-> traces, so the chat box filled with raw thinking output. The
-> `opencode.json` still has a `nemotron3-nano-30b` entry as an
-> alternate; promoting it back to default requires client-side
-> stripping of `<think>` blocks first. Full record:
-> `nemotron3-nano-30b-observations.md`.
+> **Nemotron 3 Nano on spark2 (2026-05-26).** After empirical
+> calibration the user found DeepSeek R1 distill Qwen 32B AWQ
+> underwhelming for programming and swapped spark2's `vllm-chat` to
+> `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`. This is the same model
+> that was rejected from **spark1** (2026-05-18 → 05-19) because
+> llm_wiki can't strip `<think>` traces — but spark2 is the
+> experimental sidecar, not wired into llm_wiki, so the rejection
+> doesn't apply here. The opencode reasoning-trace leak is unchanged
+> from the previous DeepSeek slot occupant (see §4 leak warning).
+> Earlier history (Nemotron Phase A/B on spark1) is captured in
+> `nemotron3-nano-30b-observations.md` and
+> `nemotron3-nano-30b-test-plan.md`.
 
 > **Drift note for Claude**: if you change anything in this list
 > (swap a model, add a flag, replace a container), update this file
@@ -72,7 +75,7 @@ sm_121, ~273 GB/s memory bandwidth, EXT4 local filesystem.
 
 | port | service | purpose |
 |---:|---|---|
-| 8001 | vllm-chat (docker) | Chat completions — `DeepSeek R1 distill Qwen 32B AWQ`, 16K context, reasoning + tool calling on |
+| 8001 | vllm-chat (docker) | Chat completions — `Nemotron 3 Nano 30B A3B BF16`, 256K context, hybrid Mamba-2/MoE, reasoning + tool calling on |
 
 (No `vllm-embed`, no Ollama — spark2 is single-container.)
 
@@ -100,7 +103,7 @@ was stopped to free 17 GiB.
 
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
-| vllm-chat | ~60 GB (0.5 × ~121.7 GiB) | ~18 GiB AWQ weights (4-bit, awq_marlin) + ~3 GiB KV @ 16K context + activations | Measured ~65 GiB host-side resident at idle. Plenty of headroom: a second container (e.g. an embed sidecar, or a draft model for speculative decoding) easily fits. |
+| vllm-chat | ~102 GB (0.80 × ~128 GB) | ~60 GiB BF16 weights + Mamba-2 state + KV cache for the 6 attention layers @ 256K context + activations | Hybrid Mamba-2/MoE: only 6 of 52 layers carry traditional KV cache, so 256K context is affordable even on BF16. 0.80 budget chosen because the recipe doesn't specify and 60 GiB weights + Mamba state needs headroom — drop to 0.75 if OOM. |
 
 ---
 
@@ -352,14 +355,20 @@ on GB10 (sm_121) is mature enough to realize that.
 ## 4. spark2 vllm-chat (Docker container, port 8001)
 
 Single-container experimental slot on the second box. Currently
-serving **DeepSeek R1 distill Qwen 32B AWQ** — a reasoning model
-that emits `<think>` traces, with a vLLM-side reasoning parser so
-clients get a clean `reasoning` field separate from `content`.
+serving **Nemotron 3 Nano 30B A3B BF16** — an NVIDIA hybrid
+Mamba-2 / Transformer-MoE model with 30B total params, ~3.5B active
+per token, 23 Mamba-2 + 23 MoE + 6 attention layers, native 256K
+context. Reasoning is baked in: emits `<think>...</think>` blocks
+that the `nano_v3` plugin strips out into a separate response field.
 
 Slot history on spark2: Nemotron 3 Nano 30B A3B BF16 (2026-05-22 →
-~2026-05-24) → **DeepSeek R1 distill Qwen 32B AWQ (~2026-05-24 →
-current)**. Both rejected from spark1 because llm_wiki has no
-`<think>` parser; spark2 is where reasoning models live.
+~2026-05-24) → DeepSeek R1 distill Qwen 32B AWQ (~2026-05-24 →
+2026-05-26) → **Nemotron 3 Nano 30B A3B BF16 (2026-05-26 →
+current)**. DeepSeek swapped out because the user found it
+underwhelming for programming despite a full 32B working per token
+under AWQ. Nemotron returns to the slot — same opencode reasoning
+leak as DeepSeek (see warning below), but spark2 isn't wired into
+llm_wiki, so the original Phase B blocker doesn't apply on this box.
 
 ### Run command
 
@@ -370,78 +379,123 @@ docker run -d --runtime nvidia --gpus all \
   --ipc=host \
   -e HF_TOKEN="$HF_TOKEN" \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
+  -v ~/vllm-plugins:/plugins:ro \
   vllm/vllm-openai:latest \
-  casperhansen/deepseek-r1-distill-qwen-32b-awq \
-  --quantization awq_marlin \
-  --dtype float16 \
-  --max-model-len 16384 \
-  --max-num-seqs 4 \
-  --gpu-memory-utilization 0.5 \
+  nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 \
+  --tensor-parallel-size 1 \
+  --max-model-len 262144 \
+  --max-num-seqs 8 \
+  --gpu-memory-utilization 0.80 \
+  --kv-cache-dtype auto \
+  --dtype bfloat16 \
+  --trust-remote-code \
   --enable-auto-tool-choice \
-  --tool-call-parser hermes \
-  --reasoning-parser deepseek_r1 \
+  --tool-call-parser qwen3_coder \
+  --reasoning-parser-plugin /plugins/nano_v3_reasoning_parser.py \
+  --reasoning-parser nano_v3 \
   --host 0.0.0.0 --port 8001
 ```
 
-(No `spin-up-vllm-deepseek-r1-distill.sh` script committed yet —
-container was launched ad-hoc. Reconstruct from this block on
-rebuild, or add a script and link it here.)
+Driven by `spin-up-vllm-nemotron3-nano-30b.sh` (committed in this
+repo). Run via:
+
+```bash
+scp spin-up-vllm-nemotron3-nano-30b.sh lib-vllm-spinup.sh spark2:~/
+ssh spark2 'bash ~/spin-up-vllm-nemotron3-nano-30b.sh'
+```
+
+The script also downloads `nano_v3_reasoning_parser.py` from HF on
+first run and drops it in `~/vllm-plugins/` on the spark2 host, then
+mounts that directory read-only into the container at `/plugins`.
+
+The script accepts `NEMO_MODEL` / `MAX_LEN` / `GPU_UTIL` / `MAX_SEQS`
+/ `KV_CACHE_DTYPE` env overrides. To swap to the FP8 variant for
+faster decode: `NEMO_MODEL=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
+KV_CACHE_DTYPE=fp8 bash ~/spin-up-vllm-nemotron3-nano-30b.sh`.
 
 ### Why these flags
 
-- **`casperhansen/deepseek-r1-distill-qwen-32b-awq`**: 32B dense
-  Qwen-arch model, distilled to mimic DeepSeek R1's reasoning trace,
-  AWQ-quantized to 4-bit (~18 GiB on disk). Same architecture family
-  as Qwen 2.5 / Qwen 3, so AWQ tooling and the `hermes` tool-call
-  parser both apply.
-- **`--quantization awq_marlin`**: Marlin is the fast AWQ kernel
-  path; explicit selection rather than letting vLLM pick (some image
-  versions default to a slower fallback for AWQ on sm_121).
-- **`--dtype float16`**: AWQ kernels expect FP16 activations.
-- **`--max-model-len 16384`** (16K): conservative — much smaller
-  than spark1's 128K because the use case (reasoning Q&A, opencode
-  experiments) doesn't need long context, and the model's native
-  context tops out around 32K anyway.
-- **`--max-num-seqs 4`**: matches spark1's conservative batching.
-- **`--gpu-memory-utilization 0.5`** (~60 GiB cap): leaves room for
-  a second container later. The 32B AWQ model only needs ~22 GiB
-  weights+KV, so the 60 GiB cap is more about reserving headroom
-  than fitting the model.
-- **`--enable-auto-tool-choice` + `--tool-call-parser hermes`**:
-  matches spark1. Hermes parser works for the Qwen tokenizer
-  family.
-- **`--reasoning-parser deepseek_r1`** *(key difference vs spark1)*:
-  vLLM strips the `<think>...</think>` block from `content` and
-  surfaces it under `choices[0].message.reasoning`. This is what
-  makes the model usable for clients that *do* understand a
-  `reasoning` field (opencode) — but llm_wiki still won't render
-  it, which is why this model lives on spark2 and not spark1.
-- **`-e HF_TOKEN`**: passthrough so vLLM can pull the AWQ weights
-  on first run. The `.profile` export-keyword quirk applies here
-  too — verify with a grandchild process if the token is missing.
+- **`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`**: NVIDIA hybrid
+  arch (Mamba-2 + MoE + 6 attention layers). Sm_121 (DGX Spark / GB10)
+  is **officially supported** by NVIDIA's vLLM recipe for this model
+  — the only model on either spark with vendor-tuned kernels for this
+  exact hardware. BF16 chosen over FP8 for raw quality; FP8 variant
+  is faster decode if needed.
+- **`--max-model-len 262144`** (256K): recipe default. Only 6 of 52
+  layers carry traditional KV cache (the rest are Mamba-2 constant
+  state or MoE FFN), so 256K is affordable. Native ceiling is 1M
+  with `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` — not enabled here.
+- **`--max-num-seqs 8`**: recipe default. Double spark1's 4 because
+  hybrid attention makes per-sequence KV cost ~10× cheaper.
+- **`--gpu-memory-utilization 0.80`** (~102 GiB cap): empirical
+  setting from the spin-up script. Not from the recipe — NVIDIA
+  doesn't specify util in the published command. 60 GiB BF16 weights
+  + Mamba state + 256K KV for the 6 attention layers fit, with
+  ~25 GiB headroom. Drop to 0.75 if OOM at startup.
+- **`--kv-cache-dtype auto`**: BF16 KV. The FP8 variant of the model
+  pairs with `KV_CACHE_DTYPE=fp8` for additional KV savings.
+- **`--dtype bfloat16`**: matches the model weights.
+- **`--trust-remote-code`**: required — the model ships custom
+  modeling code for the hybrid arch.
+- **`--enable-auto-tool-choice` + `--tool-call-parser qwen3_coder`**:
+  NVIDIA reused the qwen3_coder tool-call format. There's an open HF
+  discussion noting tool-call + reasoning is flaky in some configs
+  (https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16/discussions/3)
+  — probe with `MODEL=nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
+  ./test-toolcall.sh` after any restart before trusting it.
+- **`--reasoning-parser-plugin /plugins/nano_v3_reasoning_parser.py`
+  + `--reasoning-parser nano_v3`** *(key difference vs spark1)*:
+  loads NVIDIA's custom plugin from the host-mounted `/plugins`
+  directory and strips `<think>...</think>` blocks out of `content`.
+- **`-e HF_TOKEN`**: passthrough so vLLM can pull the BF16 weights
+  on first run (~60 GiB). The `.profile` export-keyword quirk applies
+  on spark2 too — verify with a grandchild process if the token is
+  missing.
+
+### Reasoning-trace leak warning (verified 2026-05-26)
+
+The `nano_v3` plugin routes the reasoning trace into a field literally
+named `reasoning` (not the OpenAI-convention `reasoning_content`).
+opencode's openai-compatible provider doesn't surface a custom
+`reasoning` field, so trace tokens count against `completion_tokens`
+but never display. Verified post-swap: a "Reply with only OK" probe
+returned `content: "\nOK"` plus 40 silently-dropped trace tokens
+under the `reasoning` key. This is the **same failure mode** the
+previous DeepSeek R1 occupant had on this slot — swapping the
+parser plugin didn't fix it because both NVIDIA's `nano_v3` and
+vLLM 0.21's stock `deepseek_r1` parser pick the same non-standard
+field name. Three fix paths are open (server-side rename, drop the
+parser, or accept the leak); see memory `todo-nano-v3-reasoning-leak`.
 
 ### Smoke test
 
 ```bash
 curl -sS http://192.168.1.69:8001/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"casperhansen/deepseek-r1-distill-qwen-32b-awq","messages":[{"role":"user","content":"Say only OK"}],"max_tokens":20}'
-# expect: {"choices":[{"message":{"content":"\n\nOK","reasoning":"\n\n",...}}],...}
-# note: "reasoning" field is populated even for trivial prompts because the parser is always on.
+  -d '{"model":"nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16","messages":[{"role":"user","content":"Reply with only the word OK."}],"max_tokens":256}'
+# expect: {"choices":[{"message":{"content":"\nOK","reasoning":"...","reasoning_content":null,...}}],...}
+# note: "reasoning" field (NOT reasoning_content) is populated; budget max_tokens accordingly.
 ```
 
 ### Measured behaviour
 
-No benchmarks logged yet on spark2. For comparison against spark1's
-Qwen3-Next, see `model-comparisons.md` (todo — currently spark1-only).
+No benchmarks logged yet on spark2 for this swap. For comparison
+against spark1's Qwen3-Next, see `model-comparisons.md` (todo —
+currently spark1-only). Phase A perf data from the earlier spark1
+Nemotron run is in `nemotron3-nano-30b-observations.md`, but the
+spark1 box had a vllm-embed sidecar (port 8000) that doesn't exist
+on spark2, so prefill/decode numbers don't transfer directly.
 
 ### Restart cost
 
-- Cold start (first time, with HF download): ~5–10 min (AWQ weights
-  are ~18 GB).
+- Cold start (first time, with HF download): measured 2026-05-26 —
+  ~497 s (~8 min) to "Application startup complete" *with* warm HF
+  cache (the previous 2026-05-22 Nemotron run on spark2 left the
+  weights resident). A truly cold pull would add ~10–15 min of HF
+  download for the ~60 GiB BF16 weights.
 - Warm restart (cached weights, what `docker start vllm-chat` does
-  post-reboot): ~30–60 s. Much faster than spark1 because the model
-  is 4× smaller and 4-bit quantized.
+  post-reboot): expected ~3–5 min — shard load + `torch.compile`
+  warmup dominate.
 
 ---
 
@@ -573,6 +627,24 @@ registered chat models; the active default is `dgx/qwen3-next-80b`:
           "temperature": true
         }
       }
+    },
+    "dgx2": {
+      "api": "openai",
+      "name": "DGX Spark 2 (vLLM, experimental)",
+      "options": {
+        "baseURL": "http://192.168.1.69:8001/v1",
+        "apiKey": "ignored"
+      },
+      "models": {
+        "nemotron3-nano-30b": {
+          "id": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+          "name": "Nemotron 3 Nano 30B A3B BF16 @ 256K (reasoning+tools, spark2)",
+          "limit": { "context": 262144, "output": 8192 },
+          "tool_call": true,
+          "reasoning": true,
+          "temperature": true
+        }
+      }
     }
   },
   "model": "dgx/qwen3-next-80b"
@@ -585,30 +657,34 @@ and re-run the matching spin-up script on the Spark to bring up that
 model on port 8001. The chosen vllm-chat container must have the
 tool-call flags enabled (already set in all current spin-up scripts).
 
-The `nemotron3-nano-30b` entry is preserved as an alternate but is
-**not the default** after Phase B testing rejected Nemotron: llm_wiki
-has no parser for `<think>` reasoning traces, so the chat box filled
-with raw thinking (`nemotron3-nano-30b-observations.md`). The
-`opencode-spark-longctx.sh` wrapper from Phase B still works for Gemma
-4 if invoked with `MODEL_ID=google/gemma-4-26b-a4b-it MIN_CTX=131072
+The `nemotron3-nano-30b` entry **under the `dgx` (spark1) provider** is
+preserved as an alternate but is **not the default** on spark1 after
+Phase B testing rejected Nemotron there: llm_wiki has no parser for
+`<think>` reasoning traces, so the chat box filled with raw thinking
+(`nemotron3-nano-30b-observations.md`). The `opencode-spark-longctx.sh`
+wrapper from Phase B still works for Gemma 4 if invoked with
+`MODEL_ID=google/gemma-4-26b-a4b-it MIN_CTX=131072
 ./opencode-spark-longctx.sh` — but the bare `opencode` invocation
 using `opencode.json` is the standard path.
 
 opencode also has a second provider `dgx2` pointed at spark2
 (`http://192.168.1.69:8001/v1`). Switch to a spark2 model by setting
-the top-level `"model"` field to `dgx2/<model-id>`.
+the top-level `"model"` field to `dgx2/nemotron3-nano-30b`.
 
-> **Drift flag (2026-05-25):** the `dgx2` provider currently registers
-> exactly one model id, `nemotron3-nano-30b` →
-> `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`. **That id no longer
-> matches reality** — spark2 is serving
-> `casperhansen/deepseek-r1-distill-qwen-32b-awq`. Until
-> `opencode.json` is updated, `dgx2/nemotron3-nano-30b` will return
-> HTTP 400 from vLLM. Fix: replace the entry with a
-> `deepseek-r1-distill-qwen-32b` entry whose `id` matches the served
-> model, `reasoning: true`, `limit.context: 16384`. Left unfixed
-> intentionally to surface here — owner's call whether to keep the
-> Nemotron entry as a placeholder for a future swap-back.
+> **Reasoning-trace leak warning (verified 2026-05-26):** Nemotron's
+> `nano_v3` reasoning parser plugin emits the trace under a field
+> literally named `reasoning`, **not** `reasoning_content`. opencode's
+> openai-compatible provider does not surface a custom `reasoning`
+> field — so trace tokens are consumed silently against
+> `completion_tokens` and opencode never displays them. This is the
+> **same failure mode** the previous DeepSeek R1 occupant of this slot
+> had with vLLM 0.21's stock `deepseek_r1` parser: both pick the
+> non-standard field name. A post-swap "Reply with only OK" probe
+> returned `content: "\nOK"` plus 40 dropped trace tokens under
+> `reasoning`. Budget your `max_tokens` accordingly (~1.5–2× what
+> you'd give a non-reasoning model). The `reasoning: true` flag in
+> the opencode entry is documentary; it does not unlock display in
+> this version.
 
 ---
 
@@ -633,7 +709,7 @@ until curl -sS --max-time 2 http://192.168.1.69:8001/v1/models 2>/dev/null | gre
 ```
 
 Warm-restart cost: vllm-embed ~30s, spark1 vllm-chat ~5–10 min
-(80 GB weights), spark2 vllm-chat ~30–60s (18 GB AWQ weights).
+(80 GB weights), spark2 vllm-chat ~3–5 min (60 GB BF16 weights).
 
 ### Full rebuild from a wiped box
 
@@ -709,10 +785,12 @@ spark2 ships from NVIDIA with a few defaults that bit us:
    HF_TOKEN="$HF_TOKEN"` invoked over ssh. Verify with a grandchild
    process: `ssh spark2 'bash -c "echo \$HF_TOKEN"'`.
 
-4. **Start vllm-chat** with the DeepSeek R1 distill block from §4
-   above. Expect ~5–10 min on first run (HF pulls ~18 GB of AWQ
-   weights). No spin-up script committed yet — paste the `docker
-   run` block from §4 directly.
+4. **Start vllm-chat** with the Nemotron 3 Nano block from §4 above.
+   Expect ~10–20 min on first run (HF pulls ~60 GB of BF16 weights;
+   the spin-up script also wgets `nano_v3_reasoning_parser.py` into
+   `~/vllm-plugins/` on the host before mounting it). Driven by
+   `bash ~/spin-up-vllm-nemotron3-nano-30b.sh` (committed; scp it
+   along with `lib-vllm-spinup.sh`).
 
 5. **Smoke-test** with the curl command from §4.
 
