@@ -1,5 +1,12 @@
 # Tool caches / IDE-local state
 .antigravitycli/
+__pycache__/
+
+# Generated turbovec-eval artifacts (regenerate via build-corpus.py / the
+# --gen flag of turbovec-target.py). corpus.txt is large derived campaign text.
+corpus.txt
+queries*.jsonl
+*.tv
 
 # D&D / RPG experiments that live in this dir but belong to other projects.
 # Kept out of git history; move to ~/src/CampaignGenerator or ~/src/mempalace
