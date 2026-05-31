@@ -8,7 +8,7 @@ spark2 (192.168.1.69:8001):   nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
 ```
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-05-28. Use this as a "rebuild from scratch" reference if either
+2026-05-30. Use this as a "rebuild from scratch" reference if either
 box wipes, or as inventory when debugging.
 
 > **Two-box layout.** `spark1` is the primary box that backs production
@@ -20,6 +20,44 @@ box wipes, or as inventory when debugging.
 > Only spark1 is wired into production workflows; spark2 is for
 > opencode sandboxing and side-by-side comparison.
 
+> **Active change (2026-05-30): TurboQuant KV cache + vLLM 0.22.0 on spark1.**
+> `vllm-chat` still serves the SAME model
+> (`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`, same FP8 *weights*, same 128K
+> context, same hermes tool parser) — the only functional change is the
+> **KV cache dtype: `fp8` → TurboQuant `turboquant_k8v4`** (FP8 keys +
+> 4-bit values). TurboQuant is a KV-cache quantization scheme, NOT a
+> weight quantization, so the model id is unchanged. The image was also
+> pinned from `:latest` (was vLLM 0.21.0) to
+> **`vllm/vllm-openai:v0.22.0-aarch64`** (vLLM 0.22.0, CUDA 13.0, torch
+> 2.11). Driven by `bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh`.
+> Engine log confirms `Using TURBOQUANT attention backend`. Smoke +
+> tool-call (hermes) both PASS, output coherent. **No client config
+> change needed** — the served model id is identical, so MemPalace /
+> llm_wiki / CampaignGenerator / opencode keep working unchanged.
+>
+> **Why 0.22.0 specifically (not just the user's ">=0.20.0"):**
+> hybrid-model TurboQuant support (PR #39931) shipped in 0.21.0, but the
+> Qwen3-Next *degenerate-output-under-CUDA-graph* bug (#40880) was only
+> fixed in 0.22.0 — running TurboQuant on 0.21.0 risks silent garbage.
+> Open bug #40807 (spec-decode path) doesn't apply (no spec decode here).
+> Open bug #41726 (crash on large chunked continuation prefill) is
+> guarded with `--max-num-batched-tokens 4096`. Ampere bug #40124 is
+> irrelevant — the Spark is Blackwell sm_121 (SM>=89).
+>
+> **Caveat logged at startup:** *"TurboQuant is not yet compatible with
+> FlashAttention >= 3 → overriding flash_attn_version to 2"* — the
+> full-attention layers run on FA2, not FA3.
+>
+> **Honest tradeoff (calibration note):** on a hybrid like Qwen3-Next
+> only the periodic full-attention layers carry KV (the Gated DeltaNet
+> layers have none), so TurboQuant's absolute memory win is small while
+> its compute overhead (Hadamard rotation + FA2 fallback) is full and
+> lands on the prefill path. vLLM's own study rates plain fp8 KV the
+> better default. Expect this to be a touch SLOWER than fp8 with a modest
+> memory saving — this is a "feel the tradeoff" calibration choice, not
+> an optimization. **Instant revert to plain fp8 KV:**
+> `bash ~/spin-up-vllm-qwen3-next-80b.sh`.
+>
 > **Active swap (2026-05-21): Qwen3-Next 80B A3B Instruct FP8 on spark1.**
 > `vllm-chat` was swapped from Gemma 4 26B MoE longctx to
 > `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` via
@@ -69,7 +107,7 @@ sm_121, ~273 GB/s memory bandwidth, EXT4 local filesystem.
 |---:|---|---|
 | 11434 | Ollama (systemd) | LLM serving (legacy, kept for fallback) |
 | 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` |
-| 8001 | vllm-chat (docker) | Chat completions — `Qwen3-Next 80B A3B Instruct FP8`, 128K context, hybrid attention, tool calling on |
+| 8001 | vllm-chat (docker) | Chat completions — `Qwen3-Next 80B A3B Instruct FP8`, 128K context, hybrid attention, **TurboQuant KV (`turboquant_k8v4`)**, vLLM 0.22.0, tool calling on |
 
 ### spark2 (192.168.1.69)
 
@@ -86,7 +124,7 @@ sm_121, ~273 GB/s memory bandwidth, EXT4 local filesystem.
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
 | vllm-embed | ~6 GB (0.05 × 128) | ~600 MB | KV cache fits in cap |
-| vllm-chat | ~107 GB (0.88 × ~121.7 GiB) | ~80 GiB FP8 weights + ~25 GiB for KV cache (fp8) + activations @ 128K context | Measured ~106 GiB resident with vllm-embed. Hybrid attention: most layers are Gated DeltaNet (no KV), only periodic full-attention layers carry KV — net effect is KV cost materially lower than a Llama-shape at the same context. |
+| vllm-chat | ~107 GB (0.88 × ~121.7 GiB) | ~80 GiB FP8 weights + KV cache (**TurboQuant `turboquant_k8v4`**: FP8 keys + 4-bit values, on the full-attention layers only) + activations @ 128K context | Hybrid attention: most layers are Gated DeltaNet (no KV), only periodic full-attention layers carry KV — so TurboQuant only compresses those few layers; absolute KV win over plain fp8 is small. (nvidia-smi reports `[N/A]` for memory.used on this GB10/WSL box, so resident bytes aren't directly measurable here.) |
 | Ollama (idle) | ~0 | unloads after `OLLAMA_KEEP_ALIVE` | 5 min default |
 | Ollama (loaded) | varies | qwen2.5:14b ≈ 14.5 GB, nomic ≈ 600 MB | only when actively serving |
 
@@ -236,13 +274,19 @@ opencode, future chat clients (see `desktop-chat-clients.md`), and any
 code calling `/v1/chat/completions`.
 
 Currently serving **Qwen3-Next 80B A3B Instruct FP8** (hybrid attention,
-~3B active per token, ~80B total). Slot history: Qwen 2.5 14B AWQ →
+~3B active per token, ~80B total) with **TurboQuant KV cache
+(`turboquant_k8v4`) on vLLM 0.22.0** (image
+`vllm/vllm-openai:v0.22.0-aarch64`). Slot history: Qwen 2.5 14B AWQ →
 Llama 3.3 70B AWQ + spec-decode → Gemma 4 26B MoE → Gemma 4 26B MoE
 longctx → **Nemotron 3 Nano 30B A3B (2026-05-18 to 2026-05-19, rejected
 after Phase B — see `nemotron3-nano-30b-observations.md`)** → Gemma 4
-26B MoE longctx → **Qwen3-Next 80B A3B Instruct FP8 (2026-05-21 →
-current)**. vllm-chat swap-in scripts are
-`spin-up-vllm-qwen3-next-80b.sh` (current),
+26B MoE longctx → **Qwen3-Next 80B A3B Instruct FP8, plain fp8 KV
+(2026-05-21 → 2026-05-30)** → **Qwen3-Next 80B A3B Instruct FP8,
+TurboQuant `turboquant_k8v4` KV + vLLM 0.22.0 (2026-05-30 → current)**.
+vllm-chat swap-in scripts are
+`spin-up-vllm-qwen3-next-80b-turboquant.sh` (current — TurboQuant KV,
+v0.22.0),
+`spin-up-vllm-qwen3-next-80b.sh` (plain fp8 KV — instant revert),
 `spin-up-vllm-gemma4-26b-moe-longctx.sh`,
 `spin-up-vllm-gemma4-26b-moe.sh`, `spin-up-vllm-llama70b.sh`,
 `spin-up-vllm-llama70b-specdecode.sh`, and
@@ -256,8 +300,8 @@ above.)
 
 ### Run command
 
-Currently launched via `./spin-up-vllm-qwen3-next-80b.sh`. Effective
-command:
+Currently launched via `./spin-up-vllm-qwen3-next-80b-turboquant.sh`.
+Effective command:
 
 ```bash
 docker run -d --runtime nvidia --gpus all \
@@ -266,17 +310,22 @@ docker run -d --runtime nvidia --gpus all \
   --ipc=host \
   -e HF_TOKEN="$HF_TOKEN" \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
-  vllm/vllm-openai:latest \
+  vllm/vllm-openai:v0.22.0-aarch64 \
   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8 \
   --max-model-len 131072 \
   --max-num-seqs 4 \
   --gpu-memory-utilization 0.88 \
-  --kv-cache-dtype fp8 \
+  --kv-cache-dtype turboquant_k8v4 \
+  --max-num-batched-tokens 4096 \
   --trust-remote-code \
   --enable-auto-tool-choice \
   --tool-call-parser hermes \
   --host 0.0.0.0 --port 8001
 ```
+
+The prior plain-fp8 command (revert target) is identical except
+`vllm/vllm-openai:latest` + `--kv-cache-dtype fp8` and no
+`--max-num-batched-tokens` flag — i.e. `spin-up-vllm-qwen3-next-80b.sh`.
 
 ### Why these flags
 
@@ -296,10 +345,27 @@ docker run -d --runtime nvidia --gpus all \
   device. Tight — required stopping `vllm-gemma` (17 GiB) before
   startup would fit. Fallback ladder if it OOMs: MAX_LEN=65536 first,
   then GPU_UTIL=0.85, then 0.82.
-- **`--kv-cache-dtype fp8`**: halves KV memory vs BF16. Set
-  `KV_CACHE_DTYPE=auto` if the image build lacks FP8 KV kernels for
-  the hybrid attention impl (also drop MAX_LEN to compensate for 2×
-  KV memory).
+- **`vllm/vllm-openai:v0.22.0-aarch64`** (vLLM 0.22.0, CUDA 13.0, torch
+  2.11): pinned, NOT `:latest`. TurboQuant hybrid support landed in
+  0.21.0 (#39931) but the Qwen3-Next degenerate-output-under-CUDA-graph
+  bug (#40880) was only fixed in 0.22.0 — so 0.22.0 is the floor for
+  *this* model. `:latest` happens to point at 0.22.0 right now but will
+  drift; the pin keeps this doc honest. The Spark is aarch64 (Grace);
+  the image's `arch_list` is `sm_80…sm_120` (no explicit sm_121, but
+  sm_120 cubins run on GB10/sm_121 via CUDA 12.x minor-version forward
+  compat — proven by months of prod on this box).
+- **`--kv-cache-dtype turboquant_k8v4`**: TurboQuant KV-cache quant —
+  FP8 keys + 4-bit values (~2.6× on the compressed full-attention
+  layers, +1.17% PPL per vLLM's published numbers). Closest analogue to
+  the prior plain `fp8` KV, chosen so a future A/B isolates TurboQuant's
+  machinery cost rather than an accuracy cliff. Other presets:
+  `turboquant_4bit_nc` (3.8×, +2.71%), `turboquant_k3v4_nc` (3.5×,
+  +10.63%), `turboquant_3bit_nc` (4.9×, +20.59%). Set `KV_CACHE_DTYPE=fp8`
+  (or just run the plain script) to revert.
+- **`--max-num-batched-tokens 4096`**: guard for open bug #41726 (crash
+  on large chunked continuation prefill with TurboQuant). If it still
+  crashes mid-prefill at long context, drop to 2048 and/or set
+  `ENFORCE_EAGER=1`.
 - **`--trust-remote-code`**: Qwen3-Next ships custom modeling code.
 - **`--enable-auto-tool-choice` + `--tool-call-parser hermes`**:
   default Qwen3 chat-template parser. Verified end-to-end with
@@ -309,6 +375,20 @@ docker run -d --runtime nvidia --gpus all \
 
 ### Known perf ceilings (Spark-specific)
 
+- **TurboQuant forces FlashAttention 2.** Startup logs:
+  *"TurboQuant is not yet compatible with FlashAttention >= 3 →
+  overriding flash_attn_version to 2."* The full-attention layers run
+  on FA2, giving up FA3's throughput on exactly the layers TurboQuant
+  touches.
+- **TurboQuant overhead lands on a hybrid that barely needs it.** Only
+  the periodic full-attention layers carry KV (GDN layers carry none),
+  so the memory saved is small, but the Hadamard-rotation + dequant
+  compute is paid in full, on the prefill-heavy path this box runs.
+  Net expectation: slightly slower than plain fp8 KV. **Quality
+  verified** 2026-05-30: long-context needle test (8K→120K, depths
+  0.25/0.5/0.9) scored 12/12 PASS — recall intact, no #41726 crash. The
+  fp8-vs-TurboQuant *speed* A/B is still pending. Full record:
+  `turboquant-observations.md`.
 - **Hybrid-attention kernel maturity on sm_121**: Qwen3-Next's Gated
   DeltaNet + full-attention path is newer in vLLM than the Gemma 4
   MoE path. If vLLM hasn't shipped a tuned CUDA kernel for this arch
@@ -536,6 +616,12 @@ these ports past the router.
 
 ## 7. Client-side configuration
 
+> **No client changes for the 2026-05-30 TurboQuant swap.** TurboQuant
+> is a server-side KV-cache dtype change only; the served model id
+> (`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`) is identical, so every config
+> below is unchanged from the 2026-05-21 fp8 deployment. Listed here as
+> current-state inventory, not as edits made.
+
 ### MemPalace (`~/.mempalace/config.json` on laptop)
 
 ```json
@@ -739,17 +825,22 @@ in this order so the VRAM budgeting works.
    Wait for `Application startup complete.` in `docker logs -f vllm-embed`.
 
 4. **Start vllm-chat SECOND** via the spin-up script (Qwen3-Next 80B
-   FP8 is the current default — 128K context, hybrid attention):
+   FP8 + TurboQuant KV on vLLM 0.22.0 is the current default — 128K
+   context, hybrid attention):
    ```bash
-   scp spin-up-vllm-qwen3-next-80b.sh lib-vllm-spinup.sh test-toolcall.sh spark:~/
-   ssh spark 'docker pull vllm/vllm-openai:latest'
-   ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'
+   scp spin-up-vllm-qwen3-next-80b-turboquant.sh spin-up-vllm-qwen3-next-80b.sh \
+       lib-vllm-spinup.sh test-toolcall.sh spark:~/
+   ssh spark 'docker pull vllm/vllm-openai:v0.22.0-aarch64'
+   ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh'
    ```
    Expect ~40 min on first run (HF pulls ~80 GB of FP8 weights on a
-   fresh box). Script waits for `Application startup complete` and
-   smoke-tests on its own. Then verify tool calling:
+   fresh box; ~13 min observed warm-cache on 2026-05-30 — shard load +
+   torch.compile dominate). Script waits for `Application startup
+   complete` and smoke-tests on its own. Then verify tool calling
+   (`HOST`/`PORT`, not `DGX_*`):
    `ssh spark 'MODEL=Qwen/Qwen3-Next-80B-A3B-Instruct-FP8 ~/test-toolcall.sh'`.
-   To swap to a different model later, see §9.
+   If the smoke output is repeated/garbled, that's bug #40880 — re-run
+   with `ENFORCE_EAGER=1`. To revert to plain fp8 KV or swap models, see §9.
 
 5. **Smoke-test both** with the curl commands above.
 
@@ -837,7 +928,8 @@ ssh spark 'nvidia-smi dmon -s u -c 30'
 ssh spark 'du -sh ~/.cache/huggingface'
 
 # Swap vllm-chat to a different model on port 8001 (one-liner each):
-ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'         # Qwen3-Next 80B A3B Instruct FP8 @ 128K (CURRENT)
+ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh' # Qwen3-Next 80B FP8 + TurboQuant KV @ 128K, vLLM 0.22.0 (CURRENT)
+ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'         # Qwen3-Next 80B FP8, plain fp8 KV @ 128K (revert target)
 ssh spark 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh' # Gemma 4 26B MoE @ 128K context
 ssh spark 'bash ~/spin-up-vllm-gemma4-26b-moe.sh'         # Gemma 4 26B MoE @ 32K (high-concurrency variant)
 ssh spark 'bash ~/spin-up-vllm-llama70b-specdecode.sh'    # Llama 3.3 70B AWQ + 1B draft (spec decode)
