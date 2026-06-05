@@ -7,9 +7,42 @@ spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 ```
 
+> **⚠️ ACTIVE CROSS-BOX EXPERIMENT (2026-06-05): both boxes are running
+> one model together, production single-box slots are DOWN.** spark1 +
+> spark2 are a 2-node Ray cluster serving (currently)
+> **`nvidia/MiniMax-M2.7-NVFP4`** (230B/10B, **NVFP4** — proven to run on
+> GB10 sm_121) tensor-parallel **TP=2** over the RoCE cable (container
+> `vllm-2box` on each box, image `local/vllm-ray:26.05`, port 8001 on
+> spark1 = `http://192.168.1.147:8001/v1`, parsers
+> `--tool-call-parser minimax_m2 --reasoning-parser minimax_m2_append_think`).
+> **NCCL transport: RoCE/IB verbs as of 2026-06-05** (was TCP sockets) —
+> containers now run with `--device /dev/infiniband --cap-add IPC_LOCK
+> --ulimit memlock=-1:-1` and env `NCCL_IB_HCA=rocep1s0f0:1`,
+> `NCCL_IB_GID_INDEX=3` (RoCE v2 / IPv4). Rebuilt by
+> `spin-up-vllm-2box-rdma.sh`; NCCL log confirms
+> `NET/IB : Using [0]rocep1s0f0:1/RoCE`.
+> Earlier today this slot ran `Qwen/Qwen3.5-122B-A10B-FP8` (the FP8
+> harness-validation model). While this runs, the normal single-box slots
+> below are **stopped**: spark1 `vllm-chat` (Qwen3-Next-80B) + `vllm-embed`,
+> and spark2 `vllm-chat` (Nemotron). Clients on spark1:8001 now get
+> MiniMax-M2.7, not Qwen3-Next-80B.
+> Measured (MiniMax NVFP4): prefill ~744 tok/s, decode **~15.5 tok/s on
+> RoCE/IB** (was ~11.1 tok/s on TCP sockets — **+40%** from the NCCL
+> transport switch; per-token all-reduce latency was the decode
+> bottleneck, not bandwidth). NVFP4's win remains fitting 230B, not raw
+> speed. **Caveat:** the `minimax_m2_append_think` parser leaks
+> raw `<think>` into `content` — would re-trip the llm_wiki thinking-leak
+> issue. Full record + exact commands: `qwen35-122b-2box-observations.md`.
+> **Revert NCCL transport to sockets** (cluster stays cross-box):
+> `RDMA=0 ./spin-up-vllm-2box-rdma.sh`.
+> **Revert to single-box production:** `ssh spark 'docker rm -f vllm-2box'`,
+> `ssh spark2 'docker rm -f vllm-2box'`, then bring up the single-box
+> slots per §8 (embed → chat on spark1; chat on spark2).
+
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-05-31. Use this as a "rebuild from scratch" reference if either
-box wipes, or as inventory when debugging.
+2026-05-31 (single-box steady state; see the cross-box banner above for
+the current live override). Use this as a "rebuild from scratch"
+reference if either box wipes, or as inventory when debugging.
 
 > **Two-box layout.** `spark1` is the primary box that backs production
 > LLM clients (MemPalace, llm_wiki, CampaignGenerator, opencode). It
@@ -19,6 +52,27 @@ box wipes, or as inventory when debugging.
 > reasoning models that emit `<think>` traces llm_wiki can't strip).
 > Only spark1 is wired into production workflows; spark2 is for
 > opencode sandboxing and side-by-side comparison.
+
+> **Fast interconnect up (2026-06-04): direct spark1↔spark2 200 GbE
+> cable.** A QSFP Direct Attach Copper cable now links the two boxes'
+> ConnectX-7 ports directly (`enp1s0f0np0`, RDMA device `rocep1s0f0`,
+> RoCEv2). **IP scheme changed 2026-06-05:** the NVIDIA *sync-cluster*
+> tool re-IP'd the cable to **spark1 10.100.16.1 / spark2 10.100.16.2**
+> (`enp1s0f0np0`) and **10.100.17.1/.2** (`enP2p1s0f0np0`), MTU 9000
+> preserved, via `/etc/netplan/99-nvidia-sync-cluster.yaml` — and it
+> **disabled our `99-fastlink.yaml`** (renamed `.sync-disabled-*`). The
+> old `192.168.100.x` addresses are gone; use `10.100.16.x`. Measured RDMA
+> bandwidth **~110 Gb/s per port**
+> (`ib_write_bw`: 109 single-QP, 112 at 8 QPs × 1 MB) — a hard
+> ~56%-of-line-rate ceiling more QPs don't lift (per-port
+> PCIe/host-bridge limit on GB10, ~14 GB/s). **No service runs across
+> it yet** — this entry documents the link only. It's the interconnect
+> for the future cross-box model (MiniMax-M2.7 two-box plan); ~14 GB/s
+> is ample for pipeline-parallel but marginal for cross-box
+> tensor-parallel, so favor **PP=2**. A second ConnectX port
+> (`roceP2p1s0f0`) is also RoCE-ACTIVE (possible socket-direct second
+> PCIe path, or a second cable) — untested bonding headroom toward
+> 200 G. See Hardware → Fast interconnect below.
 
 > **Active change (2026-05-30): TurboQuant KV cache + vLLM 0.22.0 on spark1.**
 > `vllm-chat` still serves the SAME model
@@ -98,6 +152,31 @@ sm_121, ~273 GB/s memory bandwidth, EXT4 local filesystem.
 | LAN IP | `192.168.1.147` | `192.168.1.69` |
 | docker group for `kostadis` | yes | yes (added manually post-install) |
 | nvidia-container-toolkit | configured | configured manually post-install (`nvidia-ctk runtime configure --runtime=docker`) |
+
+### Fast interconnect (spark1 ↔ spark2 direct cable, 2026-06-04)
+
+Point-to-point link, **separate from the LAN**. Reserved for cross-box
+model serving; nothing listens on it yet.
+
+| field | value |
+|---|---|
+| medium | QSFP Direct Attach Copper, **200 GbE** negotiated |
+| NIC / port | ConnectX-7 `enp1s0f0np0` (RDMA dev `rocep1s0f0`, RoCEv2), both boxes |
+| addressing | spark1 `192.168.100.1` / spark2 `192.168.100.2`, /24, **MTU 9000** |
+| persistence | `/etc/netplan/99-fastlink.yaml` on each box (chmod 600) |
+| measured BW | **~110 Gb/s/port** RDMA (`ib_write_bw`); ~56% of line rate, QP-count-insensitive (~14 GB/s) |
+| second port | `enP2p1s0f0np0` / `roceP2p1s0f0` also RoCE-ACTIVE — untested bonding headroom |
+| purpose | future cross-box vLLM **PP=2** (one GPU/box → no intra-box TP); no service on it yet |
+
+The LAN (`192.168.1.0/24`) still carries all SSH and every current
+client→vLLM request. The cable carries nothing until a multi-node
+Ray/vLLM job is stood up across it (see memory `todo_minimax_m27_two_box`).
+
+To re-create after a wipe: assign the IPs + MTU via the two
+`netplan set --origin-hint 99-fastlink ...` one-liners (single-line,
+paste-safe — hand-written heredoc/printf YAML gets mangled by terminal
+auto-indent), then `sudo netplan apply`. Verify with a jumbo ping
+(`ping -M do -s 8972 192.168.100.2`) and `ib_write_bw -d rocep1s0f0`.
 
 ## Ports in use
 
@@ -611,6 +690,12 @@ any host on the LAN:
 
 No auth on any of them — fine for a private LAN, do not expose any of
 these ports past the router.
+
+The direct spark1↔spark2 cable (`192.168.100.0/24` — see Hardware →
+Fast interconnect) is **not** in this table: it's a point-to-point link
+with nothing listening on it yet. When the cross-box model goes up, its
+Ray/NCCL traffic rides that subnet, pinned via `NCCL_SOCKET_IFNAME` /
+`NCCL_IB_HCA` to `rocep1s0f0`.
 
 ---
 
