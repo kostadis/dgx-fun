@@ -27,6 +27,12 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3.5-122B-A10B-FP8
 > `vllm-chat` (Nemotron). **Clients on spark1:8001 now get
 > `Qwen/Qwen3.5-122B-A10B-FP8`** — not Qwen3-Next-80B; set the client
 > model id there accordingly or expect a 400.
+> **Embeddings while this runs:** `vllm-embed` (port 8000) is stopped —
+> the ~6 GB embed container can't coexist with the cross-box model
+> (~5 GB free on spark1). Embeddings are served by **Ollama
+> `nomic-embed-text` on port 11434** instead; MemPalace's
+> `~/.mempalace/config.json` was repointed there (see §7). Same 768-dim
+> family, existing index aligns, no re-embed needed.
 > Measured (Qwen3.5-122B-FP8, RoCE/IB, single-stream): **decode ~20 tok/s**
 > (18.9–21.5, 3 samples after warm-up, 256-tok forced gens) — the
 > **fastest cross-box decode measured on this rig**: +~57% over the same
@@ -701,8 +707,8 @@ any host on the LAN:
 | from | to | URL |
 |---|---|---|
 | laptop, desktop, etc. | spark1 Ollama LLM | `http://192.168.1.147:11434/api/...` |
-| laptop, desktop, etc. | spark1 Ollama OpenAI-compat | `http://192.168.1.147:11434/v1/...` |
-| laptop, desktop, etc. | spark1 vllm-embed | `http://192.168.1.147:8000/v1/embeddings` |
+| laptop, desktop, etc. | spark1 Ollama OpenAI-compat | `http://192.168.1.147:11434/v1/...` — **currently also the live embeddings path** (`/v1/embeddings`, model `nomic-embed-text`) while vllm-embed is down for the cross-box experiment |
+| laptop, desktop, etc. | spark1 vllm-embed | `http://192.168.1.147:8000/v1/embeddings` — **DOWN during cross-box** (container stopped; can't coexist with the 2-box slot) |
 | laptop, desktop, etc. | spark1 vllm-chat | `http://192.168.1.147:8001/v1/chat/completions` |
 | laptop, desktop, etc. | spark2 vllm-chat | `http://192.168.1.69:8001/v1/chat/completions` |
 
@@ -728,6 +734,34 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 
 ### MemPalace (`~/.mempalace/config.json` on laptop)
 
+> **⚠️ LIVE (2026-06-05): embeddings repointed to Ollama for the
+> cross-box experiment.** `vllm-embed` (port 8000) is **stopped** —
+> the cross-box `Qwen3.5-122B-FP8` slot (see top banner) consumes
+> both boxes (~5 GB free on spark1, ~11 GB on spark2), so the ~6 GB
+> vLLM embed container can no longer coexist with it. Embeddings now
+> come from **Ollama `nomic-embed-text` on port 11434** (same 768-dim
+> model family — the existing index aligns fine, no re-embed needed;
+> verified end-to-end with `mempalace ... search`). The live file is:
+>
+> ```json
+> {
+>   "embedding_provider": "openai-compat",
+>   "embedding_model": "nomic-embed-text",
+>   "embedding_endpoint": "http://192.168.1.147:11434",
+>   "llm_endpoint": "http://192.168.1.147:8001",
+>   "llm_model": "Qwen/Qwen3.5-122B-A10B-FP8"
+> }
+> ```
+>
+> The `llm_model` was also corrected here — it had been left at the
+> stale `google/gemma-4-26b-a4b-it`, which is served nowhere now and
+> would 400 on the next mining run. **Revert when single-box returns:**
+> set `embedding_model`/`embedding_endpoint` back to the vllm-embed
+> values below (8000 / `nomic-ai/nomic-embed-text-v1.5`) and `llm_model`
+> to whatever §8 brings up on 8001.
+
+The single-box steady-state values (rebuild target) are:
+
 ```json
 {
   "embedding_provider": "openai-compat",
@@ -738,11 +772,11 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 }
 ```
 
-mempalace mining embeds via vllm-embed and calls the chat LLM during
-the "convos" extraction phase. The `llm_model` field **must match the
-model id actually served at port 8001** — every swap of vllm-chat
-requires updating this field too, or LLM calls return 400. The chat
-palace at `~/.mempalace/palaces/chat/` is currently in a
+mempalace mining embeds via the embedding endpoint and calls the chat
+LLM during the "convos" extraction phase. The `llm_model` field **must
+match the model id actually served at port 8001** — every swap of
+vllm-chat requires updating this field too, or LLM calls return 400.
+The chat palace at `~/.mempalace/palaces/chat/` is currently in a
 known-broken state (chroma collection expects 384-dim embeddings, the
 embedder produces 768-dim) and pending the rebuild plan in
 `~/src/mempalace/chat-palace-rebuild-runbook.md`.
