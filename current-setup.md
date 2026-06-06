@@ -10,31 +10,38 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 > **⚠️ ACTIVE CROSS-BOX EXPERIMENT (2026-06-05): both boxes are running
 > one model together, production single-box slots are DOWN.** spark1 +
 > spark2 are a 2-node Ray cluster serving (currently)
-> **`nvidia/MiniMax-M2.7-NVFP4`** (230B/10B, **NVFP4** — proven to run on
-> GB10 sm_121) tensor-parallel **TP=2** over the RoCE cable (container
-> `vllm-2box` on each box, image `local/vllm-ray:26.05`, port 8001 on
-> spark1 = `http://192.168.1.147:8001/v1`, parsers
-> `--tool-call-parser minimax_m2 --reasoning-parser minimax_m2_append_think`).
-> **NCCL transport: RoCE/IB verbs as of 2026-06-05** (was TCP sockets) —
-> containers now run with `--device /dev/infiniband --cap-add IPC_LOCK
-> --ulimit memlock=-1:-1` and env `NCCL_IB_HCA=rocep1s0f0:1`,
-> `NCCL_IB_GID_INDEX=3` (RoCE v2 / IPv4). Rebuilt by
-> `spin-up-vllm-2box-rdma.sh`; NCCL log confirms
-> `NET/IB : Using [0]rocep1s0f0:1/RoCE`.
-> Earlier today this slot ran `Qwen/Qwen3.5-122B-A10B-FP8` (the FP8
-> harness-validation model). While this runs, the normal single-box slots
-> below are **stopped**: spark1 `vllm-chat` (Qwen3-Next-80B) + `vllm-embed`,
-> and spark2 `vllm-chat` (Nemotron). Clients on spark1:8001 now get
-> MiniMax-M2.7, not Qwen3-Next-80B.
-> Measured (MiniMax NVFP4): prefill ~744 tok/s, decode **~15.5 tok/s on
-> RoCE/IB** (was ~11.1 tok/s on TCP sockets — **+40%** from the NCCL
-> transport switch; per-token all-reduce latency was the decode
-> bottleneck, not bandwidth). NVFP4's win remains fitting 230B, not raw
-> speed. **Caveat:** the `minimax_m2_append_think` parser leaks
-> raw `<think>` into `content` — would re-trip the llm_wiki thinking-leak
-> issue. Full record + exact commands: `qwen35-122b-2box-observations.md`.
+> **`Qwen/Qwen3.5-122B-A10B-FP8`** (122B total / 10B active, hybrid
+> Gated-DeltaNet + gated-attention MoE, FP8) tensor-parallel **TP=2**
+> over the RoCE cable (container `vllm-2box` on each box, image
+> `local/vllm-ray:26.05`, port 8001 on spark1 =
+> `http://192.168.1.147:8001/v1`, parsers
+> `--tool-call-parser qwen3_coder --reasoning-parser qwen3`,
+> `--max-model-len 131072`). Brought up by
+> `PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh`.
+> **NCCL transport: RoCE/IB verbs** — containers run with
+> `--device /dev/infiniband --cap-add IPC_LOCK --ulimit memlock=-1:-1`
+> and env `NCCL_IB_HCA=rocep1s0f0:1`, `NCCL_IB_GID_INDEX=3` (RoCE v2 /
+> IPv4); NCCL log confirms `NET/IB : Using [0]rocep1s0f0:1/RoCE`.
+> While this runs, the normal single-box slots below are **stopped**:
+> spark1 `vllm-chat` (Qwen3-Next-80B) + `vllm-embed`, and spark2
+> `vllm-chat` (Nemotron). **Clients on spark1:8001 now get
+> `Qwen/Qwen3.5-122B-A10B-FP8`** — not Qwen3-Next-80B; set the client
+> model id there accordingly or expect a 400.
+> Measured (Qwen3.5-122B-FP8, RoCE/IB, single-stream): **decode ~20 tok/s**
+> (18.9–21.5, 3 samples after warm-up, 256-tok forced gens) — the
+> **fastest cross-box decode measured on this rig**: +~57% over the same
+> model on TCP sockets (12.7 tok/s) and ahead of MiniMax-M2.7-NVFP4 on
+> RoCE (15.5 tok/s). Prefill not re-measured this run (was ~860 tok/s on
+> sockets; compute-bound, transport-insensitive). **Why Qwen3.5 here, not
+> MiniMax:** the `qwen3` reasoning parser keeps the trace OUT of `content`
+> (verified — no llm_wiki think-leak), and there's no MiniMax
+> path-corruption bug (`file.md`→`file .md`, GH anomalyco/opencode#25690).
+> Tool-calling PASS (`qwen3_coder`: `get_weather`/`{"location":"Paris"}`).
+> Full record + exact commands: `qwen35-122b-2box-observations.md`.
+> **Swap the model in this slot:** `PROFILE=minimax ./spin-up-vllm-2box-rdma.sh`
+> (back to MiniMax-M2.7-NVFP4) — the `PROFILE` knob selects model + parsers.
 > **Revert NCCL transport to sockets** (cluster stays cross-box):
-> `RDMA=0 ./spin-up-vllm-2box-rdma.sh`.
+> `RDMA=0 PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh`.
 > **Revert to single-box production:** `ssh spark 'docker rm -f vllm-2box'`,
 > `ssh spark2 'docker rm -f vllm-2box'`, then bring up the single-box
 > slots per §8 (embed → chat on spark1; chat on spark2).

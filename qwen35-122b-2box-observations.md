@@ -154,6 +154,44 @@ so it kept loading and came up fine. Script's wait bumped accordingly.
 
 **Revert transport to sockets:** `RDMA=0 ./spin-up-vllm-2box-rdma.sh`.
 
+## 2026-06-05 (later still): Qwen3.5 RETURNS to the slot over RoCE/IB — decode ~20 tok/s
+
+Swapped the cross-box slot back from MiniMax-M2.7-NVFP4 to
+**`Qwen/Qwen3.5-122B-A10B-FP8`**, this time over the **RoCE/IB** transport
+(MiniMax's earlier RoCE win, same `vllm-2box` containers). Motivation was
+not speed: MiniMax-M2.x has a path-corruption bug in agentic file ops
+(`file.md`→`file .md`, GH `anomalyco/opencode#25690`) plus the
+`minimax_m2_append_think` think-leak into `content` — both make it
+unusable for development. Qwen3.5's `qwen3` parser has neither problem.
+
+Brought up by the now-parameterized spin-up script:
+`PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh` (the `PROFILE` knob carries
+model id + tool/reasoning parsers + ctx; `minimax` is the other profile).
+
+**Headline: this is the fastest cross-box decode measured on the rig.**
+
+| metric | value | note |
+|---|---|---|
+| **Decode** | **~20 tok/s** | 18.9–21.5, 3 samples after warm-up; 256-tok forced gens (`ignore_eos`, `min_tokens=256`), tiny prompt, single stream, `enable_thinking:false` |
+| vs Qwen3.5 on TCP sockets | 12.7 tok/s | **+~57%** from the transport switch (cf. MiniMax's +40%: 11.1→15.5) |
+| vs MiniMax-M2.7-NVFP4 on RoCE | 15.5 tok/s | Qwen wins despite ~same 10B active — FP8 GEMMs vs MiniMax's partial/emulated NVFP4 MoE path (the "skipped tactics") |
+| Prefill | ~860 tok/s | **not re-measured this run**; carried from the socket run — compute-bound, transport-insensitive |
+| Think-leak | **none** | `enable_thinking:false` → `content` clean, `reasoning` field absent (vs MiniMax's `<think>` riding in `content`) |
+| Tool calls | ✅ | `qwen3_coder`: `get_weather` / `{"location":"Paris"}`, null content, parseable args |
+
+**Cold-start gotcha (logged, fix applied):** rank-0 weight load took
+**~875 s** (~14.5 min) — the 118 GiB checkpoint exceeds available RAM, so
+vLLM disables auto-prefetch on EXT4 and reads shards serially. That blew
+past `spin-up-vllm-2box-rdma.sh`'s endpoint-wait window, so the script
+exited 1 even though the detached `vllm serve` came up fine ~minutes
+later. Bumped the script's wait window so the `qwen35` profile doesn't
+trip a false failure next time. The model loads, it's just slow off disk.
+
+**Caveat on the decode number:** single-stream, 256-tok gens, 3 samples —
+a feel number, not a rigorous bench. Multi-stream / long-context decode
+not characterized. Prefill is still the weak axis for the
+[[user_workflow_read_heavy]] case; not re-measured here.
+
 ## Open follow-ups
 
 - PP=2 variant for decode (vs TP=2). Confirm vLLM PP support for the GDN hybrid first.

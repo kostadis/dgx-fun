@@ -20,6 +20,10 @@
 #   RDMA=0 ./spin-up-vllm-2box-rdma.sh
 # (brings the cluster back exactly as it was before this change.)
 #
+# SELECT the model in the slot with PROFILE (default: minimax):
+#   PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh   # Qwen3.5-122B-A10B-FP8
+#   PROFILE=minimax ./spin-up-vllm-2box-rdma.sh  # nvidia/MiniMax-M2.7-NVFP4
+#
 set -euo pipefail
 
 # ---- knobs ------------------------------------------------------------------
@@ -35,11 +39,33 @@ WORKER_IP=10.100.16.2                   # cable IP, spark2 enp1s0f0np0
 RAY_PORT=6379
 CHAT_PORT=8001
 
-MODEL=nvidia/MiniMax-M2.7-NVFP4
+# Which model occupies the cross-box slot. Each profile carries its own
+# model id + tool/reasoning parsers + context length; everything else
+# (TP=2, Ray backend, RoCE transport, gpu-util) is shared below.
+#   minimax  - nvidia/MiniMax-M2.7-NVFP4 (230B/10B NVFP4; minimax_m2 parsers)
+#   qwen35   - Qwen/Qwen3.5-122B-A10B-FP8 (122B/10B FP8; qwen3 parsers, no
+#              think-leak into content, no path-corruption bug)
+PROFILE="${PROFILE:-minimax}"
+case "$PROFILE" in
+  minimax)
+    MODEL=nvidia/MiniMax-M2.7-NVFP4
+    MODEL_FLAGS="--tool-call-parser minimax_m2 --reasoning-parser minimax_m2_append_think --max-model-len 65536"
+    ;;
+  qwen35)
+    MODEL=Qwen/Qwen3.5-122B-A10B-FP8
+    MODEL_FLAGS="--tool-call-parser qwen3_coder --reasoning-parser qwen3 --max-model-len 131072"
+    ;;
+  *)
+    echo "!!! Unknown PROFILE='$PROFILE' (expected: minimax | qwen35)" >&2
+    exit 1
+    ;;
+esac
+echo ">>> Profile: ${PROFILE}  Model: ${MODEL}"
+
 SERVE_FLAGS="--tensor-parallel-size 2 --distributed-executor-backend ray \
-  --tool-call-parser minimax_m2 --reasoning-parser minimax_m2_append_think \
+  ${MODEL_FLAGS} \
   --enable-auto-tool-choice --trust-remote-code \
-  --gpu-memory-utilization 0.85 --max-model-len 65536 \
+  --gpu-memory-utilization 0.85 \
   --host 0.0.0.0 --port ${CHAT_PORT}"
 
 # ---- shared env for both containers ----------------------------------------
@@ -128,9 +154,14 @@ echo ">>> [5/6] Launching vllm serve (${MODEL}) on ${HEAD}:${CHAT_PORT}..."
 run_remote "$HEAD" "docker exec -d ${CONTAINER} bash -c \
   'vllm serve ${MODEL} ${SERVE_FLAGS} > /tmp/vllm-serve.log 2>&1'"
 
-echo ">>> Waiting for the chat endpoint to answer (model load + FP4 autotune is slow; ~13-15 min for 230B)..."
+# Cold load is SLOW on this box: the FP8/FP4 checkpoint exceeds available
+# RAM, so vLLM disables auto-prefetch on EXT4 and reads shards serially —
+# rank-0 weight load alone measured ~875 s for qwen35, plus compile +
+# CUDA-graph capture. Wait up to 40 min before declaring failure; the
+# detached `vllm serve` keeps loading regardless of this loop.
+echo ">>> Waiting for the chat endpoint to answer (cold load is slow: ~875s rank-0 weight load + compile; up to 40 min)..."
 ok=0
-for i in $(seq 1 120); do
+for i in $(seq 1 240); do
   if curl -sS --max-time 5 "http://192.168.1.147:${CHAT_PORT}/v1/models" 2>/dev/null | grep -q "${MODEL}"; then
     echo "    Endpoint live after ~$((i*10))s."
     ok=1
