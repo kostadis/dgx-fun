@@ -72,11 +72,15 @@ reference if either box wipes, or as inventory when debugging.
 > bandwidth **~110 Gb/s per port**
 > (`ib_write_bw`: 109 single-QP, 112 at 8 QPs × 1 MB) — a hard
 > ~56%-of-line-rate ceiling more QPs don't lift (per-port
-> PCIe/host-bridge limit on GB10, ~14 GB/s). **No service runs across
-> it yet** — this entry documents the link only. It's the interconnect
-> for the future cross-box model (MiniMax-M2.7 two-box plan); ~14 GB/s
-> is ample for pipeline-parallel but marginal for cross-box
-> tensor-parallel, so favor **PP=2**. A second ConnectX port
+> PCIe/host-bridge limit on GB10, ~14 GB/s). **This cable is now LIVE
+> service traffic** — the cross-box `vllm-2box` slot (see banner above)
+> runs its TP=2 NCCL all-reduce over it via RoCE/IB verbs
+> (`NCCL_IB_HCA=rocep1s0f0:1`, GID 3). Contrary to the original "marginal
+> for tensor-parallel" worry, **TP=2 works fine here** because direct DAC
+> point-to-point RoCE keeps the per-token all-reduce *latency* low (the
+> real decode bottleneck), not because bandwidth is plentiful; the +57%
+> Qwen3.5 decode gain from sockets→RoCE is that latency win. PP=2 remains
+> the obvious next experiment for decode. A second ConnectX port
 > (`roceP2p1s0f0`) is also RoCE-ACTIVE (possible socket-direct second
 > PCIe path, or a second cable) — untested bonding headroom toward
 > 200 G. See Hardware → Fast interconnect below.
@@ -162,28 +166,35 @@ sm_121, ~273 GB/s memory bandwidth, EXT4 local filesystem.
 
 ### Fast interconnect (spark1 ↔ spark2 direct cable, 2026-06-04)
 
-Point-to-point link, **separate from the LAN**. Reserved for cross-box
-model serving; nothing listens on it yet.
+Point-to-point link, **separate from the LAN**. **Now carrying live
+service traffic**: the cross-box `vllm-2box` slot (banner above) runs its
+TP=2 NCCL all-reduce over this cable via RoCE/IB verbs.
 
 | field | value |
 |---|---|
 | medium | QSFP Direct Attach Copper, **200 GbE** negotiated |
 | NIC / port | ConnectX-7 `enp1s0f0np0` (RDMA dev `rocep1s0f0`, RoCEv2), both boxes |
-| addressing | spark1 `192.168.100.1` / spark2 `192.168.100.2`, /24, **MTU 9000** |
-| persistence | `/etc/netplan/99-fastlink.yaml` on each box (chmod 600) |
+| addressing | spark1 `10.100.16.1` / spark2 `10.100.16.2`, /24, **MTU 9000** (NVIDIA sync-cluster tool re-IP'd from `192.168.100.x` on 2026-06-05; 2nd port `10.100.17.1/.2` on `enP2p1s0f0np0`) |
+| persistence | `/etc/netplan/99-nvidia-sync-cluster.yaml` on each box (the old `99-fastlink.yaml` was renamed `.sync-disabled-*` by the sync tool) |
 | measured BW | **~110 Gb/s/port** RDMA (`ib_write_bw`); ~56% of line rate, QP-count-insensitive (~14 GB/s) |
 | second port | `enP2p1s0f0np0` / `roceP2p1s0f0` also RoCE-ACTIVE — untested bonding headroom |
-| purpose | future cross-box vLLM **PP=2** (one GPU/box → no intra-box TP); no service on it yet |
+| NCCL pinning | `NCCL_IB_HCA=rocep1s0f0:1`, `NCCL_IB_GID_INDEX=3` (RoCE v2 / IPv4); OOB bootstrap on `enp1s0f0np0`. Log: `NET/IB : Using [0]rocep1s0f0:1/RoCE` |
+| current use | **live** cross-box vLLM **TP=2** (Qwen3.5-122B-FP8); RoCE/IB transport gave +57% decode vs TCP sockets. PP=2 still the next decode experiment |
 
-The LAN (`192.168.1.0/24`) still carries all SSH and every current
-client→vLLM request. The cable carries nothing until a multi-node
-Ray/vLLM job is stood up across it (see memory `todo_minimax_m27_two_box`).
+The LAN (`192.168.1.0/24`) carries all SSH and every *client→vLLM*
+request; the cable carries only the *inter-node* TP all-reduce for the
+cross-box slot. When the cross-box slot is torn down (back to single-box),
+the cable goes idle again. See `qwen35-122b-2box-observations.md` for the
+full cross-box recipe and `todo_minimax_m27_two_box` in memory.
 
-To re-create after a wipe: assign the IPs + MTU via the two
-`netplan set --origin-hint 99-fastlink ...` one-liners (single-line,
-paste-safe — hand-written heredoc/printf YAML gets mangled by terminal
-auto-indent), then `sudo netplan apply`. Verify with a jumbo ping
-(`ping -M do -s 8972 192.168.100.2`) and `ib_write_bw -d rocep1s0f0`.
+To re-create after a wipe: the cable is normally re-IP'd by the NVIDIA
+sync-cluster tool to `10.100.16.1/.2` (`/etc/netplan/99-nvidia-sync-cluster.yaml`).
+If doing it by hand instead, assign the IPs + MTU via single-line
+`netplan set ...` one-liners (paste-safe — hand-written heredoc/printf
+YAML gets mangled by terminal auto-indent), then `sudo netplan apply`.
+Verify with a jumbo ping (`ping -M do -s 8972 10.100.16.2`) and
+`ib_write_bw -d rocep1s0f0`. (Test the real TCP path too — ping + RDMA
+both pass on a stale IP config.)
 
 ## Ports in use
 
@@ -698,11 +709,12 @@ any host on the LAN:
 No auth on any of them — fine for a private LAN, do not expose any of
 these ports past the router.
 
-The direct spark1↔spark2 cable (`192.168.100.0/24` — see Hardware →
-Fast interconnect) is **not** in this table: it's a point-to-point link
-with nothing listening on it yet. When the cross-box model goes up, its
-Ray/NCCL traffic rides that subnet, pinned via `NCCL_SOCKET_IFNAME` /
-`NCCL_IB_HCA` to `rocep1s0f0`.
+The direct spark1↔spark2 cable (`10.100.16.0/24` — see Hardware →
+Fast interconnect) is **not** in this table: it carries no client-facing
+endpoint. While the cross-box slot is up, its Ray/NCCL inter-node traffic
+rides that subnet, pinned via `NCCL_SOCKET_IFNAME` (OOB bootstrap) /
+`NCCL_IB_HCA=rocep1s0f0:1` (RoCE/IB data path). Clients still reach the
+served model only through spark1 `192.168.1.147:8001` on the LAN.
 
 ---
 
@@ -1019,8 +1031,18 @@ ssh spark 'nvidia-smi dmon -s u -c 30'
 # Disk usage of HF cache (shared between vLLM containers)
 ssh spark 'du -sh ~/.cache/huggingface'
 
-# Swap vllm-chat to a different model on port 8001 (one-liner each):
-ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh' # Qwen3-Next 80B FP8 + TurboQuant KV @ 128K, vLLM 0.22.0 (CURRENT)
+# CROSS-BOX slot (CURRENTLY LIVE — both boxes, one model, TP=2 over RoCE).
+# Run from the WORKSTATION (it SSHes to spark + spark2). PROFILE picks the
+# model + parsers; RDMA=1 (default) = RoCE/IB transport.
+PROFILE=qwen35  ./spin-up-vllm-2box-rdma.sh   # Qwen3.5-122B-A10B-FP8 @ 128K (CURRENT)
+PROFILE=minimax ./spin-up-vllm-2box-rdma.sh   # nvidia/MiniMax-M2.7-NVFP4 @ 64K
+RDMA=0 PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh  # same, revert transport to TCP sockets
+# Tear the cross-box slot down and return to the single-box scripts below:
+ssh spark 'docker rm -f vllm-2box'; ssh spark2 'docker rm -f vllm-2box'
+
+# SINGLE-BOX vllm-chat swaps on port 8001 (one-liner each). These are the
+# steady-state slots — all STOPPED while the cross-box slot above is live.
+ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh' # Qwen3-Next 80B FP8 + TurboQuant KV @ 128K, vLLM 0.22.0 (single-box default)
 ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'         # Qwen3-Next 80B FP8, plain fp8 KV @ 128K (revert target)
 ssh spark 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh' # Gemma 4 26B MoE @ 128K context
 ssh spark 'bash ~/spin-up-vllm-gemma4-26b-moe.sh'         # Gemma 4 26B MoE @ 32K (high-concurrency variant)
