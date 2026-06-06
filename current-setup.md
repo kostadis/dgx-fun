@@ -3,8 +3,8 @@
 **Current `vllm-chat` model ids** (copy-paste for client configs):
 
 ```
-spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
-spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
+spark1 (192.168.1.147:8001):  Qwen/Qwen3.5-122B-A10B-FP8
+spark2 (192.168.1.69:8001):   Qwen/Qwen3.5-122B-A10B-FP8
 ```
 
 > **⚠️ ACTIVE CROSS-BOX EXPERIMENT (2026-06-05): both boxes are running
@@ -47,7 +47,7 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 > slots per §8 (embed → chat on spark1; chat on spark2).
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-05-31 (single-box steady state; see the cross-box banner above for
+2026-06-06 (single-box steady state; see the cross-box banner above for
 the current live override). Use this as a "rebuild from scratch"
 reference if either box wipes, or as inventory when debugging.
 
