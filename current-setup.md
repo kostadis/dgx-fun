@@ -3,12 +3,55 @@
 **Current `vllm-chat` model ids** (copy-paste for client configs):
 
 ```
-spark1 (192.168.1.147:8001):  Qwen/Qwen3.5-122B-A10B-FP8
-spark2 (192.168.1.69:8001):   Qwen/Qwen3.5-122B-A10B-FP8
+spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
+spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 ```
 
-> **⚠️ ACTIVE CROSS-BOX EXPERIMENT (2026-06-05): both boxes are running
-> one model together, production single-box slots are DOWN.** spark1 +
+> **⚠️ LIVE (2026-06-06): both boxes now run the SAME single-box model —
+> `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`.** The Nemotron-3-Super NVFP4
+> experiment on spark1 concluded (see verdict below); spark1's `vllm-chat`
+> was swapped back to Qwen3-Next-80B, which spark2 was already running.
+> Current live state:
+>
+> | box | port 8001 model | container | image | notes |
+> |---|---|---|---|---|
+> | **spark1** (192.168.1.147) | **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** | `vllm-chat` | `vllm/vllm-openai:latest` | 80B/3B-active hybrid (Gated DeltaNet + attn + MoE), FP8, 128K, **plain fp8 KV**, hermes tools. TP=1, gpu-util 0.88. The primary box opencode/MemPalace/llm_wiki/CampaignGenerator point at. Swapped in by `spin-up-vllm-qwen3-next-80b.sh`. |
+> | **spark2** (192.168.1.69) | **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** | `vllm-chat` | `vllm/vllm-openai:latest` (vLLM 0.21.0) | Identical model, independent single-box. 80B/3B-active hybrid, FP8, 128K, fp8 KV, hermes tools. TP=1, gpu-util 0.88. |
+>
+> So **both boxes serve the identical model id**; clients on either
+> `192.168.1.147:8001` or `192.168.1.69:8001` get the same Qwen3-Next-80B.
+> There is no cross-box / TP=2 model running — **the cable is IDLE** (both
+> TP=1, no inter-node NCCL).
+>
+> **Nemotron-3-Super verdict (2026-06-06):** the single-box NVFP4 hybrid
+> (12B active) did NOT clear the Qwen3.5-122B coding bar. Reasoning was
+> genuinely good and it correctly *saw the scope* of problems, but it got
+> lost *executing* long-horizon changes — concretely, it bogged down
+> partway through a Python-parser rewrite it had correctly sized up. A
+> capability gap, not a latency one (MTP wouldn't fix it). Full writeup:
+> `nemotron3-super-120b-observations.md` + memory
+> `project_nemotron3_super_nvfp4`. The infra it proved out still stands:
+> NVFP4 runs on real CUTLASS FP4 kernels on GB10/sm_121, Nemotron-H loads
+> at 120B — the `spin-up-vllm-nemotron3-super-120b.sh` script is kept for
+> a future re-test.
+>
+> **Embeddings:** still on **Ollama `nomic-embed-text` (port 11434)** —
+> the `vllm-embed` container was not brought back (could fit alongside
+> Qwen3-Next's 0.88 util by dropping to ~0.85, but left on Ollama for
+> continuity; see §7).
+> **Revert spark1 to the Nemotron-Super experiment:**
+> `ssh spark 'bash ~/spin-up-vllm-nemotron3-super-120b.sh'`.
+> **Restore the cross-box Qwen3.5-122B coder** (from the WORKSTATION):
+> `PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh` (recreates `vllm-2box` on
+> both boxes; tear down the two single-box `vllm-chat` containers first:
+> `ssh spark 'docker rm -f vllm-chat'; ssh spark2 'docker rm -f vllm-chat'`).
+>
+> ---
+>
+> **⏸ SUPERSEDED (was LIVE 2026-06-05, torn down 2026-06-06): cross-box
+> experiment.** Kept below as the recipe to restore the Qwen3.5-122B
+> coder. **At the time:** both boxes ran
+> one model together, production single-box slots were DOWN. spark1 +
 > spark2 are a 2-node Ray cluster serving (currently)
 > **`Qwen/Qwen3.5-122B-A10B-FP8`** (122B total / 10B active, hybrid
 > Gated-DeltaNet + gated-attention MoE, FP8) tensor-parallel **TP=2**
@@ -53,9 +96,10 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3.5-122B-A10B-FP8
 > slots per §8 (embed → chat on spark1; chat on spark2).
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-06-06 (single-box steady state; see the cross-box banner above for
-the current live override). Use this as a "rebuild from scratch"
-reference if either box wipes, or as inventory when debugging.
+2026-06-06 (single-box steady state; see the LIVE banner above for the
+current override — both boxes now serve Qwen3-Next-80B). Use this as a
+"rebuild from scratch" reference if either box wipes, or as inventory
+when debugging.
 
 > **Two-box layout.** `spark1` is the primary box that backs production
 > LLM clients (MemPalace, llm_wiki, CampaignGenerator, opencode). It
@@ -185,7 +229,7 @@ TP=2 NCCL all-reduce over this cable via RoCE/IB verbs.
 | measured BW | **~110 Gb/s/port** RDMA (`ib_write_bw`); ~56% of line rate, QP-count-insensitive (~14 GB/s) |
 | second port | `enP2p1s0f0np0` / `roceP2p1s0f0` also RoCE-ACTIVE — untested bonding headroom |
 | NCCL pinning | `NCCL_IB_HCA=rocep1s0f0:1`, `NCCL_IB_GID_INDEX=3` (RoCE v2 / IPv4); OOB bootstrap on `enp1s0f0np0`. Log: `NET/IB : Using [0]rocep1s0f0:1/RoCE` |
-| current use | **live** cross-box vLLM **TP=2** (Qwen3.5-122B-FP8); RoCE/IB transport gave +57% decode vs TCP sockets. PP=2 still the next decode experiment |
+| current use | **IDLE (2026-06-06)** — cross-box torn down; both boxes run separate single-box TP=1 models, no inter-node NCCL. Last live use: cross-box TP=2 (Qwen3.5-122B-FP8), RoCE/IB gave +57% decode vs TCP. PP=2 still the next decode experiment when the cable is back in service |
 
 The LAN (`192.168.1.0/24`) carries all SSH and every *client→vLLM*
 request; the cable carries only the *inter-node* TP all-reduce for the
@@ -208,15 +252,15 @@ both pass on a stale IP config.)
 
 | port | service | purpose |
 |---:|---|---|
-| 11434 | Ollama (systemd) | LLM serving (legacy, kept for fallback) |
-| 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` |
-| 8001 | vllm-chat (docker) | Chat completions — `Qwen3-Next 80B A3B Instruct FP8`, 128K context, hybrid attention, **TurboQuant KV (`turboquant_k8v4`)**, vLLM 0.22.0, tool calling on |
+| 11434 | Ollama (systemd) | LLM serving + **currently the live embeddings path** (`nomic-embed-text`) while vllm-embed is down |
+| 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` — **DOWN** (stopped back during the cross-box experiment, still not restored; embeddings on Ollama 11434. Could now be restored — box is single-box again — but left on Ollama for continuity) |
+| 8001 | vllm-chat (docker) | Chat completions — **`Qwen3-Next 80B A3B Instruct FP8`**, 128K context, hybrid (Gated DeltaNet + attn + MoE), plain fp8 KV, hermes tool calling on, image `vllm/vllm-openai:latest` (same model spark2 runs) |
 
 ### spark2 (192.168.1.69)
 
 | port | service | purpose |
 |---:|---|---|
-| 8001 | vllm-chat (docker) | Chat completions — `Nemotron 3 Nano 30B A3B BF16`, 256K context, hybrid Mamba-2/MoE, reasoning + tool calling on |
+| 8001 | vllm-chat (docker) | Chat completions — **`Qwen3-Next 80B A3B Instruct FP8`**, 128K context, hybrid (Gated DeltaNet + attn + MoE), fp8 KV, hermes tool calling on, image `vllm/vllm-openai:latest` (vLLM 0.21.0) |
 
 (No `vllm-embed`, no Ollama — spark2 is single-container.)
 
@@ -226,8 +270,8 @@ both pass on a stale IP config.)
 
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
-| vllm-embed | ~6 GB (0.05 × 128) | ~600 MB | KV cache fits in cap |
-| vllm-chat | ~107 GB (0.88 × ~121.7 GiB) | ~80 GiB FP8 weights + KV cache (**TurboQuant `turboquant_k8v4`**: FP8 keys + 4-bit values, on the full-attention layers only) + activations @ 128K context | Hybrid attention: most layers are Gated DeltaNet (no KV), only periodic full-attention layers carry KV — so TurboQuant only compresses those few layers; absolute KV win over plain fp8 is small. (nvidia-smi reports `[N/A]` for memory.used on this GB10/WSL box, so resident bytes aren't directly measurable here.) |
+| vllm-embed | — | — | **DOWN** — stopped back during the cross-box experiment, still not restored; embeddings on Ollama 11434 (could be restored now, left on Ollama for continuity) |
+| vllm-chat | ~113 GB (0.88 × ~128 GB) | ~80 GiB FP8 weights + fp8 KV (full-attn layers only) + Gated DeltaNet state + activations @ 128K | Hybrid (Gated DeltaNet + periodic full-attention + MoE): most layers carry no KV, so 128K is affordable. Drop GPU_UTIL to 0.85 if OOM. Identical to spark2's load. (nvidia-smi reports `[N/A]` for memory.used on this GB10/WSL box, so resident bytes aren't directly measurable here.) |
 | Ollama (idle) | ~0 | unloads after `OLLAMA_KEEP_ALIVE` | 5 min default |
 | Ollama (loaded) | varies | qwen2.5:14b ≈ 14.5 GB, nomic ≈ 600 MB | only when actively serving |
 
@@ -244,7 +288,7 @@ was stopped to free 17 GiB.
 
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
-| vllm-chat | ~102 GB (0.80 × ~128 GB) | ~60 GiB BF16 weights + Mamba-2 state + KV cache for the 6 attention layers @ 256K context + activations | Hybrid Mamba-2/MoE: only 6 of 52 layers carry traditional KV cache, so 256K context is affordable even on BF16. 0.80 budget chosen because the recipe doesn't specify and 60 GiB weights + Mamba state needs headroom — drop to 0.75 if OOM. |
+| vllm-chat | ~113 GB (0.88 × ~128 GB) | ~80 GiB FP8 weights + fp8 KV (full-attn layers only) + Gated DeltaNet state + activations @ 128K | Hybrid (Gated DeltaNet + periodic full-attention + MoE): most layers carry no KV, so 128K is affordable. Drop GPU_UTIL to 0.85 if OOM. Was Nemotron 3 Nano 30B before 2026-06-06. |
 
 ---
 
@@ -376,7 +420,32 @@ Chat completions + tool calling service. Backs llm_wiki, CampaignGenerator,
 opencode, future chat clients (see `desktop-chat-clients.md`), and any
 code calling `/v1/chat/completions`.
 
-Currently serving **Qwen3-Next 80B A3B Instruct FP8** (hybrid attention,
+> **LIVE (2026-06-06): this slot serves
+> `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`**, brought up by
+> `spin-up-vllm-qwen3-next-80b.sh` (committed in this repo) — the
+> **plain fp8 KV** variant on `vllm/vllm-openai:latest`, NOT the
+> TurboQuant `v0.22.0-aarch64` build that previously held this slot.
+> 80B total / ~3B active, hybrid (Gated DeltaNet + periodic full-attn +
+> MoE), 128K context, fp8 KV, TP=1, `--gpu-memory-utilization 0.88`,
+> `--tool-call-parser hermes`, no reasoning parser (Instruct variant).
+> This is the **same model id spark2 runs** (§4) — both boxes now serve
+> identical Qwen3-Next-80B independently; the cable is idle.
+> Smoke + tool-call expected PASS (this exact plain-fp8 config ran in
+> prod 2026-05-21 → 05-30 before the TurboQuant swap).
+>
+> **Why back to this:** the Nemotron-3-Super NVFP4 experiment that held
+> this slot earlier on 2026-06-06 concluded — it missed the Qwen3.5-122B
+> coding bar (good reasoning, saw scope, lost the thread executing a
+> Python-parser rewrite; capability gap, not latency). Full writeup:
+> `nemotron3-super-120b-observations.md`. Re-run the experiment with
+> `ssh spark 'bash ~/spin-up-vllm-nemotron3-super-120b.sh'`.
+>
+> The TurboQuant prose below describes the **prior occupant** of this
+> slot; kept as the runbook for the TurboQuant KV variant
+> (`spin-up-vllm-qwen3-next-80b-turboquant.sh`), which is NOT currently
+> live.
+
+Previously serving **Qwen3-Next 80B A3B Instruct FP8** (hybrid attention,
 ~3B active per token, ~80B total) with **TurboQuant KV cache
 (`turboquant_k8v4`) on vLLM 0.22.0** (image
 `vllm/vllm-openai:v0.22.0-aarch64`). Slot history: Qwen 2.5 14B AWQ →
@@ -403,8 +472,8 @@ above.)
 
 ### Run command
 
-Currently launched via `./spin-up-vllm-qwen3-next-80b-turboquant.sh`.
-Effective command:
+Currently launched via `./spin-up-vllm-qwen3-next-80b.sh` (the plain
+fp8 KV variant). Effective command:
 
 ```bash
 docker run -d --runtime nvidia --gpus all \
@@ -413,22 +482,24 @@ docker run -d --runtime nvidia --gpus all \
   --ipc=host \
   -e HF_TOKEN="$HF_TOKEN" \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
-  vllm/vllm-openai:v0.22.0-aarch64 \
+  vllm/vllm-openai:latest \
   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8 \
   --max-model-len 131072 \
   --max-num-seqs 4 \
   --gpu-memory-utilization 0.88 \
-  --kv-cache-dtype turboquant_k8v4 \
-  --max-num-batched-tokens 4096 \
+  --kv-cache-dtype fp8 \
   --trust-remote-code \
   --enable-auto-tool-choice \
   --tool-call-parser hermes \
   --host 0.0.0.0 --port 8001
 ```
 
-The prior plain-fp8 command (revert target) is identical except
-`vllm/vllm-openai:latest` + `--kv-cache-dtype fp8` and no
-`--max-num-batched-tokens` flag — i.e. `spin-up-vllm-qwen3-next-80b.sh`.
+The **TurboQuant variant** (`spin-up-vllm-qwen3-next-80b-turboquant.sh`)
+is identical except it pins `vllm/vllm-openai:v0.22.0-aarch64`, uses
+`--kv-cache-dtype turboquant_k8v4`, and adds `--max-num-batched-tokens
+4096` (a guard for bug #41726). It is NOT currently live — the plain
+fp8 build above is, matching spark2. The "Why these flags" notes below
+cover both; the TurboQuant-specific flags apply only to that variant.
 
 ### Why these flags
 
@@ -537,8 +608,21 @@ on GB10 (sm_121) is mature enough to realize that.
 
 ## 4. spark2 vllm-chat (Docker container, port 8001)
 
-Single-container experimental slot on the second box. Currently
-serving **Nemotron 3 Nano 30B A3B BF16** — an NVIDIA hybrid
+Single-container experimental slot on the second box.
+
+> **LIVE (2026-06-06): spark2 now serves
+> `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** (the prior spark1 single-box
+> model), brought up warm-from-cache by `spin-up-vllm-qwen3-next-80b.sh`.
+> 80B/3B-active hybrid (Gated DeltaNet + attn + MoE), FP8, 128K, fp8 KV,
+> hermes tool parser, TP=1, gpu-util 0.88, image `vllm/vllm-openai:latest`
+> (reports vLLM **0.21.0** — plain fp8 KV is the documented-safe path on
+> 0.21.0; smoke output clean, not the #40880 degenerate-output bug).
+> Smoke + tool-call PASS 2026-06-06. It's the single-box coding reference
+> for the Nemotron-3-Super experiment on spark1 (§3). opencode model id:
+> `dgx2/qwen3-next-80b`. No reasoning parser (Instruct variant, no
+> `<think>`). The Nemotron-3-Nano prose below is the **prior occupant**.
+
+Previously serving **Nemotron 3 Nano 30B A3B BF16** — an NVIDIA hybrid
 Mamba-2 / Transformer-MoE model with 30B total params, ~3.5B active
 per token, 23 Mamba-2 + 23 MoE + 6 attention layers, native 256K
 context. Reasoning is baked in: emits `<think>...</think>` blocks
@@ -708,7 +792,7 @@ any host on the LAN:
 |---|---|---|
 | laptop, desktop, etc. | spark1 Ollama LLM | `http://192.168.1.147:11434/api/...` |
 | laptop, desktop, etc. | spark1 Ollama OpenAI-compat | `http://192.168.1.147:11434/v1/...` — **currently also the live embeddings path** (`/v1/embeddings`, model `nomic-embed-text`) while vllm-embed is down for the cross-box experiment |
-| laptop, desktop, etc. | spark1 vllm-embed | `http://192.168.1.147:8000/v1/embeddings` — **DOWN during cross-box** (container stopped; can't coexist with the 2-box slot) |
+| laptop, desktop, etc. | spark1 vllm-embed | `http://192.168.1.147:8000/v1/embeddings` — **DOWN** (stopped during the cross-box experiment, not yet restored; embeddings served by Ollama 11434) |
 | laptop, desktop, etc. | spark1 vllm-chat | `http://192.168.1.147:8001/v1/chat/completions` |
 | laptop, desktop, etc. | spark2 vllm-chat | `http://192.168.1.69:8001/v1/chat/completions` |
 
@@ -749,11 +833,22 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 >   "embedding_model": "nomic-embed-text",
 >   "embedding_endpoint": "http://192.168.1.147:11434",
 >   "llm_endpoint": "http://192.168.1.147:8001",
->   "llm_model": "Qwen/Qwen3.5-122B-A10B-FP8"
+>   "llm_model": "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8"
 > }
 > ```
 >
-> The `llm_model` was also corrected here — it had been left at the
+> **⚠️ 2026-06-06:** spark1:8001 is back to serving
+> `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` (Nemotron-3-Super experiment
+> concluded). This `llm_model` value matches the single-box steady-state
+> target below — so the only live override that remains is **embeddings
+> on Ollama 11434** (vllm-embed still down). If the laptop's
+> `~/.mempalace/config.json` still says `llm_model:
+> "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4"` or
+> `"Qwen/Qwen3.5-122B-A10B-FP8"`, mining will 400 — repoint it to the
+> value shown above. (Verify/edit the actual laptop file before the next
+> mining run.)
+>
+> Historical note: the `llm_model` had earlier been left at the
 > stale `google/gemma-4-26b-a4b-it`, which is served nowhere now and
 > would 400 on the next mining run. **Revert when single-box returns:**
 > set `embedding_model`/`embedding_endpoint` back to the vllm-embed
@@ -799,8 +894,20 @@ DGX_MODEL=Qwen/Qwen3-Next-80B-A3B-Instruct-FP8 python session_doc.py ... \
 ### opencode
 
 opencode reads its provider config from
-`~/.config/opencode/opencode.json`. The DGX provider has five
-registered chat models; the active default is `dgx/qwen3-next-80b`:
+`~/.config/opencode/opencode.json`.
+
+> **LIVE (2026-06-06):** spark1:8001 is back to Qwen3-Next-80B, so the
+> top-level default should point at the `dgx` provider's
+> **`qwen3-next-80b`** entry (→ spark1:8001). The `nemotron3-super-120b`
+> entry added earlier today (→ spark1:8001 while the experiment ran) is
+> now stale — it points at a model id spark1 no longer serves, so leaving
+> the default on it will 400; switch the top-level `"model"` back to
+> `dgx/qwen3-next-80b`. `dgx2/qwen3-next-80b` (→ spark2:8001) remains a
+> valid alternate that now serves the **same** model. (Verify/edit the
+> actual `~/.config/opencode/opencode.json` — this doc records intent.)
+
+The DGX provider's historical entry set (active default at the time was
+`dgx/qwen3-next-80b`):
 
 ```json
 {
@@ -1065,19 +1172,27 @@ ssh spark 'nvidia-smi dmon -s u -c 30'
 # Disk usage of HF cache (shared between vLLM containers)
 ssh spark 'du -sh ~/.cache/huggingface'
 
-# CROSS-BOX slot (CURRENTLY LIVE — both boxes, one model, TP=2 over RoCE).
-# Run from the WORKSTATION (it SSHes to spark + spark2). PROFILE picks the
-# model + parsers; RDMA=1 (default) = RoCE/IB transport.
-PROFILE=qwen35  ./spin-up-vllm-2box-rdma.sh   # Qwen3.5-122B-A10B-FP8 @ 128K (CURRENT)
+# CROSS-BOX slot (NOT live — torn down 2026-06-06 to free spark2 for the
+# Nemotron-3-Super experiment; both boxes now run SEPARATE single-box
+# models, see banner at top). Run from the WORKSTATION (it SSHes to
+# spark + spark2). PROFILE picks the model + parsers; RDMA=1 = RoCE/IB.
+# To restore: tear down the two single-box vllm-chat containers first
+# (ssh spark 'docker rm -f vllm-chat'; ssh spark2 'docker rm -f vllm-chat').
+PROFILE=qwen35  ./spin-up-vllm-2box-rdma.sh   # Qwen3.5-122B-A10B-FP8 @ 128K (the bar-setting coder)
 PROFILE=minimax ./spin-up-vllm-2box-rdma.sh   # nvidia/MiniMax-M2.7-NVFP4 @ 64K
 RDMA=0 PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh  # same, revert transport to TCP sockets
 # Tear the cross-box slot down and return to the single-box scripts below:
 ssh spark 'docker rm -f vllm-2box'; ssh spark2 'docker rm -f vllm-2box'
 
-# SINGLE-BOX vllm-chat swaps on port 8001 (one-liner each). These are the
-# steady-state slots — all STOPPED while the cross-box slot above is live.
-ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh' # Qwen3-Next 80B FP8 + TurboQuant KV @ 128K, vLLM 0.22.0 (single-box default)
-ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'         # Qwen3-Next 80B FP8, plain fp8 KV @ 128K (revert target)
+# SINGLE-BOX vllm-chat swaps on port 8001 (one-liner each).
+# CURRENT (2026-06-06): BOTH boxes run Qwen3-Next-80B (plain fp8 KV) —
+# spark1 via the one-liner below, spark2 via the same script (scp it over
+# + run on spark2). The Nemotron-3-Super experiment on spark1 concluded
+# (missed the Qwen3.5-122B coding bar) and was swapped back to Qwen3-Next.
+# The other scripts below are alternates for the spark1 slot.
+ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'         # Qwen3-Next 80B FP8, plain fp8 KV @ 128K (CURRENT both boxes)
+ssh spark 'bash ~/spin-up-vllm-nemotron3-super-120b.sh'      # Nemotron 3 Super 120B A12B NVFP4 @ 128K (concluded experiment; reasoning+tools)
+ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh' # Qwen3-Next 80B FP8 + TurboQuant KV @ 128K, vLLM 0.22.0
 ssh spark 'bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh' # Gemma 4 26B MoE @ 128K context
 ssh spark 'bash ~/spin-up-vllm-gemma4-26b-moe.sh'         # Gemma 4 26B MoE @ 32K (high-concurrency variant)
 ssh spark 'bash ~/spin-up-vllm-llama70b-specdecode.sh'    # Llama 3.3 70B AWQ + 1B draft (spec decode)

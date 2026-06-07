@@ -30,6 +30,27 @@
 #        (live model id missing from §2/§3/§4) — human follow-up needed
 set -euo pipefail
 
+# -C / --cluster: cross-box mode. In a 2-node Ray cluster the model is
+# served only on spark1 :8001; spark2 :8001 is a Ray worker and serves
+# nothing, so its /v1/models probe legitimately fails. With this flag we
+# treat spark1 :8001 as the single cluster endpoint and mirror its model
+# id into the spark2 anchor line (matching the doc convention that both
+# lines show the same cluster model). Without it, an unreachable
+# spark2 :8001 is a hard error.
+CLUSTER=0
+usage() {
+  echo "Usage: $(basename "$0") [-C|--cluster]" >&2
+  echo "  -C, --cluster   cross-box mode: spark1 :8001 is the only" >&2
+  echo "                  serving endpoint; don't fail on spark2 :8001." >&2
+}
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -C|--cluster) CLUSTER=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "ERROR: unknown option: $1" >&2; usage; exit 1 ;;
+  esac
+done
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOC="$REPO_DIR/current-setup.md"
 TODAY="$(date -u +%Y-%m-%d)"
@@ -63,14 +84,29 @@ SPARK1_EMBED_MODEL="$(first_model_id "$SPARK1_EMBED_JSON")"
 SPARK1_CHAT_MODEL="$(first_model_id "$SPARK1_CHAT_JSON")"
 SPARK2_CHAT_MODEL="$(first_model_id "$SPARK2_CHAT_JSON")"
 
+# In cluster mode the cluster is served only on spark1 :8001. Mirror that
+# model id into the spark2 anchor line so the doc shows both endpoints
+# pointing at the same cluster model, and don't treat an idle spark2 :8001
+# as a failure.
+if [[ $CLUSTER -eq 1 ]]; then
+  SPARK2_CHAT_MODEL="$SPARK1_CHAT_MODEL"
+fi
+
 echo "Live state:"
+[[ $CLUSTER -eq 1 ]] && echo "  (cluster mode: spark1 :8001 is the single cluster endpoint)"
 printf "  spark1 :8000 embed = %s\n" "${SPARK1_EMBED_MODEL:-(unreachable)}"
 printf "  spark1 :8001 chat  = %s\n" "${SPARK1_CHAT_MODEL:-(unreachable)}"
-printf "  spark2 :8001 chat  = %s\n" "${SPARK2_CHAT_MODEL:-(unreachable)}"
+if [[ $CLUSTER -eq 1 ]]; then
+  printf "  spark2 :8001 chat  = %s (mirrored from cluster head)\n" "${SPARK2_CHAT_MODEL:-(unreachable)}"
+else
+  printf "  spark2 :8001 chat  = %s\n" "${SPARK2_CHAT_MODEL:-(unreachable)}"
+fi
 
 fail=0
 [[ -z "$SPARK1_CHAT_MODEL" ]] && { echo "ERROR: spark1 :8001 unreachable or no model loaded." >&2; fail=1; }
-[[ -z "$SPARK2_CHAT_MODEL" ]] && { echo "ERROR: spark2 :8001 unreachable or no model loaded." >&2; fail=1; }
+if [[ $CLUSTER -eq 0 ]]; then
+  [[ -z "$SPARK2_CHAT_MODEL" ]] && { echo "ERROR: spark2 :8001 unreachable or no model loaded." >&2; fail=1; }
+fi
 [[ -z "$SPARK1_EMBED_MODEL" ]] && echo "WARN: spark1 :8000 (embed) unreachable — not updated in doc." >&2
 if [[ $fail -ne 0 ]]; then
   echo "Refusing to update doc from incomplete probe." >&2
@@ -121,10 +157,13 @@ if n_anchor == 0:
     sys.exit(3)
 
 # 2. Snapshot date.
+# Match only the date token; preserve whatever follows it (a bare "."
+# in older docs, or a " (single-box steady state…)" parenthetical that
+# was added by hand). Replacing just the date keeps that trailing prose.
 date_re = re.compile(
-    r"(Snapshot of what's actually running on \*\*both\*\* DGX Sparks as of\n)\d{4}-\d{2}-\d{2}\."
+    r"(Snapshot of what's actually running on \*\*both\*\* DGX Sparks as of\n)\d{4}-\d{2}-\d{2}"
 )
-src, n_date = date_re.subn(rf"\g<1>{today}.", src, count=1)
+src, n_date = date_re.subn(rf"\g<1>{today}", src, count=1)
 if n_date == 0:
     print("ERROR: could not find the snapshot date line in current-setup.md.", file=sys.stderr)
     sys.exit(3)
