@@ -3,7 +3,7 @@
 **Current `vllm-chat` model ids** (copy-paste for client configs):
 
 ```
-spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Thinking-FP8   (--reasoning-parser qwen3)
+spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Thinking-FP8
 spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 ```
 
@@ -104,7 +104,7 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 > slots per §8 (embed → chat on spark1; chat on spark2).
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-06-08 (single-box steady state; see the LIVE banner above for the
+2026-06-09 (single-box steady state; see the LIVE banner above for the
 current override — spark1 serves Qwen3-Next-80B **Thinking** w/
 reasoning-parser, spark2 serves the **Instruct** variant). Use this as a
 "rebuild from scratch" reference if either box wipes, or as inventory
