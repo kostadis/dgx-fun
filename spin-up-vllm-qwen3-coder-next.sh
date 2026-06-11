@@ -32,7 +32,7 @@
 #   1. Stop + remove the existing vllm-chat container.
 #   2. Start a vLLM container on port 8001 serving
 #      Qwen/Qwen3-Coder-Next-FP8 with:
-#        - --max-model-len 131072 (128K — conservative start vs 256K native)
+#        - --max-model-len 262144 (256K — model native max; fits ~9.6x concurrency)
 #        - --max-num-seqs 4 (KV is the bottleneck, not compute)
 #        - --gpu-memory-utilization 0.88
 #        - --kv-cache-dtype fp8
@@ -52,10 +52,12 @@
 #   CODER_PORT     host port; default 8001 (REPLACES vllm-chat)
 #   GPU_UTIL       --gpu-memory-utilization; default 0.88 (~113 GB of 128 GB)
 #                  Drop to 0.85 if OOM at startup.
-#   MAX_LEN        --max-model-len; default 131072 (128K)
-#                  65536  -> more concurrent slots, less per-session room
-#                  131072 -> default — opencode-friendly
-#                  262144 -> native max; expect 1-2 slots only
+#   MAX_LEN        --max-model-len; default 262144 (256K — model native max)
+#                  65536  -> max concurrency, less per-session room
+#                  131072 -> 128K, opencode-friendly middle ground
+#                  262144 -> default — native max. Measured 2026-06-11: KV
+#                            pool ~2.53M tokens, so 256K still fits ~9.6x
+#                            concurrency (few full-attn layers carry KV).
 #   MAX_SEQS       --max-num-seqs; default 4
 #   KV_CACHE_DTYPE --kv-cache-dtype; default "fp8"
 #   TOOL_PARSER    --tool-call-parser; default "qwen3_coder"
@@ -74,7 +76,7 @@ source "$(dirname "$0")/lib-vllm-spinup.sh"
 CODER_MODEL="${CODER_MODEL:-Qwen/Qwen3-Coder-Next-FP8}"
 CODER_PORT="${CODER_PORT:-8001}"
 GPU_UTIL="${GPU_UTIL:-0.88}"
-MAX_LEN="${MAX_LEN:-131072}"
+MAX_LEN="${MAX_LEN:-262144}"
 MAX_SEQS="${MAX_SEQS:-4}"
 KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 TOOL_PARSER="${TOOL_PARSER:-qwen3_coder}"

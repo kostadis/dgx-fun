@@ -16,7 +16,7 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 >
 > | box | port 8001 model | container | image | notes |
 > |---|---|---|---|---|
-> | **spark1** (192.168.1.147) | **`Qwen/Qwen3-Coder-Next-FP8`** | `vllm-chat` | `vllm/vllm-openai:v0.22.0-aarch64` | 80B/3B-active hybrid (Gated DeltaNet + attn + MoE), FP8, 128K, fp8 KV, **`--tool-call-parser qwen3_coder`**, **no reasoning parser** (model wraps entire answer in `<think>` leaving `content` null — raw `<think>` tags visible in content). TP=1, gpu-util 0.88. Agentic-coding fine-tune of Qwen3-Next-80B-A3B-Base; RL on 800K executable tasks. SWE-bench Verified 74.2%. |
+> | **spark1** (192.168.1.147) | **`Qwen/Qwen3-Coder-Next-FP8`** | `vllm-chat` | `vllm/vllm-openai:v0.22.0-aarch64` | 80B/3B-active hybrid (Gated DeltaNet + attn + MoE), FP8, 256K, fp8 KV, **`--tool-call-parser qwen3_coder`**, **no reasoning parser** (model wraps entire answer in `<think>` leaving `content` null — raw `<think>` tags visible in content). TP=1, gpu-util 0.88. Agentic-coding fine-tune of Qwen3-Next-80B-A3B-Base; RL on 800K executable tasks. SWE-bench Verified 74.2%. |
 > | **spark2** (192.168.1.69) | **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** | `vllm-chat` | `vllm/vllm-openai:latest` (vLLM 0.21.0) | Instruct variant, independent single-box. 80B/3B-active hybrid, FP8, 128K, fp8 KV, hermes tools, no reasoning parser. TP=1, gpu-util 0.88. |
 >
 > So **the two boxes now serve different model ids** — spark1 Coder-Next,
@@ -107,7 +107,7 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 > slots per §8 (embed → chat on spark1; chat on spark2).
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-06-10 (single-box steady state; see the LIVE banner above for the
+2026-06-11 (single-box steady state; see the LIVE banner above for the
 current override — spark1 serves **Qwen3-Coder-Next** w/
 `qwen3_coder` tools and no reasoning parser, spark2 serves the **Instruct**
 variant). Use this as a
@@ -267,7 +267,7 @@ both pass on a stale IP config.)
 |---:|---|---|
 | 11434 | Ollama (systemd) | LLM serving + **currently the live embeddings path** (`nomic-embed-text`) while vllm-embed is down |
 | 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` — **DOWN** (stopped back during the cross-box experiment, still not restored; embeddings on Ollama 11434. Could now be restored — box is single-box again — but left on Ollama for continuity) |
-| 8001 | vllm-chat (docker) | Chat completions — **`Qwen3-Coder-Next FP8`** (`--tool-call-parser qwen3_coder`, no reasoning parser), 128K context, hybrid (Gated DeltaNet + attn + MoE), fp8 KV, image `vllm/vllm-openai:v0.22.0-aarch64` (spark2 runs the **Instruct** variant) |
+| 8001 | vllm-chat (docker) | Chat completions — **`Qwen3-Coder-Next FP8`** (`--tool-call-parser qwen3_coder`, no reasoning parser), 256K context (`--max-model-len 262144`, native max), hybrid (Gated DeltaNet + attn + MoE), fp8 KV, image `vllm/vllm-openai:v0.22.0-aarch64` (spark2 runs the **Instruct** variant @ 128K) |
 
 ### spark2 (192.168.1.69)
 
@@ -284,7 +284,7 @@ both pass on a stale IP config.)
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
 | vllm-embed | — | — | **DOWN** — stopped back during the cross-box experiment, still not restored; embeddings on Ollama 11434 (could be restored now, left on Ollama for continuity) |
-| vllm-chat | ~113 GB (0.88 × ~128 GB) | ~80 GiB FP8 weights + fp8 KV (full-attn layers only) + Gated DeltaNet state + activations @ 128K | Hybrid (Gated DeltaNet + periodic full-attention + MoE): most layers carry no KV, so 128K is affordable. Drop GPU_UTIL to 0.85 if OOM. Same footprint as spark2 (identical arch/quant/flags; Coder-Next vs Instruct doesn't change VRAM). (nvidia-smi reports `[N/A]` for memory.used on this GB10/WSL box, so resident bytes aren't directly measurable here.) |
+| vllm-chat | ~113 GB (0.88 × ~128 GB) | ~80 GiB FP8 weights + fp8 KV (full-attn layers only) + Gated DeltaNet state + activations @ 256K | Hybrid (Gated DeltaNet + periodic full-attention + MoE): most layers carry no KV, so even 256K is affordable — measured 2026-06-11 the KV pool holds ~2.53M tokens (29.33 GiB), i.e. 9.64x concurrency at full 256K with `--max-num-seqs 4` untouched. Drop GPU_UTIL to 0.85 if OOM. Same footprint as spark2 (identical arch/quant/flags; Coder-Next vs Instruct doesn't change VRAM; spark2 still runs 128K). (nvidia-smi reports `[N/A]` for memory.used on this GB10/WSL box, so resident bytes aren't directly measurable here.) |
 | Ollama (idle) | ~0 | unloads after `OLLAMA_KEEP_ALIVE` | 5 min default |
 | Ollama (loaded) | varies | qwen2.5:14b ≈ 14.5 GB, nomic ≈ 600 MB | only when actively serving |
 
@@ -437,12 +437,17 @@ code calling `/v1/chat/completions`.
 > brought up by `bash ~/spin-up-vllm-qwen3-coder-next.sh`
 > (committed in this repo) on `vllm/vllm-openai:v0.22.0-aarch64`.
 > 80B total / ~3B active, hybrid (Gated DeltaNet + periodic full-attn +
-> MoE), 128K context, fp8 KV, TP=1, `--gpu-memory-utilization 0.88`,
+> MoE), 256K context (`--max-model-len 262144`), fp8 KV, TP=1,
+> `--gpu-memory-utilization 0.88`,
 > `--tool-call-parser qwen3_coder`, **no `--reasoning-parser`**. Agentic-
 > coding fine-tune of Qwen3-Next-80B-A3B-Base (RL on 800K executable
 > tasks; SWE-bench Verified 74.2%). This is a **different model id from
 > spark2** (§4), which runs the Instruct variant; the cable is idle.
-> Smoke + tool-call (`qwen3_coder`) verified PASS on 2026-06-10. The
+> Smoke + tool-call (`qwen3_coder`) verified PASS. **Context bumped
+> 128K → 256K (`--max-model-len 262144`) on 2026-06-11**, `--max-num-seqs 4`
+> left untouched: the KV pool holds ~2.53M tokens, so 256K still runs at
+> 9.64x concurrency (the hybrid carries KV only on its periodic full-attn
+> layers). The
 > model wraps its whole answer in `<think>…</think>` with nothing after
 > the close tag, so the qwen3 reasoning parser is intentionally OFF (it
 > would null out `content`); raw `<think>` tags stay in `content`.
@@ -505,7 +510,7 @@ docker run -d --runtime nvidia --gpus all \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
   vllm/vllm-openai:v0.22.0-aarch64 \
   Qwen/Qwen3-Coder-Next-FP8 \
-  --max-model-len 131072 \
+  --max-model-len 262144 \
   --max-num-seqs 4 \
   --gpu-memory-utilization 0.88 \
   --kv-cache-dtype fp8 \
@@ -532,12 +537,14 @@ cover both; the TurboQuant-specific flags apply only to that variant.
   per token. Hybrid architecture: Gated DeltaNet (linear attention,
   O(n), no KV cache) on most layers + periodic full-attention layers
   + MoE FFN. Native context 256K (extendable to 1M with YaRN); we run
-  128K. **Instruct** variant chosen explicitly over Thinking to avoid
-  re-tripping the Nemotron `<think>`-leak failure mode in llm_wiki.
-- **`--max-model-len 131072`** (128K): conservative starting point vs
-  256K native. Memory is the binding constraint on a 128 GB unified
-  box with 80 GB of weights — see the fallback ladder in the script
-  header.
+  the full **256K** native max.
+- **`--max-model-len 262144`** (256K): the model's native max. Measured
+  2026-06-11 the KV pool holds ~2.53M tokens, so a full 256K request
+  still leaves ~9.6x concurrency headroom even with `--max-num-seqs 4` —
+  KV is *not* the binding constraint on this hybrid (only the periodic
+  full-attention layers carry KV). Going past 256K toward the 1M YaRN
+  ceiling would need rope-scaling args this script doesn't set. Fallback
+  ladder if OOM: MAX_LEN=131072, then GPU_UTIL=0.85.
 - **`--max-num-seqs 4`**: KV is the bottleneck, not compute. Don't
   over-batch.
 - **`--gpu-memory-utilization 0.88`**: ~107 GiB cap on the ~121.7 GiB
@@ -1103,7 +1110,7 @@ in this order so the VRAM budgeting works.
    Wait for `Application startup complete.` in `docker logs -f vllm-embed`.
 
 4. **Start vllm-chat SECOND** via the spin-up script (Qwen3-Coder-Next
-   FP8 on vLLM 0.22.0 is the current default — 128K context, hybrid
+   FP8 on vLLM 0.22.0 is the current default — 256K context, hybrid
    attention, `qwen3_coder` tools, no reasoning parser):
    ```bash
    scp spin-up-vllm-qwen3-coder-next.sh spin-up-vllm-qwen3-next-80b.sh \
@@ -1225,7 +1232,7 @@ ssh spark 'docker rm -f vllm-2box'; ssh spark2 'docker rm -f vllm-2box'
 # DIFFERENT models. The other scripts below are alternates for the spark1 slot.
 # NOTE: the coder script defaults the reasoning parser OFF (matches live).
 # Set REASONING_PARSER=qwen3 to enable thinking mode (nulls `content` on this model).
-ssh spark 'bash ~/spin-up-vllm-qwen3-coder-next.sh'  # Qwen3-Coder-Next FP8, fp8 KV @ 128K, qwen3_coder tools, NO reasoning parser (CURRENT spark1)
+ssh spark 'bash ~/spin-up-vllm-qwen3-coder-next.sh'  # Qwen3-Coder-Next FP8, fp8 KV @ 256K (native max), qwen3_coder tools, NO reasoning parser (CURRENT spark1)
 ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'         # Qwen3-Next 80B Instruct FP8, plain fp8 KV @ 128K (CURRENT spark2; default model)
 ssh spark 'bash ~/spin-up-vllm-nemotron3-super-120b.sh'      # Nemotron 3 Super 120B A12B NVFP4 @ 128K (concluded experiment; reasoning+tools)
 ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh' # Qwen3-Next 80B FP8 + TurboQuant KV @ 128K, vLLM 0.22.0
