@@ -273,7 +273,7 @@ both pass on a stale IP config.)
 
 | port | service | purpose |
 |---:|---|---|
-| 8001 | vllm-chat (docker) | Chat completions — **`Qwen3-Next 80B A3B Instruct FP8`**, 128K context, hybrid (Gated DeltaNet + attn + MoE), fp8 KV, hermes tool calling on, image `vllm/vllm-openai:latest` (vLLM 0.21.0) |
+| 8001 | vllm-chat (docker) | Chat completions — **`Qwen3-Next 80B A3B Instruct FP8`**, 128K context, hybrid (Gated DeltaNet + attn + MoE), fp8 KV, **`--max-num-seqs 8`** (bumped from 4 on 2026-06-11), hermes tool calling on, image `vllm/vllm-openai:latest` (vLLM 0.21.0) |
 
 (No `vllm-embed`, no Ollama — spark2 is single-container.)
 
@@ -301,7 +301,7 @@ was stopped to free 17 GiB.
 
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
-| vllm-chat | ~113 GB (0.88 × ~128 GB) | ~80 GiB FP8 weights + fp8 KV (full-attn layers only) + Gated DeltaNet state + activations @ 128K | Hybrid (Gated DeltaNet + periodic full-attention + MoE): most layers carry no KV, so 128K is affordable. Drop GPU_UTIL to 0.85 if OOM. Was Nemotron 3 Nano 30B before 2026-06-06. |
+| vllm-chat | ~113 GB (0.88 × ~128 GB) | ~80 GiB FP8 weights + fp8 KV (full-attn layers only) + Gated DeltaNet state + activations @ 128K | Hybrid (Gated DeltaNet + periodic full-attention + MoE): most layers carry no KV, so 128K is affordable. `--max-num-seqs 8` (2026-06-11): KV pool measured ~2.47M tokens = 18.82x concurrency at 128K, so 8×128K (1.05M) fits with room to spare (paged KV — the seq cap costs no idle memory). Drop GPU_UTIL to 0.85 if OOM. Was Nemotron 3 Nano 30B before 2026-06-06. |
 
 ---
 
@@ -646,10 +646,14 @@ Single-container experimental slot on the second box.
 > `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** (the prior spark1 single-box
 > model), brought up warm-from-cache by `spin-up-vllm-qwen3-next-80b.sh`.
 > 80B/3B-active hybrid (Gated DeltaNet + attn + MoE), FP8, 128K, fp8 KV,
-> hermes tool parser, TP=1, gpu-util 0.88, image `vllm/vllm-openai:latest`
+> **`--max-num-seqs 8`** (bumped from 4 on 2026-06-11), hermes tool parser,
+> TP=1, gpu-util 0.88, image `vllm/vllm-openai:latest`
 > (reports vLLM **0.21.0** — plain fp8 KV is the documented-safe path on
 > 0.21.0; smoke output clean, not the #40880 degenerate-output bug).
-> Smoke + tool-call PASS 2026-06-06. It's the single-box coding reference
+> Smoke + tool-call PASS 2026-06-06; re-verified PASS at seqs=8 on
+> 2026-06-11 (KV pool ~2.47M tokens → 18.82x concurrency at 128K, so 8 is
+> well within budget). Brought up by
+> `MAX_SEQS=8 bash ~/spin-up-vllm-qwen3-next-80b.sh`. It's the single-box coding reference
 > for the Nemotron-3-Super experiment on spark1 (§3). opencode model id:
 > `dgx2/qwen3-next-80b`. No reasoning parser (Instruct variant, no
 > `<think>`). The Nemotron-3-Nano prose below is the **prior occupant**.
@@ -1272,8 +1276,10 @@ curl -sS http://192.168.1.69:8001/v1/chat/completions \
 # HF cache size (spark2-only — not shared with spark1)
 ssh spark2 'du -sh ~/.cache/huggingface'
 
-# To swap the spark2 model: no committed spin-up script yet — adapt the
-# docker run block from §4 with the new model id and re-run.
+# Current spark2 bring-up (committed script; scp it + lib-vllm-spinup.sh first):
+ssh spark2 'MAX_SEQS=8 bash ~/spin-up-vllm-qwen3-next-80b.sh'  # Qwen3-Next 80B Instruct FP8, 128K, fp8 KV, hermes, max-num-seqs 8 (CURRENT spark2)
+# To swap the spark2 model: override QWEN_MODEL / MAX_LEN / MAX_SEQS / etc.,
+# or adapt the docker run block from §4 with the new model id and re-run.
 ```
 
 ---
