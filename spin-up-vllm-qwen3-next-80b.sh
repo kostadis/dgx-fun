@@ -24,11 +24,16 @@
 #     TOOL_PARSER=qwen3_coder as the alternate — it's a stricter parser
 #     designed for Qwen3-Coder's tool format, and may or may not be a
 #     better fit for Qwen3-Next-Instruct.
-#   * NO reasoning parser. This is the Instruct variant (not Thinking),
-#     so no <think> blocks to strip. That was the explicit reason for
-#     picking Instruct over Thinking — the Thinking variant would
-#     re-trip the Nemotron-style llm_wiki failure (no <think> stripper
-#     on the client side).
+#   * Reasoning parser is OPTIONAL, off by default (REASONING_PARSER="").
+#     The default model is the Instruct variant — no <think> blocks, so
+#     no parser needed; that was the original reason for picking Instruct
+#     over Thinking (a raw <think> leak re-trips the Nemotron-style
+#     llm_wiki failure). To run the Thinking variant safely, set
+#     QWEN_MODEL=Qwen/Qwen3-Next-80B-A3B-Thinking-FP8 REASONING_PARSER=qwen3
+#     — the `qwen3` reasoning parser splits <think> traces into a separate
+#     reasoning_content field and leaves `content` clean, so llm_wiki and
+#     other non-stripping clients keep working. Proven on this image in the
+#     2-box Ray config.
 #
 # WHAT THIS DOES
 #   1. Stop + remove the existing vllm-chat container (Gemma 4 MoE, or
@@ -73,6 +78,9 @@
 #                  BF16 KV (doubles KV memory; expect to also drop MAX_LEN).
 #   TOOL_PARSER    --tool-call-parser; default "hermes". Alternate:
 #                  "qwen3_coder" (stricter Qwen3-Coder format).
+#   REASONING_PARSER  --reasoning-parser; default "" (off). Set to
+#                  "qwen3" when serving the Thinking variant so <think>
+#                  traces land in reasoning_content, not content.
 #
 # REVERT TO GEMMA 4 26B MoE (current default before this swap)
 #   bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh   # 128K variant
@@ -89,6 +97,7 @@ MAX_LEN="${MAX_LEN:-131072}"
 MAX_SEQS="${MAX_SEQS:-4}"
 KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 TOOL_PARSER="${TOOL_PARSER:-hermes}"
+REASONING_PARSER="${REASONING_PARSER:-}"
 CONTAINER_NAME="vllm-chat"
 IMAGE="vllm/vllm-openai:latest"
 
@@ -126,7 +135,16 @@ echo "  max_len:     ${MAX_LEN}"
 echo "  max_seqs:    ${MAX_SEQS}"
 echo "  kv_dtype:    ${KV_CACHE_DTYPE}"
 echo "  tool_parser: ${TOOL_PARSER}"
+echo "  reasoning:   ${REASONING_PARSER:-<off>}"
 echo ""
+
+# Optional --reasoning-parser. Empty by default (Instruct variant); set
+# REASONING_PARSER=qwen3 for the Thinking variant. Built as an array so
+# the flag is omitted entirely when off.
+REASONING_ARGS=()
+if [ -n "${REASONING_PARSER}" ]; then
+    REASONING_ARGS=(--reasoning-parser "${REASONING_PARSER}")
+fi
 
 vllm_stop_container "${CONTAINER_NAME}"
 vllm_gpu_healthcheck
@@ -148,6 +166,7 @@ docker run -d \
     --trust-remote-code \
     --enable-auto-tool-choice \
     --tool-call-parser "${TOOL_PARSER}" \
+    "${REASONING_ARGS[@]}" \
     --host 0.0.0.0 --port "${QWEN_PORT}"
 
 # 40-min budget — first run pulls ~80 GB FP8 weights. Stricter error
