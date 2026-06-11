@@ -13,17 +13,17 @@
 #   * Tool-call-parser is `qwen3_coder`, NOT `hermes`. Qwen3-Coder-Next
 #     uses a stricter tool-call format; `hermes` may produce malformed calls.
 #     If calls still come back wrong, try `qwen3_xml` as a fallback.
-#   * Reasoning parser: `qwen3` by default. Qwen3-Coder-Next is a single
+#   * Reasoning parser: OFF by default so a plain run of this script
+#     reproduces the live spark1 deployment. Qwen3-Coder-Next is a single
 #     checkpoint supporting both thinking and non-thinking modes (no separate
-#     -Thinking variant). The `qwen3` parser routes <think> traces into
-#     reasoning_content so llm_wiki and non-stripping clients stay clean.
-#     Set REASONING_PARSER="" to disable if you don't want thinking mode.
-#     OBSERVED 2026-06-10: with the parser ON, this checkpoint wraps its
-#     ENTIRE answer in <think>...</think> with nothing after </think>, so
-#     the parser leaves `content` null and clients reading content get an
-#     empty reply. The live spark1 deployment therefore runs with
-#     REASONING_PARSER="" (raw <think> tags stay in content, but clients
-#     see the output). See current-setup.md §3.
+#     -Thinking variant). OBSERVED 2026-06-10: with `--reasoning-parser qwen3`
+#     ON, this checkpoint wraps its ENTIRE answer in <think>...</think> with
+#     nothing after </think>, so the parser routes the whole thing into
+#     `reasoning` and leaves `content` NULL — clients reading content get an
+#     empty reply. With the parser OFF (the default) the raw <think> tags
+#     stay in content, so clients at least see the output. Set
+#     REASONING_PARSER=qwen3 to opt into thinking mode anyway (expect null
+#     content on this model). See current-setup.md §3.
 #   * Agentic training: fine-tuned for long-horizon tool-use tasks. Expect
 #     better performance on opencode/agentic workflows vs. the general Instruct
 #     variant, with possibly more verbose tool calls.
@@ -37,7 +37,7 @@
 #        - --gpu-memory-utilization 0.88
 #        - --kv-cache-dtype fp8
 #        - --enable-auto-tool-choice --tool-call-parser qwen3_coder
-#        - --reasoning-parser qwen3
+#        - (no --reasoning-parser by default — see note above)
 #        - --trust-remote-code
 #   3. Wait for "Application startup complete" — 40 min budget. First
 #      run pulls ~80 GB of FP8 weights from HF.
@@ -60,10 +60,9 @@
 #   KV_CACHE_DTYPE --kv-cache-dtype; default "fp8"
 #   TOOL_PARSER    --tool-call-parser; default "qwen3_coder"
 #                  Alternate: "qwen3_xml" if qwen3_coder produces malformed calls
-#   REASONING_PARSER  --reasoning-parser; default "qwen3"
-#                  Set to "" to disable thinking mode entirely. NOTE: the
-#                  default ("qwen3") nulls `content` on this model — pass
-#                  REASONING_PARSER= to reproduce the live spark1 state.
+#   REASONING_PARSER  --reasoning-parser; default "" (OFF — matches the live
+#                  spark1 deployment). Set REASONING_PARSER=qwen3 to enable
+#                  thinking mode, but note that nulls `content` on this model.
 #
 # REVERT
 #   bash ~/spin-up-vllm-qwen3-next-80b.sh   # back to Qwen3-Next-80B Instruct
@@ -79,7 +78,7 @@ MAX_LEN="${MAX_LEN:-131072}"
 MAX_SEQS="${MAX_SEQS:-4}"
 KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 TOOL_PARSER="${TOOL_PARSER:-qwen3_coder}"
-REASONING_PARSER="${REASONING_PARSER-qwen3}"
+REASONING_PARSER="${REASONING_PARSER-}"
 CONTAINER_NAME="vllm-chat"
 # Pin to 0.22.0 — Qwen3-Next CUDA-graph degenerate-output bug (#40880)
 # puts all content into <think> with nothing in `content` on 0.21.0.
