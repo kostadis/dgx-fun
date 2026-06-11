@@ -30,9 +30,9 @@ spark2 (192.168.1.69:8001):   Qwen/Qwen3-Next-80B-A3B-Instruct-FP8
 > reading `content` get an empty response. Deployed WITHOUT the parser, the
 > raw `<think>` tags stay in `content` so clients at least see the output.
 > The slot therefore runs `--tool-call-parser qwen3_coder` and **no
-> `--reasoning-parser`** (the spin-up script defaults `REASONING_PARSER=qwen3`;
-> this deployment was launched with `REASONING_PARSER=`). qwen3_coder tool
-> calling PASSes.
+> `--reasoning-parser`** — which the spin-up script now does by default, so a
+> plain run reproduces this state (set `REASONING_PARSER=qwen3` to opt into
+> thinking mode). qwen3_coder tool calling PASSes.
 >
 > **Nemotron-3-Super verdict (2026-06-06):** the single-box NVFP4 hybrid
 > (12B active) did NOT clear the Qwen3.5-122B coding bar. Reasoning was
@@ -434,7 +434,7 @@ opencode, future chat clients (see `desktop-chat-clients.md`), and any
 code calling `/v1/chat/completions`.
 
 > **LIVE (2026-06-10): this slot serves `Qwen/Qwen3-Coder-Next-FP8`**,
-> brought up by `REASONING_PARSER= bash ~/spin-up-vllm-qwen3-coder-next.sh`
+> brought up by `bash ~/spin-up-vllm-qwen3-coder-next.sh`
 > (committed in this repo) on `vllm/vllm-openai:v0.22.0-aarch64`.
 > 80B total / ~3B active, hybrid (Gated DeltaNet + periodic full-attn +
 > MoE), 128K context, fp8 KV, TP=1, `--gpu-memory-utilization 0.88`,
@@ -446,8 +446,9 @@ code calling `/v1/chat/completions`.
 > model wraps its whole answer in `<think>…</think>` with nothing after
 > the close tag, so the qwen3 reasoning parser is intentionally OFF (it
 > would null out `content`); raw `<think>` tags stay in `content`.
-> **NB:** the spin-up script *defaults* `REASONING_PARSER=qwen3` — pass
-> `REASONING_PARSER=` (as above) to reproduce this no-parser live state.
+> **NB:** the spin-up script *defaults* the reasoning parser OFF so a plain
+> run reproduces this live state; set `REASONING_PARSER=qwen3` to opt into
+> thinking mode (which nulls `content` on this model).
 >
 > **Slot history:** Qwen3-Next-80B Instruct → TurboQuant KV → Thinking
 > (`--reasoning-parser qwen3`, 2026-06-08 → 2026-06-10) → Qwen3-Coder-Next
@@ -1108,7 +1109,7 @@ in this order so the VRAM budgeting works.
    scp spin-up-vllm-qwen3-coder-next.sh spin-up-vllm-qwen3-next-80b.sh \
        lib-vllm-spinup.sh test-toolcall.sh spark:~/
    ssh spark 'docker pull vllm/vllm-openai:v0.22.0-aarch64'
-   ssh spark 'REASONING_PARSER= bash ~/spin-up-vllm-qwen3-coder-next.sh'
+   ssh spark 'bash ~/spin-up-vllm-qwen3-coder-next.sh'
    ```
    Expect ~40 min on first run (HF pulls ~80 GB of FP8 weights on a
    fresh box; ~13 min observed warm-cache on 2026-05-30 — shard load +
@@ -1222,9 +1223,9 @@ ssh spark 'docker rm -f vllm-2box'; ssh spark2 'docker rm -f vllm-2box'
 # spark2 runs the **Instruct** variant (spin-up-vllm-qwen3-next-80b.sh,
 # default model, scp'd over + run on spark2). The two boxes now serve
 # DIFFERENT models. The other scripts below are alternates for the spark1 slot.
-# NOTE: the coder script DEFAULTS REASONING_PARSER=qwen3, which nulls `content`
-# on this model — pass REASONING_PARSER= to reproduce the live (no-parser) state.
-ssh spark 'REASONING_PARSER= bash ~/spin-up-vllm-qwen3-coder-next.sh'  # Qwen3-Coder-Next FP8, fp8 KV @ 128K, qwen3_coder tools, NO reasoning parser (CURRENT spark1)
+# NOTE: the coder script defaults the reasoning parser OFF (matches live).
+# Set REASONING_PARSER=qwen3 to enable thinking mode (nulls `content` on this model).
+ssh spark 'bash ~/spin-up-vllm-qwen3-coder-next.sh'  # Qwen3-Coder-Next FP8, fp8 KV @ 128K, qwen3_coder tools, NO reasoning parser (CURRENT spark1)
 ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'         # Qwen3-Next 80B Instruct FP8, plain fp8 KV @ 128K (CURRENT spark2; default model)
 ssh spark 'bash ~/spin-up-vllm-nemotron3-super-120b.sh'      # Nemotron 3 Super 120B A12B NVFP4 @ 128K (concluded experiment; reasoning+tools)
 ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-turboquant.sh' # Qwen3-Next 80B FP8 + TurboQuant KV @ 128K, vLLM 0.22.0
