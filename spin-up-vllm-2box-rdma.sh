@@ -33,7 +33,7 @@ WORKER=spark2                           # ssh alias, spark2 (on wifi for mgmt; c
 IMAGE=local/vllm-ray:26.05
 CONTAINER=vllm-2box
 HF_CACHE=/home/kostadis/.cache/huggingface
-SHM=10995116277                         # 10.24g, matches prior run
+SHM=2147483648                          # 2g — TP all-reduce goes over NCCL/RDMA, plasma unused
 HEAD_IP=10.100.16.1                     # cable IP, spark1 enp1s0f0np0
 WORKER_IP=10.100.16.2                   # cable IP, spark2 enp1s0f0np0
 RAY_PORT=6379
@@ -53,7 +53,7 @@ case "$PROFILE" in
     ;;
   qwen35)
     MODEL=Qwen/Qwen3.5-122B-A10B-FP8
-    MODEL_FLAGS="--tool-call-parser qwen3_coder --reasoning-parser qwen3 --max-model-len 131072"
+    MODEL_FLAGS="--tool-call-parser qwen3_coder --reasoning-parser qwen3 --max-model-len 262144"
     ;;
   *)
     echo "!!! Unknown PROFILE='$PROFILE' (expected: minimax | qwen35)" >&2
@@ -65,7 +65,8 @@ echo ">>> Profile: ${PROFILE}  Model: ${MODEL}"
 SERVE_FLAGS="--tensor-parallel-size 2 --distributed-executor-backend ray \
   ${MODEL_FLAGS} \
   --enable-auto-tool-choice --trust-remote-code \
-  --gpu-memory-utilization 0.85 \
+  --gpu-memory-utilization 0.70 \
+  --max-num-seqs 35 \
   --host 0.0.0.0 --port ${CHAT_PORT}"
 
 # ---- shared env for both containers ----------------------------------------
