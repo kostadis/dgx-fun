@@ -210,7 +210,7 @@ So this pipeline needs a deliberate box assignment, e.g.:
 
 ```bash
 curl -sS http://192.168.1.147:8001/v1/models   # spark1 vllm-chat
-curl -sS http://192.168.1.69:8001/v1/models    # spark2 vllm-chat
+curl -sS http://192.168.1.121:8001/v1/models    # spark2 vllm-chat
 ```
 
 The orchestrator points the *plan* call at whichever endpoint serves

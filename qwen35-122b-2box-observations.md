@@ -192,6 +192,98 @@ a feel number, not a rigorous bench. Multi-stream / long-context decode
 not characterized. Prefill is still the weak axis for the
 [[user_workflow_read_heavy]] case; not re-measured here.
 
+## 2026-06-17: High-concurrency batch job — unified memory OOM lessons
+
+Ran a large batch job (140+ requests, 5 sequential passes per chapter, reasoning
+model) against the cross-box Qwen3.5-122B slot. Several crashes and fixes before
+landing on a stable config. Key learnings:
+
+### Unified memory is the hard constraint, not KV capacity
+
+GB10 has 128 GB unified memory — GPU and CPU share the same physical pool. There
+is no separate CPU RAM. This means:
+
+- `--gpu-memory-utilization 0.85` reserves 109 GB for vLLM *out of the same pool*
+  the OS, Ray, and Python use.
+- vllm-embed on spark2 takes another 6 GB.
+- OS + Ray processes take ~8–10 GB.
+- That leaves ~3–5 GB for the Ray worker's Python heap — almost nothing.
+
+As concurrent request count grows, the Ray worker heap grows (request state,
+output buffers, KV page tables, sampling objects). At 90+ concurrent sequences
+spark2 ran out of RAM (30–65 MB available), thrashed swap, Ray missed heartbeats,
+declared the worker dead, and the whole cluster fell over.
+
+**This is NOT a KV cache problem.** The KV pool was at 22–35% when crashes
+happened — plenty of KV headroom. The failure is purely CPU-side heap.
+
+### Fix 1: reduce `--gpu-memory-utilization` (0.85 → 0.80)
+
+Frees ~6 GB on each box. Bought more time but didn't fully solve it at high
+concurrency (~90 seqs). Stabilized it at moderate concurrency (~20 seqs).
+
+### Fix 2: reduce Ray plasma store shm (10 GB → 2 GB)
+
+The `--shm-size` on the docker run sets the Ray plasma object store size.
+Default was 10.24 GB — allocated as shared memory, counts against available RAM.
+For TP=2 on this setup, the TP all-reduce goes over NCCL/RDMA, **not** through
+the plasma store. The plasma store is essentially unused. Dropping it to 2 GB
+freed ~8 GB on spark2 immediately.
+
+### Fix 3: `--max-num-seqs 20` (hard server-side cap)
+
+The real fix. `--max-num-seqs` limits how many sequences the vLLM scheduler holds
+simultaneously. Requests beyond the cap queue at the HTTP layer with near-zero
+memory cost — just an async queue entry, no Python heap, no KV pages, no sampling
+state. With 20 sequences in flight:
+
+- Spark2 available RAM: **13 GB** (vs 30–65 MB when crashing)
+- Throughput: ~124 tok/s stable (vs 200 tok/s briefly then crash)
+- KV usage: 5–8% (stable, not growing)
+
+Client-side queuing is insufficient on its own — if the client queue depth is
+misconfigured or increased, the server accepts all requests and you're back to
+90 concurrent. Server-side `--max-num-seqs` enforces the ceiling regardless of
+client behavior.
+
+### The 200 tok/s ceiling on unified memory
+
+Peak throughput of ~200 tok/s was reached at ~42 concurrent sequences. But that
+concurrency level is too close to the RAM ceiling to be stable for a long batch
+job. On discrete GPU hardware (A100/H100) the CPU heap and GPU VRAM don't
+compete, so high concurrency is safe. On GB10 unified memory, the practical stable
+ceiling is lower.
+
+To push toward 200 tok/s stably, the levers are:
+- Drop `--gpu-memory-utilization` further (e.g. 0.70) to free more CPU RAM
+  headroom, then raise `--max-num-seqs` (e.g. 35–40). KV pool shrinks but
+  at current context lengths that's not the constraint.
+- Stop vllm-embed on spark2 during batch jobs (frees 6 GB).
+
+### Reasoning tokens dominate batch job runtime
+
+The same batch job took **1 hour** on single-box Qwen3-Next-80B Instruct (no
+reasoning) and is estimated at **8–12 hours** on Qwen3.5-122B with reasoning
+enabled. The difference is entirely thinking tokens — the model generates 10–20K
+`<think>` tokens per call before producing output. Those tokens cost the same
+throughput as content tokens.
+
+To suppress thinking per-request: pass `"chat_template_kwargs": {"enable_thinking": false}`
+in the request body. This tells the model to skip the `<think>` block entirely
+and can bring runtime back toward the 80B Instruct baseline while keeping the
+122B quality on the output itself.
+
+### Stable config as of 2026-06-17
+
+```
+--gpu-memory-utilization 0.80
+--max-num-seqs 20
+--shm-size 2g  (docker run flag, not vllm serve)
+```
+
+Measured: ~124 tok/s at 20 concurrent, spark2 stable at 13 GB available RAM,
+no crashes under sustained batch load.
+
 ## Open follow-ups
 
 - PP=2 variant for decode (vs TP=2). Confirm vLLM PP support for the GDN hybrid first.

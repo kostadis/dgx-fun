@@ -56,7 +56,7 @@ DOC="$REPO_DIR/current-setup.md"
 TODAY="$(date -u +%Y-%m-%d)"
 
 SPARK1_HOST="192.168.1.147"
-SPARK2_HOST="192.168.1.69"
+SPARK2_HOST="192.168.1.121"
 
 probe() {
   local url="$1"
@@ -147,7 +147,7 @@ anchor_re = re.compile(
 new_anchor = (
     "```\n"
     f"spark1 (192.168.1.147:8001):  {s1_chat}\n"
-    f"spark2 (192.168.1.69:8001):   {s2_chat}\n"
+    f"spark2 (192.168.1.121:8001):   {s2_chat}\n"
     "```"
 )
 src, n_anchor = anchor_re.subn(new_anchor, src, count=1)

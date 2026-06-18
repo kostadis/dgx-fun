@@ -72,8 +72,10 @@
 #                  65536  -> more concurrent slots, less per-session room
 #                  131072 -> default — opencode-friendly
 #                  262144 -> native max; expect 1-2 slots only
-#   MAX_SEQS       --max-num-seqs; default 4. Raise cautiously — KV is
-#                  the bottleneck, not compute.
+#   MAX_SEQS       --max-num-seqs; default 8. KV pool ~2.47M tokens at
+#                  128K gives ~18.8x headroom; 8×128K = 1.05M fits with
+#                  ~2.4x headroom. Admission cap only — idle slots cost
+#                  nothing (paged KV).
 #   KV_CACHE_DTYPE --kv-cache-dtype; default "fp8". Set "auto" to use
 #                  BF16 KV (doubles KV memory; expect to also drop MAX_LEN).
 #   TOOL_PARSER    --tool-call-parser; default "hermes". Alternate:
@@ -94,7 +96,7 @@ QWEN_MODEL="${QWEN_MODEL:-Qwen/Qwen3-Next-80B-A3B-Instruct-FP8}"
 QWEN_PORT="${QWEN_PORT:-8001}"
 GPU_UTIL="${GPU_UTIL:-0.88}"
 MAX_LEN="${MAX_LEN:-131072}"
-MAX_SEQS="${MAX_SEQS:-4}"
+MAX_SEQS="${MAX_SEQS:-8}"
 KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 TOOL_PARSER="${TOOL_PARSER:-hermes}"
 REASONING_PARSER="${REASONING_PARSER:-}"
