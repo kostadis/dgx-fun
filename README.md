@@ -13,6 +13,13 @@ This repository contains experiments, reports, and scripts related to running LL
 - **vLLM Spin-up Scripts:** Shell scripts for quickly deploying different models (Gemma 4, Llama 70B, etc.) using vLLM.
 - **Testing:** Scripts for testing tool calls and general functionality.
 
+### Library
+- **[`dgxlib/`](dgxlib/README.md):** Installable Python package owning per-model
+  request behavior (thinking/timeout/max_tokens registry + model discovery), so a
+  model swap is a one-line edit to `dgxlib/models.yaml` rather than code surgery in
+  callers. Consumed by CampaignGenerator and mytools. See
+  [`dgxlib/ARCHITECTURE.md`](dgxlib/ARCHITECTURE.md).
+
 ## Usage
 
 Most deployment scripts can be run directly:
