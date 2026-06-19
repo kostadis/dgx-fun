@@ -46,7 +46,19 @@ def _is_retryable(exc: BaseException) -> bool:
     return False
 
 
-def call_api(
+def _norm_finish_reason(finish_reason: str | None) -> str:
+    """Normalise an OpenAI ``finish_reason`` to the shared two-value vocabulary.
+
+    vLLM reports ``"length"`` when the response was truncated by the
+    ``max_tokens`` cap; everything else (``"stop"``, ``"tool_calls"``, ...)
+    collapses to ``"stop"``. Mirrors claudelib's ``_norm_stop_reason`` so a
+    provider-agnostic caller sees ``"max_tokens"`` for truncation from either
+    backend.
+    """
+    return "max_tokens" if finish_reason == "length" else "stop"
+
+
+def call_api_full(
     client: DgxClient,
     system: str,
     content,
@@ -54,8 +66,13 @@ def call_api(
     max_tokens: int | None = None,
     *,
     thinking: bool | None = None,
-) -> str:
-    """Non-streaming chat completion. Returns ``choices[0].message.content``.
+) -> tuple[str, str]:
+    """Non-streaming chat completion. Returns ``(text, finish_reason)``.
+
+    ``text`` is ``choices[0].message.content``; ``finish_reason`` is normalised
+    to the shared vocabulary (``"max_tokens"`` for a length-truncated response,
+    else ``"stop"`` — see :func:`_norm_finish_reason`). Callers that need to
+    detect truncation use the second element; :func:`call_api` discards it.
 
     Retries transient connection errors (the Spark warm-restart takes several
     minutes; tolerate it). Per-model request behavior — thinking, read timeout,
@@ -95,8 +112,28 @@ def call_api(
             )
             with urllib.request.urlopen(req, timeout=request_timeout) as resp:
                 resp_payload = json.loads(resp.read().decode("utf-8"))
-            return resp_payload["choices"][0]["message"]["content"]
+            choice = resp_payload["choices"][0]
+            return choice["message"]["content"], _norm_finish_reason(choice.get("finish_reason"))
         except Exception as e:
             if _is_retryable(e) and attempt < len(delays):
                 continue
             raise
+
+
+def call_api(
+    client: DgxClient,
+    system: str,
+    content,
+    model: str,
+    max_tokens: int | None = None,
+    *,
+    thinking: bool | None = None,
+) -> str:
+    """Non-streaming chat completion. Returns ``choices[0].message.content``.
+
+    Thin wrapper over :func:`call_api_full` that drops the finish-reason — kept
+    for callers that only want the text (e.g. CampaignGenerator, pdf_enricher).
+    """
+    text, _ = call_api_full(client, system, content, model, max_tokens,
+                            thinking=thinking)
+    return text
