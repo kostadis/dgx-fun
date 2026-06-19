@@ -1,6 +1,8 @@
 # Tool caches / IDE-local state
 .antigravitycli/
 __pycache__/
+*.egg-info/
+.pytest_cache/
 
 # Generated turbovec-eval artifacts (regenerate via build-corpus.py / the
 # --gen flag of turbovec-target.py). corpus.txt is large derived campaign text.
