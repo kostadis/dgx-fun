@@ -19,7 +19,9 @@ Update it in the **same change** that does any of the following:
 
 - Swaps the model served by `vllm-chat` (e.g. Gemma 4 → Llama 70B,
   Qwen 14B → Gemma 4, etc.) — this includes running any of the
-  `spin-up-vllm-*.sh` scripts that replace the container.
+  `spin-up-vllm-*.sh` scripts that replace the container. **A model
+  swap also requires updating `dgxlib/models.yaml`** — see the dgxlib
+  section below.
 - Adds, removes, or modifies vLLM flags on a running container
   (`--max-model-len`, `--gpu-memory-utilization`, `--dtype`,
   `--enable-auto-tool-choice`, `--tool-call-parser`,
@@ -75,6 +77,40 @@ curl -sS http://192.168.1.147:11434/api/ps     # ollama loaded
 
 If a section of `current-setup.md` disagrees with the live response,
 the live response wins — update the doc.
+
+## dgxlib — the per-model request registry
+
+This repo ships an installable Python package, **`dgxlib/`**, that owns how each
+model served on the Spark wants to be *called* (thinking on/off, read timeout,
+max_tokens) plus served-id discovery. It is editable-installed into the shared
+venv (`pip install -e ~/src/dgx` → `~/.venvs/main`) and consumed by
+CampaignGenerator (`campaignlib/api/backends.py`) and mytools
+(`rpg-lib/pdf_enricher.py`). See `dgxlib/README.md` and `dgxlib/ARCHITECTURE.md`.
+
+`dgxlib/models.yaml` is the **machine-readable, behavior-only sibling of
+`current-setup.md`**: where `current-setup.md` records *what* is served,
+`models.yaml` records *how to call it*. Same honesty rule applies.
+
+### When you must update `dgxlib/models.yaml`
+
+In the **same change** that swaps the `vllm-chat` model (runs a
+`spin-up-vllm-*.sh` script / updates `current-setup.md`), add or edit the entry
+for the new served model id:
+
+- `can_think` — does the model have a reasoning/thinking template at all
+- `thinking_default` — think-or-not when a caller doesn't specify
+- `read_timeout` — generous for reasoning models (they stream slowly)
+
+Key on the exact id from `curl -sS http://192.168.1.147:8001/v1/models`. A `match`
+prefix entry can cover a family; unknown ids fall through to `default`.
+
+### What does NOT belong here
+
+- Don't hand-edit per-model request config in the *consumers* (the whole point is
+  one source of truth). Thinking is `(model capability) × (call intent)`: the
+  registry holds capability + default; the *call site* passes `thinking=True/False`.
+- Endpoint/host resolution is **not** in the registry yet (still env + a default
+  constant) — tracked as dgx-fun #19.
 
 ## Other notes for this repo
 
