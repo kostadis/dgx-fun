@@ -10,6 +10,8 @@ surgery in every caller.
 - :func:`make_client` / :func:`call_api` — a plain non-streaming client that
   applies the registry; the whole client mytools needs. CampaignGenerator imports
   only the registry/discovery layer and applies it in its own transport.
+- :func:`call_api_full` — same call, but returns ``(text, finish_reason)`` for
+  callers that need to detect ``max_tokens`` truncation (e.g. pdf-translators).
 - :data:`RETRYABLE_STATUS` / :func:`is_retryable_status` — shared retry policy.
 """
 
@@ -20,7 +22,7 @@ from .registry import (
     load_registry,
     clear_registry_cache,
 )
-from .client import DgxClient, make_client, call_api, _is_retryable
+from .client import DgxClient, make_client, call_api, call_api_full, _is_retryable
 from .retry import RETRYABLE_STATUS, is_retryable_status
 
 __all__ = [
@@ -33,6 +35,7 @@ __all__ = [
     "DgxClient",
     "make_client",
     "call_api",
+    "call_api_full",
     "RETRYABLE_STATUS",
     "is_retryable_status",
 ]
