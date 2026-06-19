@@ -1,0 +1,38 @@
+# Per-model DGX request behavior registry.
+#
+# This is the one place that encodes how each model served on the Spark wants to
+# be called. Edit it in the same breath as the spin-up-vllm-*.sh script that
+# serves a model — a model swap should be a one-line change here, never code.
+#
+# Thinking is (model capability) x (call intent):
+#   - can_think        : does this model support a reasoning/thinking template at all
+#   - thinking_default : when a caller does NOT specify, think or not?
+# A call site may override with thinking=True/False; the override is honored only
+# if can_think is true, otherwise thinking is forced off.
+#
+# Keys are the exact model id advertised by GET /v1/models (what vLLM serves).
+# `match` entries are prefix fallbacks used when no exact id matches.
+# Unknown models fall through to `default`.
+
+default:
+  can_think: false
+  thinking_default: false
+  read_timeout: 300        # seconds; httpx/urllib read budget
+  max_tokens: 16384        # generous floor; reasoning models can burn a lot
+
+models:
+  "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8":
+    can_think: true
+    thinking_default: false
+    read_timeout: 600
+
+  "Qwen/Qwen2.5-14B-Instruct-AWQ":
+    can_think: false
+    thinking_default: false
+
+match:
+  # Prefix fallbacks (longest match wins) for slots whose exact id isn't listed.
+  "Qwen/Qwen3":
+    can_think: true
+    thinking_default: false
+    read_timeout: 600

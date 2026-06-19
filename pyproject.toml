@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dgxlib"
+version = "0.1.0"
+description = "Shared library encapsulating DGX Spark per-model behavior (request registry + model discovery)."
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6"]
+
+[tool.setuptools]
+# Explicit package list so setuptools does not sweep dgx-fun's many loose
+# top-level scripts (committee.py, turbovec-*.py, build-corpus.py, ...).
+packages = ["dgxlib"]
+
+[tool.setuptools.package-data]
+dgxlib = ["models.yaml"]
