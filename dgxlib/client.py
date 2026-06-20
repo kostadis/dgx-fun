@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import time
 import urllib.error
 import urllib.request
@@ -44,6 +45,29 @@ def _is_retryable(exc: BaseException) -> bool:
     if isinstance(exc, (TimeoutError, ConnectionError)):
         return True
     return False
+
+
+def _describe_error(exc: BaseException, timeout: float | None) -> str:
+    """Human-readable, failure-mode-specific summary for the retry log.
+
+    The retry banner used to say only "DGX unavailable" for *every* error, so a
+    read timeout (the request was sent, generation ran past the budget) and a
+    connection refusal (the endpoint is down / wrong host) were
+    indistinguishable. This names which one happened so the log is diagnosable.
+    """
+    if isinstance(exc, urllib.error.HTTPError):
+        return f"HTTP {exc.code} {exc.reason}"
+    # urllib wraps the real cause in URLError.reason; unwrap to classify it.
+    reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+    if isinstance(reason, (socket.timeout, TimeoutError)):
+        budget = f" after {timeout:g}s" if timeout else ""
+        return (f"read timeout{budget} — endpoint reachable but no response in "
+                f"time (generation likely exceeded the budget)")
+    if isinstance(reason, ConnectionRefusedError):
+        return "connection refused — endpoint down or wrong host/port"
+    if isinstance(reason, ConnectionError):
+        return f"connection error: {reason}"
+    return f"{type(reason).__name__}: {reason}"
 
 
 def _norm_finish_reason(finish_reason: str | None) -> str:
@@ -99,11 +123,7 @@ def call_api_full(
     body = json.dumps(payload).encode("utf-8")
 
     delays = [10, 20, 40]
-    for attempt, delay in enumerate([-1] + delays):
-        if delay >= 0:
-            print(f"\n  [DGX unavailable — waiting {delay}s before retry "
-                  f"{attempt}/{len(delays)}...]", flush=True)
-            time.sleep(delay)
+    for attempt in range(len(delays) + 1):
         try:
             req = urllib.request.Request(
                 url, data=body,
@@ -115,8 +135,16 @@ def call_api_full(
             choice = resp_payload["choices"][0]
             return choice["message"]["content"], _norm_finish_reason(choice.get("finish_reason"))
         except Exception as e:
+            desc = _describe_error(e, request_timeout)
             if _is_retryable(e) and attempt < len(delays):
+                delay = delays[attempt]
+                print(f"\n  [DGX {desc} — waiting {delay}s before retry "
+                      f"{attempt + 1}/{len(delays)}...]", flush=True)
+                time.sleep(delay)
                 continue
+            if attempt > 0:
+                print(f"\n  [DGX {desc} — giving up after {attempt} "
+                      f"retr{'y' if attempt == 1 else 'ies'}]", flush=True)
             raise
 
 

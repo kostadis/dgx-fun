@@ -21,6 +21,17 @@ default:
   max_tokens: 16384        # generous floor; reasoning models can burn a lot
 
 models:
+  "Qwen/Qwen3.5-122B-A10B-FP8":
+    # Cross-box TP=2 on the Spark: ~20 tok/s single-stream, slower under
+    # concurrent load. A full 20k-token completion (pdf-translators' budget)
+    # legitimately needs >10 min. Under heavy batch load (max-num-seqs=35
+    # saturated), a request can wait in vLLM's queue up to ~800s before even
+    # starting, then another ~800s to generate — total >1200s. 1h covers the
+    # worst case without masking true outages (connection errors are immediate).
+    can_think: true
+    thinking_default: false
+    read_timeout: 3600
+
   "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8":
     can_think: true
     thinking_default: false

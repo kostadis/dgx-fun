@@ -3,10 +3,37 @@
 **Current `vllm-chat` model ids** (copy-paste for client configs):
 
 ```
-spark1 (192.168.1.147:8001):  Qwen/Qwen3.5-122B-A10B-FP8  (vllm-2box, TP=2 cross-box, 256K, qwen3_coder tools, qwen3 reasoning)
-spark2 (192.168.1.121:8001):  (Ray WORKER — no independent endpoint; all traffic to spark1:8001)
+spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 128K, hermes tools, no reasoning parser)
+spark2 (192.168.1.121:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, independent endpoint)
+spark2 (192.168.1.121:8000):  Qwen/Qwen3-Embedding-0.6B  (vllm-embed, unchanged)
 ```
 
+> **▶ LIVE (2026-06-20): single-box Qwen3-Next-80B-A3B-Instruct-FP8 on BOTH boxes.**
+> The cross-box `vllm-2box` Qwen3.5-122B TP=2 cluster was torn down on both
+> boxes and replaced with an **independent single-box `vllm-chat`** on each:
+> **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`**, 128K (`--max-model-len 131072`),
+> TP=1, `--gpu-memory-utilization 0.88`, hermes tools, no reasoning parser,
+> image `vllm/vllm-openai:latest`, via `spin-up-vllm-qwen3-next-80b.sh` on each
+> box. **Both endpoints now serve independently** — spark1 `192.168.1.147:8001`
+> AND spark2 `192.168.1.121:8001`. spark2 `vllm-embed` (port 8000,
+> `Qwen/Qwen3-Embedding-0.6B`) kept running throughout. Smoke + generation PASS
+> on both.
+> **Why:** the 122B (10B active) decodes long structured-output render jobs
+> (pdf-translators 5etools-JSON conversion) too slowly — big chapters exceeded
+> the dgxlib `read_timeout` and never completed (retry-from-scratch loop). The
+> 80B-A3B (3B active) decodes ~3x faster and completes the same jobs. A
+> throughput/decode-rate win for long-output render, not a capability change
+> (a 14B rendered the same chunk with 0 validation errors). Side finding:
+> Ollama cannot co-host a model on spark1 while a vLLM chat slot is resident —
+> no GPU memory, it falls back to CPU at ~3 tok/s.
+> **Clients flipped to the new id:** MemPalace `llm_model`, opencode `dgx`
+> default + build agent, llm_wiki custom provider, CampaignGenerator
+> `DGX_DEFAULT_MODEL`.
+> **Revert to cross-box 122B:** `PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh`
+> from the workstation (tear down both single-box `vllm-chat` first).
+>
+> ---
+>
 > **Note (2026-06-11):** spark2 was briefly swapped to **SGLang** as a
 > calibration A/B, then **reverted to vLLM the same day** — SGLang was no
 > serving improvement on GB10 (decode is bandwidth-bound; the tuned
@@ -15,7 +42,7 @@ spark2 (192.168.1.121:8001):  (Ray WORKER — no independent endpoint; all traff
 > reproducible spin-up is `spin-up-sglang-qwen3-next-80b.sh`. **Live state
 > below is vLLM.**
 
-> **⚠️ LIVE (2026-06-10): spark1 now runs the CODER variant —
+> **⚠️ PREV (2026-06-10, superseded): spark1 ran the CODER variant —
 > `Qwen/Qwen3-Coder-Next-FP8` with `--tool-call-parser qwen3_coder` and
 > **no reasoning parser**. spark2 stays on the Instruct variant.**
 > spark1's `vllm-chat` was swapped Thinking-FP8 → Qwen3-Coder-Next-FP8 on
@@ -74,7 +101,7 @@ spark2 (192.168.1.121:8001):  (Ray WORKER — no independent endpoint; all traff
 >
 > ---
 >
-> **▶ LIVE (2026-06-17): cross-box Qwen3.5-122B-FP8 TP=2.**
+> **▶ PREV (2026-06-17, superseded by the 2026-06-20 banner above): cross-box Qwen3.5-122B-FP8 TP=2.**
 > `vllm-2box` (image `local/vllm-ray:26.05`) running on both boxes
 > via `PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh`. Serving
 > **`Qwen/Qwen3.5-122B-A10B-FP8`** at **256K** context
@@ -265,14 +292,14 @@ both pass on a stale IP config.)
 |---:|---|---|
 | 11434 | Ollama (systemd) | LLM serving + **currently the live embeddings path** (`nomic-embed-text`) while vllm-embed is down |
 | 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` — **DOWN** (stopped back during the cross-box experiment, still not restored; embeddings on Ollama 11434. Could now be restored — box is single-box again — but left on Ollama for continuity) |
-| 8001 | vllm-2box (docker) | Chat completions — **`Qwen/Qwen3.5-122B-A10B-FP8`** TP=2 cross-box Ray HEAD, 256K (`--max-model-len 262144`), `qwen3_coder` tools, `qwen3` reasoning parser, gpu-util 0.85, image `local/vllm-ray:26.05`. All client traffic comes here. |
+| 8001 | vllm-chat (docker) | Chat completions — **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** single-box TP=1, 128K (`--max-model-len 131072`), hermes tools, no reasoning parser, gpu-util 0.88, image `vllm/vllm-openai:latest` (2026-06-20 swap from cross-box 122B). Independent endpoint. |
 
 ### spark2 (192.168.1.121)
 
 | port | service | purpose |
 |---:|---|---|
 | 8000 | vllm-embed (docker) | Embeddings — `Qwen/Qwen3-Embedding-0.6B` — 1024-dim, instruction-aware, `--runner pooling --enforce-eager`, gpu-util 0.05, image `local/vllm-ray:26.05` (entrypoint overridden: `--entrypoint ""`), **`--restart unless-stopped`** (always-on). Smoke-tested 2026-06-15: `dim=1024`. |
-| 8001 | vllm-2box (docker) | Ray WORKER for cross-box TP=2 — **no independent endpoint**. All client traffic goes to spark1:8001. Same image (`local/vllm-ray:26.05`), same model (`Qwen/Qwen3.5-122B-A10B-FP8`), tensor-parallel rank 1. |
+| 8001 | vllm-chat (docker) | Chat completions — **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** single-box TP=1, 128K, gpu-util 0.88, image `vllm/vllm-openai:latest` (2026-06-20 swap from cross-box 122B WORKER). **Now an independent endpoint** — clients may target spark2:8001 directly. |
 
 (No Ollama on spark2. Briefly ran SGLang `sglang-chat` on 2026-06-11; reverted to vLLM same day — see the
 note under the LIVE banner.)
@@ -457,7 +484,7 @@ Chat completions + tool calling service. Backs llm_wiki, CampaignGenerator,
 opencode, future chat clients (see `desktop-chat-clients.md`), and any
 code calling `/v1/chat/completions`.
 
-> **LIVE (2026-06-17): this slot is now `vllm-2box`** (cross-box TP=2),
+> **PREV (2026-06-17, superseded 2026-06-20 → single-box 80B): this slot was `vllm-2box`** (cross-box TP=2),
 > brought up by `PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh` on
 > `local/vllm-ray:26.05`. Serving **`Qwen/Qwen3.5-122B-A10B-FP8`**,
 > **256K** context (`--max-model-len 262144`), TP=2, RoCE/IB
@@ -656,7 +683,7 @@ on GB10 (sm_121) is mature enough to realize that.
 
 Cross-box Ray WORKER slot on the second box. No independent endpoint — all client traffic goes to spark1:8001.
 
-> **LIVE (2026-06-17): spark2 is a Ray WORKER** for the cross-box
+> **PREV (2026-06-17, superseded 2026-06-20 → single-box 80B): spark2 was a Ray WORKER** for the cross-box
 > `Qwen/Qwen3.5-122B-A10B-FP8` TP=2 cluster. Container `vllm-2box`,
 > image `local/vllm-ray:26.05`, gpu-util 0.85, RoCE/IB (`rocep1s0f0:1`,
 > GID 3). spark2 `vllm-embed` (port 8000, `Qwen/Qwen3-Embedding-0.6B`)
@@ -859,21 +886,18 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 
 ## 7. Client-side configuration
 
-> **⚠️ LIVE (2026-06-17): spark1:8001 now serves `Qwen/Qwen3.5-122B-A10B-FP8`.**
-> Any client that sends an explicit model id to spark1:8001 — MemPalace
-> `llm_model`, llm_wiki's Model field, CampaignGenerator's `DGX_MODEL`,
-> the opencode `dgx` provider — must send **`Qwen/Qwen3.5-122B-A10B-FP8`**
-> or the call 400s. The live config block (MemPalace) and opencode entry
-> are updated below. The single-box steady-state rebuild target values
-> remain as documented.
+> **⚠️ LIVE (2026-06-20): spark1:8001 AND spark2:8001 serve `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** (single-box on each box).
+> Any client that sends an explicit model id — MemPalace `llm_model`,
+> llm_wiki's custom-provider Model, CampaignGenerator's `DGX_MODEL` /
+> `DGX_DEFAULT_MODEL`, the opencode `dgx` provider — must send
+> **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** or the call 400s. All four were
+> flipped to the 80B id on 2026-06-20 (see the top LIVE banner).
 
 ### MemPalace (`~/.mempalace/config.json` on laptop)
 
-> **⚠️ LIVE (2026-06-17): cross-box Qwen3.5-122B is up.** Update
-> `llm_model` → `Qwen/Qwen3.5-122B-A10B-FP8` before the next mining
-> run or calls will 400. Embeddings remain on Ollama 11434
-> (`nomic-embed-text`, 768-dim) — vllm-embed on spark1 is still down.
-> The live file should be:
+> **⚠️ LIVE (2026-06-20): single-box 80B is up.** `llm_model` was set to
+> `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` (done 2026-06-20). Embeddings are on
+> spark2:8000 (`Qwen/Qwen3-Embedding-0.6B`). The live file should be:
 >
 > ```json
 > {
@@ -881,7 +905,7 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 >   "embedding_model": "nomic-embed-text",
 >   "embedding_endpoint": "http://192.168.1.147:11434",
 >   "llm_endpoint": "http://192.168.1.147:8001",
->   "llm_model": "Qwen/Qwen3.5-122B-A10B-FP8"
+>   "llm_model": "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8"
 > }
 > ```
 
@@ -926,23 +950,23 @@ DGX_MODEL=Qwen/Qwen3-Next-80B-A3B-Instruct-FP8 python session_doc.py ... \
 opencode reads its provider config from
 `~/.config/opencode/opencode.json`.
 
-> **LIVE (2026-06-17):** spark1:8001 now serves `Qwen/Qwen3.5-122B-A10B-FP8`.
-> Flip the top-level `"model"` field to `"dgx/qwen35-122b"` and add the
-> entry below to the `dgx` provider's `models` block. The `qwen3-next-80b`
-> entry remains registered but is no longer the live model on spark1.
+> **LIVE (2026-06-20):** spark1:8001 (and spark2:8001) serve
+> `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`. The top-level `"model"` and the
+> `build` agent model are set to `"dgx/qwen3-next-80b"` (already in the
+> `models` block). The `qwen35-122b` entry below is kept as a dead/history
+> entry — selecting it 400s until a 122B is re-served.
 
-**Current live entry to add/activate:**
+**Current live entry (already registered):**
 ```json
-"qwen35-122b": {
-  "id": "Qwen/Qwen3.5-122B-A10B-FP8",
-  "name": "Qwen3.5 122B A10B FP8 @ 256K (TP=2, qwen3_coder tools, reasoning)",
-  "limit": { "context": 262144, "output": 8192 },
+"qwen3-next-80b": {
+  "id": "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8",
+  "name": "Spark1 (.147) Qwen3-Next 80B A3B Instruct FP8 @ 128K (hybrid attention, tools)",
+  "limit": { "context": 131072, "output": 48192 },
   "tool_call": true,
-  "reasoning": true,
   "temperature": true
 }
 ```
-Top-level `"model"`: `"dgx/qwen35-122b"`
+Top-level `"model"`: `"dgx/qwen3-next-80b"`
 
 The DGX provider's full historical entry set (active default at the time was
 `dgx/qwen3-next-80b`):

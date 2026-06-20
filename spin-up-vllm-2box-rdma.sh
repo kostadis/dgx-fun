@@ -66,7 +66,7 @@ SERVE_FLAGS="--tensor-parallel-size 2 --distributed-executor-backend ray \
   ${MODEL_FLAGS} \
   --enable-auto-tool-choice --trust-remote-code \
   --gpu-memory-utilization 0.70 \
-  --max-num-seqs 35 \
+  --max-num-seqs 60 \
   --host 0.0.0.0 --port ${CHAT_PORT}"
 
 # ---- shared env for both containers ----------------------------------------
