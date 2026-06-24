@@ -1,32 +1,37 @@
 #!/usr/bin/env python3
 """batch_status.py — progress report for a batch_convert.py run.
 
-Reads the batch manifest and reports honest progress toward the *deduped* goal
-(canonical, non-skipped docs), counting only real adventure JSON on disk — NOT
-the per-chunk caches under each `<stem>-responses/` directory. Also shows
-whether the batch is alive and which docs are in flight right now.
+Reads batch_convert's SQLite **state DB** (read-only) and reports honest progress
+toward the *deduped* goal (canonical, non-skipped docs), counting only real
+adventure JSON on disk — NOT the per-chunk caches under each `<stem>-responses/`
+directory. Also shows whether the batch is alive and which docs are in flight.
+
+The state DB is batch_convert's single source of truth — it pulls the
+canonical/dedup decision from rpg-lib's API and records it there, so this tool
+never contacts rpg-lib (or its DB) directly. WAL + read-only mode let us read a
+consistent committed snapshot while a conversion is writing.
 
 Usage:
     python3 batch_status.py                 # one-shot report
     python3 batch_status.py --watch 30      # refresh every 30s, with docs/hr + ETA
-    python3 batch_status.py --fast          # manifest-only (skip the on-disk JSON stat)
-    python3 batch_status.py --manifest X.json
+    python3 batch_status.py --fast          # state-only (skip the on-disk JSON stat)
+    python3 batch_status.py --state-db X.db
 """
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
+import sqlite3
 import subprocess
 import time
 from collections import Counter
 from pathlib import Path
 
 # This tool lives with the DGX throughput experiments but reads the
-# pdf-translators batch manifest. Default to that path; override with --manifest.
-DEFAULT_MANIFEST = Path(
-    "/home/kroussos/src/mytools/pdf-translators/dmsguild-manifest.json"
+# pdf-translators batch state DB. Default to that path; override with --state-db.
+DEFAULT_STATE_DB = Path(
+    "/home/kroussos/src/mytools/pdf-translators/dmsguild-state.db"
 )
 
 
@@ -87,17 +92,32 @@ def _age(seconds: float) -> str:
     return f"{s / 3600:.1f}h ago"
 
 
-def compute(manifest_path: Path, check_disk: bool) -> dict:
-    m = json.loads(manifest_path.read_text())
-    root = Path(m["root"])
-    docs = m["docs"]
-    saved_at = m.get("saved_at", 0)
+def _open_ro(path: Path) -> sqlite3.Connection:
+    """Read-only connection — a consistent WAL snapshot, never blocks the writer."""
+    conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA query_only=ON")
+    return conn
 
-    canonical = {r: v for r, v in docs.items() if v.get("status") != "skipped"}
-    skipped = {r: v for r, v in docs.items() if v.get("status") == "skipped"}
+
+def compute(state_db: Path, check_disk: bool) -> dict:
+    conn = _open_ro(state_db)
+    try:
+        meta = {r["key"]: r["value"]
+                for r in conn.execute("SELECT key, value FROM meta")}
+        rows = conn.execute("SELECT rel, status, reason FROM docs").fetchall()
+    finally:
+        conn.close()
+
+    root = Path(meta.get("root", ""))
+    saved_at = int(meta.get("saved_at", 0) or 0)
+
+    docs = {r["rel"]: {"status": r["status"], "reason": r["reason"]} for r in rows}
+    canonical = {r: v for r, v in docs.items() if v["status"] != "skipped"}
+    skipped = {r: v for r, v in docs.items() if v["status"] == "skipped"}
 
     # Real deliverable = final adventure JSON next to the PDF (never inside a
-    # *-responses/ dir). Prefer disk truth; fall back to manifest 'done' status.
+    # *-responses/ dir). Prefer disk truth; fall back to the state 'done' status.
     def jpath(rel: str) -> Path:
         return (root / rel).with_suffix(".json")
 
@@ -106,14 +126,14 @@ def compute(manifest_path: Path, check_disk: bool) -> dict:
         stale = sum(1 for r in skipped if jpath(r).exists())
         source = "json on disk"
     else:
-        converted = sum(1 for v in canonical.values() if v.get("status") == "done")
+        converted = sum(1 for v in canonical.values() if v["status"] == "done")
         stale = 0
-        source = "manifest status"
+        source = "state db status"
 
-    failed = sum(1 for v in canonical.values() if v.get("status") == "failed")
+    failed = sum(1 for v in canonical.values() if v["status"] == "failed")
     remaining = len(canonical) - converted - failed
 
-    skip_reasons = Counter(v.get("reason", "?") for v in skipped.values())
+    skip_reasons = Counter(v["reason"] or "?" for v in skipped.values())
 
     return {
         "root": root, "saved_at": saved_at,
@@ -129,7 +149,7 @@ def render(st: dict, verbose: bool) -> None:
     now = time.time()
 
     age = _age(now - st["saved_at"]) if st["saved_at"] else "unknown"
-    print(f"Conversion progress   (manifest saved {age})")
+    print(f"Conversion progress   (state saved {age})")
     if running:
         print(f"  batch RUNNING (pid {pid}) — {len(flights)} converter subprocess(es) in flight")
     else:
@@ -170,20 +190,23 @@ def render(st: dict, verbose: bool) -> None:
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    p.add_argument("--state-db", "--manifest", dest="state_db", type=Path,
+                   default=DEFAULT_STATE_DB,
+                   help="batch_convert's SQLite state DB (--manifest is a "
+                        "deprecated alias).")
     p.add_argument("--watch", type=float, metavar="SECONDS", default=None,
                    help="Refresh every SECONDS; show docs/hr and ETA from the delta.")
     p.add_argument("--fast", action="store_true",
-                   help="Manifest-only; skip stat-ing JSON on disk (faster on slow mounts).")
+                   help="State-only; skip stat-ing JSON on disk (faster on slow mounts).")
     p.add_argument("--verbose", action="store_true", help="Break down skip reasons.")
     args = p.parse_args(argv)
 
-    if not args.manifest.exists():
-        print(f"error: manifest not found: {args.manifest}")
+    if not args.state_db.exists():
+        print(f"error: state DB not found: {args.state_db}")
         return 1
 
     if args.watch is None:
-        render(compute(args.manifest, check_disk=not args.fast), args.verbose)
+        render(compute(args.state_db, check_disk=not args.fast), args.verbose)
         return 0
 
     # Watch mode: sample the rate from the converted-count delta.
@@ -191,7 +214,7 @@ def main(argv=None) -> int:
     t0 = time.time()
     try:
         while True:
-            st = compute(args.manifest, check_disk=not args.fast)
+            st = compute(args.state_db, check_disk=not args.fast)
             os.system("clear")
             render(st, args.verbose)
             if first is None:
