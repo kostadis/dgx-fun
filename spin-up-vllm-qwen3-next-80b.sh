@@ -72,7 +72,7 @@
 #                  65536  -> more concurrent slots, less per-session room
 #                  131072 -> default — opencode-friendly
 #                  262144 -> native max; expect 1-2 slots only
-#   MAX_SEQS       --max-num-seqs; default 8. KV pool ~2.47M tokens at
+#   MAX_SEQS       --max-num-seqs; default 16 (throughput config). KV pool ~2.47M tokens at
 #                  128K gives ~18.8x headroom; 8×128K = 1.05M fits with
 #                  ~2.4x headroom. Admission cap only — idle slots cost
 #                  nothing (paged KV).
@@ -94,14 +94,23 @@ source "$(dirname "$0")/lib-vllm-spinup.sh"
 
 QWEN_MODEL="${QWEN_MODEL:-Qwen/Qwen3-Next-80B-A3B-Instruct-FP8}"
 QWEN_PORT="${QWEN_PORT:-8001}"
-GPU_UTIL="${GPU_UTIL:-0.88}"
-MAX_LEN="${MAX_LEN:-131072}"
-MAX_SEQS="${MAX_SEQS:-8}"
+# Defaults 0.80 / 256K are DERIVED, not arbitrary. Before changing GPU_UTIL,
+# MAX_LEN, or MAX_SEQS, read ./gpu-reservation-and-kv-tradeoffs.md — unified
+# memory means the reservation steals host RAM (0.88 wedged the box 2026-06-20),
+# and decode is bandwidth-bound so KV above real concurrency is wasted.
+GPU_UTIL="${GPU_UTIL:-0.80}"
+MAX_LEN="${MAX_LEN:-262144}"
+MAX_SEQS="${MAX_SEQS:-16}"
 KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 TOOL_PARSER="${TOOL_PARSER:-hermes}"
 REASONING_PARSER="${REASONING_PARSER:-}"
 CONTAINER_NAME="vllm-chat"
-IMAGE="vllm/vllm-openai:latest"
+# Pin to the GB10-proven 0.22.0 by default — the documented FLOOR for Qwen3-Next
+# (fixes #40880 degenerate-output-under-CUDA-graph, which 0.21.0 hits with SILENT
+# garbage). The box's cached :latest is stale at 0.21.0, so an unpinned run lands
+# below the floor without warning. Override IMAGE=... to test a newer tag. Matches
+# spin-up-vllm-qwen3-next-80b-mtp.sh so both builds run the same vLLM version.
+IMAGE="${IMAGE:-vllm/vllm-openai:v0.22.0-aarch64}"
 
 qwen3_next_failure_hints() {
     cat <<'EOF'

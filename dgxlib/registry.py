@@ -28,12 +28,26 @@ class ModelConfig:
     """Resolved request behavior for one (model, call-intent) pair.
 
     ``extra_body`` is merged into the OpenAI-compatible request body (vLLM reads
-    ``chat_template_kwargs``); ``read_timeout`` and ``max_tokens`` are applied by
-    the caller's transport.
+    ``chat_template_kwargs``); the timeouts and ``max_tokens`` are applied by the
+    caller's transport.
+
+    Two timeout knobs, because the streaming client measures *progress*, not
+    total wall-clock:
+
+    - ``read_timeout`` — legacy total-response budget. Retained for back-compat
+      and as the default source for ``idle_timeout``.
+    - ``idle_timeout`` — the streaming socket budget: the max seconds to wait for
+      the *next* token (and for the first token / queue admission). A healthy
+      generation streams continuously and never trips it however slow it is
+      overall; a stalled or over-queued slot produces no bytes and trips it fast.
+      Defaults to ``read_timeout`` when a model doesn't set it, so switching to
+      streaming changes the *meaning* of the existing budget (total → inter-token)
+      without changing its value. Set a smaller value to fail dead slots faster.
     """
 
     extra_body: dict = field(default_factory=dict)
     read_timeout: float = 300.0
+    idle_timeout: float = 300.0
     max_tokens: int | None = 16384
 
 
@@ -117,8 +131,15 @@ def resolve_model_config(
         # template would reject (or ignore) chat_template_kwargs.
         extra_body["chat_template_kwargs"] = {"enable_thinking": effective_thinking}
 
+    read_timeout = float(s.get("read_timeout", 300))
+    # idle_timeout defaults to read_timeout: with streaming, the same number now
+    # means "no token for this long" instead of "no full response for this long",
+    # so an unset model keeps its old budget but stops killing slow-but-working
+    # generations. A model sets idle_timeout explicitly to fail dead slots faster.
+    idle_timeout = float(s.get("idle_timeout", read_timeout))
     return ModelConfig(
         extra_body=extra_body,
-        read_timeout=float(s.get("read_timeout", 300)),
+        read_timeout=read_timeout,
+        idle_timeout=idle_timeout,
         max_tokens=max_tokens if max_tokens is not None else s.get("max_tokens", 16384),
     )
