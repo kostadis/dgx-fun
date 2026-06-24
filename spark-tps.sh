@@ -11,9 +11,14 @@
 # elapsed wall-clock between samples (so it self-corrects if a poll is slow).
 # "running" / "waiting" are the live vllm:num_requests_{running,waiting} gauges.
 #
-# Usage:  ./spark-tps.sh            # both boxes, refresh every 1s
+# Usage:  ./spark-tps.sh            # both boxes, refresh every 1s (in-place)
 #         INTERVAL=2 ./spark-tps.sh # custom refresh
 #         ./spark-tps.sh --once     # single sample line (no rates), for scripts
+#         ./spark-tps.sh --scroll   # append a new row each tick, one column per Spark
+#
+# In --scroll mode the display does not overwrite itself: every tick prints a
+# fresh row that scrolls up, with each Spark rendered as its own column and a
+# leading clock column. Good for keeping a scrollback history / piping to a log.
 #
 # Targets the vllm-chat slot on :8001. Edit BOXES below if ports/IPs change.
 
@@ -49,7 +54,11 @@ declare -a PREV_GEN PREV_T
 for i in "${!BOXES[@]}"; do PREV_GEN[$i]=""; PREV_T[$i]=""; done
 
 once_mode=0
-[[ "${1:-}" == "--once" ]] && once_mode=1
+scroll_mode=0
+case "${1:-}" in
+  --once)   once_mode=1 ;;
+  --scroll) scroll_mode=1 ;;
+esac
 
 # Exit cleanly on Ctrl-C / SIGTERM (don't leave the cursor parked mid-redraw).
 trap 'printf "\n"; exit 0' INT TERM
@@ -58,9 +67,25 @@ trap 'printf "\n"; exit 0' INT TERM
 N=${#BOXES[@]}
 first=1
 
+# Per-box column width for --scroll mode (each cell, excluding the separator).
+CELL_W=24
+
+# Print the scroll-mode header row once (clock column + one column per box).
+print_scroll_header() {
+  printf '%-8s' "time"
+  for i in "${!BOXES[@]}"; do
+    IFS='|' read -r name hostport <<<"${BOXES[$i]}"
+    printf ' │ %-*s' "$CELL_W" "$name (${hostport%%:*})"
+  done
+  printf '\n'
+}
+
+[[ $scroll_mode -eq 1 ]] && print_scroll_header
+
 while :; do
   # Collect this round's lines into an array, then print as a block.
   declare -a LINES=()
+  declare -a CELLS=()
   t_now=$(now)
 
   for i in "${!BOXES[@]}"; do
@@ -69,6 +94,7 @@ while :; do
 
     if [[ "$gen" == "-" ]]; then
       LINES+=("$(printf '%-7s (%-15s)   %s' "$name" "${hostport%%:*}" "DOWN / unreachable")")
+      CELLS+=("$(printf '%-*s' "$CELL_W" "DOWN")")
       PREV_GEN[$i]=""; PREV_T[$i]="$t_now"
       continue
     fi
@@ -83,11 +109,21 @@ while :; do
 
     LINES+=("$(printf '%-7s (%-15s)  %8s tok/s   %2s running   %2s waiting' \
       "$name" "${hostport%%:*}" "$rate" "$run" "$wait")")
+    CELLS+=("$(printf '%8s t/s %2sr %2sw' "$rate" "$run" "$wait")")
   done
 
   if [[ $once_mode -eq 1 ]]; then
     printf '%s\n' "${LINES[@]}"
     break
+  fi
+
+  if [[ $scroll_mode -eq 1 ]]; then
+    # Append one row: leading clock column, then each box as a column.
+    printf '%-8s' "$(date +%H:%M:%S)"
+    for cell in "${CELLS[@]}"; do printf ' │ %-*s' "$CELL_W" "$cell"; done
+    printf '\n'
+    sleep "$INTERVAL"
+    continue
   fi
 
   # Redraw block in place after the first paint.
