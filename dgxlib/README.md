@@ -29,12 +29,13 @@ Per-model request behavior, keyed by the exact model id vLLM advertises
 registry stores capability and a default; the *call site* decides intent.
 
 ```yaml
-default:        { can_think: false, thinking_default: false, read_timeout: 300, max_tokens: 16384 }
+default:        { can_think: false, thinking_default: false, read_timeout: 300, idle_timeout: 120, max_tokens: 16384 }
 models:
   "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8":
     can_think: true            # reasoning-capable
     thinking_default: false    # off unless the call asks
-    read_timeout: 600
+    read_timeout: 600          # legacy total-response budget (back-compat)
+    idle_timeout: 120          # streaming: max seconds with no token -> fail fast
   "Qwen/Qwen2.5-14B-Instruct-AWQ":
     can_think: false           # no thinking template → forced off
 match:                         # prefix fallbacks (longest wins) for unlisted ids
@@ -59,7 +60,7 @@ import dgxlib
 cfg = dgxlib.resolve_model_config(
     "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8", thinking=True)
 # cfg.extra_body  -> {"chat_template_kwargs": {"enable_thinking": True}}
-# cfg.read_timeout, cfg.max_tokens
+# cfg.read_timeout (legacy total budget), cfg.idle_timeout (streaming inter-token budget), cfg.max_tokens
 
 served = dgxlib.discover_model("http://192.168.1.147:8001/v1")  # read id from /v1/models
 ```

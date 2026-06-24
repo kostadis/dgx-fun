@@ -20,7 +20,7 @@ transports*, and that difference is load-bearing:
 |---|---|---|
 | Surface | plain functions mirroring a `claudelib` | an **anthropic-SDK facade** (`client.messages.stream(...).text_stream`) |
 | Deps | stdlib `urllib` only | `openai` SDK + `httpx` |
-| Streaming | no | yes (its whole pipeline depends on it) |
+| Streaming | yes (SSE; the read timeout is an inter-token *idle* budget) | yes (its whole pipeline depends on it) |
 | Uses dgxlib as | **the whole client** | **only the behavior layer**, applied in its own client |
 
 So the split is: **shared = the behavior layer (registry + discovery) + a plain
@@ -106,5 +106,7 @@ config — the registry is.
 - **Per-agent profiles**: only per-model + per-call intent today. Named profiles
   ("extraction" vs "synthesis") are a plausible later generalization of the
   per-call axis, not built yet.
-- The retry *predicate*, streaming, tool use, and vision stay in the consumers'
-  transports — out of scope for the shared layer.
+- Tool use and vision stay in the consumers' transports — out of scope for the
+  shared layer. The plain client now streams (SSE) and owns its own retry
+  predicate (`_is_retryable`: idle timeouts non-retryable, connection errors
+  retryable); CG still supplies its own transport-level streaming and retry.
