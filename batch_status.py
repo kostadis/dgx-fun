@@ -53,14 +53,24 @@ def driver_running() -> tuple[bool, str | None]:
 
 
 def inflight_docs() -> list[tuple[str, str]]:
-    """(pdf_basename, endpoint) for each live converter subprocess."""
+    """(pdf_path, endpoint) for each live converter subprocess."""
     docs = []
     for ln in _pgrep(r"pdf_to_5etools_v2\.py"):
         mp = re.search(r"pdf_to_5etools_v2\.py\s+(.+?)\s+--provider", ln)
         me = re.search(r"--endpoint\s+(\S+)", ln)
         if mp:
-            docs.append((os.path.basename(mp.group(1)), me.group(1) if me else "?"))
+            docs.append((mp.group(1), me.group(1) if me else "?"))
     return docs
+
+
+def chunk_count(pdf_path: str) -> int:
+    """JSON chunks the converter has produced so far for this doc — the
+    `*-parsed.json` files in its `<stem>-responses/` dir. 0 if not started."""
+    p = Path(pdf_path)
+    rdir = p.parent / f"{p.stem}-responses"
+    if not rdir.is_dir():
+        return 0
+    return sum(1 for _ in rdir.glob("*-parsed.json"))
 
 
 def _bar(frac: float, width: int = 24) -> str:
@@ -143,14 +153,18 @@ def render(st: dict, verbose: bool) -> None:
     print()
 
     if flights:
-        print("  In flight now:")
-        by_ep: dict[str, list[str]] = {}
-        for name, ep in flights:
-            by_ep.setdefault(ep, []).append(name)
+        total_chunks = 0
+        by_ep: dict[str, list[tuple[str, int]]] = {}
+        for pdf_path, ep in flights:
+            n = chunk_count(pdf_path)
+            total_chunks += n
+            by_ep.setdefault(ep, []).append((os.path.basename(pdf_path), n))
+        print(f"  In flight now ({total_chunks} json chunks done across "
+              f"{len(flights)} docs):")
         for ep in sorted(by_ep):
             print(f"    {ep}")
-            for name in by_ep[ep]:
-                print(f"      - {name}")
+            for name, n in by_ep[ep]:
+                print(f"      {n:>4} chunks  {name}")
 
 
 def main(argv=None) -> int:
