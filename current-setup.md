@@ -3,13 +3,136 @@
 **Current `vllm-chat` model ids** (copy-paste for client configs):
 
 ```
-spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 16, NO spec decode (plain), default chunked prefill, vLLM 0.22.0)  ← THROUGHPUT
-spark2 (192.168.1.121:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 16, NO spec decode (plain), default chunked prefill, vLLM 0.22.0)  ← THROUGHPUT (matches spark1)
-spark2 (192.168.1.121:8000):  Qwen/Qwen3-Embedding-0.6B  (vllm-embed, unchanged)
+spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 3, MTP-2 spec decode (qwen3_next_mtp) + APC PREFIX CACHING ON (Mamba 'align' mode), chunked prefill 40K, fp8 KV, vLLM 0.22.0)  ← LATENCY (MTP) + APC / production
+spark2 (192.168.1.121:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 3, MTP-2 spec decode (qwen3_next_mtp) + APC PREFIX CACHING ON (Mamba 'align' mode), chunked prefill 40K, fp8 KV, vLLM 0.22.0)  ← EXPERIMENT (APC + MTP), see LIVE banner
+spark2 (192.168.1.121:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — unloads after 5 min idle; was vllm-embed on port 8000 until 2026-06-30)
 ```
-> **ctx = total context per request (prompt + generation), i.e. `--max-model-len`.** Both boxes 256K, both now on the plain build with vLLM's default chunked prefill (no `--max-num-batched-tokens` pin). The earlier no-chunked-prefill-at-256K attempt wedged spark2's host twice — default chunked prefill bounds the warmup batch and avoids that.
+> **ctx = total context per request (prompt + generation), i.e. `--max-model-len`.** **BOTH boxes now run the MTP-2 latency build + APC prefix caching** (`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`, `--enable-prefix-caching`, `--max-num-seqs 3`, chunked prefill pinned at `--max-num-batched-tokens 40960`). MTP draft acceptance ~77% on a hard code prompt / higher on prose (APC does not degrade it — measured); APC gives ~5–10× TTFT on a re-sent prefix. **spark2 was the test bed and spark1 (production) now matches it** — see the LIVE banner immediately below.
 
-> **▶ LIVE (2026-06-23, latest): BOTH boxes on the THROUGHPUT config (plain, NO spec decode, seqs 16). A/B concluded — throughput config won (+47%); spark2 moved to match spark1 to serve a batch document-conversion job.**
+> **▶ LIVE (2026-07-02): spark1 powercycled overnight and came back with `vllm-chat` DEAD (`Exited (255)` — the container had no restart policy). Relaunched on the unchanged APC+MTP config, and the failure class is FIXED: `vllm-chat` now runs `--restart unless-stopped` on BOTH boxes.**
+> - **Relaunch:** `PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh` (deployed script verified byte-identical to the repo copy first). Config, served id, and client wiring all unchanged — **the 2026-07-01 banner below remains the accurate description of what both boxes serve.** spark2 was verified healthy throughout the incident (chat + embed answering).
+> - **Auto-restart fix:** applied `docker update --restart unless-stopped vllm-chat` to the live containers on spark1 AND spark2 (no container restart needed), and both spin-up scripts (`spin-up-vllm-qwen3-next-80b.sh`, `spin-up-vllm-qwen3-next-80b-mtp.sh`) now default `RESTART_POLICY=unless-stopped` and pass `--restart` (updated copies pushed to both boxes). A reboot/powercycle now brings the chat slot back automatically (~5–10 min weight reload + compile before it answers). `docker stop`/`docker rm -f` still stick — a manually stopped container stays stopped — so the swap scripts and experiments behave exactly as before.
+> - **Gotcha to remember:** an auto-restarted container comes back with its ORIGINAL flags — fine today (both boxes run the production config), but if a box reboots mid-experiment, the *experiment* comes back, not production. Ollama (spark2 embed) already auto-starts via systemd, unchanged.
+>
+> ---
+>
+> **▶ PREV (2026-07-01 — CONFIG STILL LIVE, see banner above): APC PREFIX CACHING enabled on BOTH boxes' MTP-2 `Qwen3-Next-80B-A3B-Instruct-FP8`. Validated on spark2 (DFlash Coder-30B → this) first, then rolled onto spark1 production. Agent-loop/TTFT win.**
+> The question: does vLLM's automatic prefix caching engage on the HYBRID Qwen3-Next (Gated DeltaNet/Mamba + sparse full-attn), where the GDN layers carry recurrent state, not radix-cacheable KV blocks — and can it coexist with MTP spec decode? Both answered **YES** (measured, not reasoned).
+> - **APC engages via experimental Mamba 'align' mode.** vLLM 0.22.0 accepts `--enable-prefix-caching` on `Qwen3NextForCausalLM` and auto-logs *"Mamba cache mode is set to 'align' ... support for Mamba layers is experimental."* Ported the `PREFIX_CACHING=1` knob into `spin-up-vllm-qwen3-next-80b-mtp.sh` (it previously only existed on the plain `spin-up-vllm-qwen3-next-80b.sh`).
+> - **Measured — APC (fixed ~7k-token prefix, resent):** APC-only build → cold TTFT **5.94s / 0 hits** → warm **0.57s / 6432 prefix-cache hits (~92% of the prefix)**, **~10× TTFT** (repeat-controlled: on a 2nd run even request A was warm, so it's caching, not first-inference warmup). APC **+ MTP-2** build → warm run **~5520 hits (~79%), TTFT ~6.7s→~1.0s**; the *hit count going 0→5520* is the unambiguous proof (the exact TTFT ratio is looser here — fresh container, not repeat-controlled). Hit rates are approximate (block-alignment varies).
+> - **Measured — MTP is NOT degraded by APC (clean same-prompt A/B, 300-tok code-gen, temp 0):** run *before* the spark1 rollout, with spark1 as the MTP-only control — spark2 (APC+MTP) **76.1% per-token accept, 2.52 tok/backbone-step** vs spark1 (MTP-only) **77.1%, 2.54** — within noise, so **APC and MTP compose (prefill win + decode win, no trade)**. That result is what justified enabling APC on spark1 too. (Both sit below the doc's headline 95–99% because acceptance is prompt-dependent — this code prompt is just harder to draft; the A/B controls for it by using one prompt on both boxes.) Output coherent throughout (no #36872 gibberish). APC is a **prefill/TTFT win only** — the exact axis the read-heavy / agent-loop workload cares about, complementary to MTP's decode win.
+> - **KV cost (APC + MTP @ 256K):** spark1 pool **1,002,438 tok / 3.82×**, spark2 pool **927,989 tok / 3.54×** (spark1 slightly roomier — no embed sidecar). Both down from the plain build's ~6.5× (drafter + Mamba align cache both consume memory) — fine at seqs 3, watch if concurrency rises. APC-only (no MTP) was **6.43×**, so most of the drop is the MTP drafter, not APC.
+> - **Corrects the earlier "prefix caching left OFF / not pursued" note** (2026-06-20, below): on 0.22.0 it works on this hybrid. Served id unchanged (`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`), so no client repoint; `dgxlib/models.yaml` unchanged (APC changes prefill speed, not how the model is *called*).
+> - **spark1 rollout verified 2026-07-01:** APC probe warm **5520 hits / TTFT 0.578s**, coherent (*"The ocean stretches endlessly beneath the horizon..."*). ~10 min restart; clients (MemPalace, llm_wiki, CampaignGenerator, opencode) reconnected on the unchanged id.
+> **Revert a box to bare production MTP-2 80B (no APC):** `ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'` (spark1) / `ssh spark2 '…'` (spark2).
+> **Re-run this (APC + MTP), either box:** `PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh`.
+> **Re-run the DFlash experiment (spark2):** `ssh spark2 'bash ~/spin-up-vllm-qwen3-coder-30b-a3b-dflash.sh'` (weights cached, ~9 min).
+>
+> ---
+>
+> **▶ PREV (2026-06-30): spark2 swapped to a DFlash speculative-decoding EXPERIMENT — `Qwen3-Coder-30B-A3B-Instruct` + `z-lab/Qwen3-Coder-30B-A3B-DFlash`. spark1 untouched (still production MTP-2 80B).**
+> DFlash (UC San Diego, Feb 2026, `z-lab/dflash`) drafts a whole BLOCK of up to N future tokens in one non-causal diffusion forward pass, verified by the target in a single batched pass — a higher per-step ceiling than MTP's 1-2 token autoregressive draft. Tried via `spin-up-vllm-qwen3-coder-30b-a3b-dflash.sh` / `spin-up-vllm-qwen3-coder-next-dflash.sh` (both new in this repo).
+> - **CONFIRMED: `vllm/vllm-openai:v0.22.0-aarch64` (already cached on both boxes) ships DFlash natively** — no git clone, no pip install, no image rebuild, no vLLM downgrade. Select via `--speculative-config '{"method":"dflash","model":"<drafter-id>","num_speculative_tokens":N}'`.
+> - **HARD CONSTRAINT — fp8 KV cache is incompatible with DFlash on this vLLM build.** The drafter needs a non-causal attention backend; FlashAttention is the only backend that supports non-causal at all, but it rejects fp8 KV specifically. Every other backend (FlashInfer, Triton, FlexAttention, TurboQuant) fails the non-causal check outright regardless of KV dtype. Net: engine init hard-fails ("No valid attention backend found for cuda") unless `--kv-cache-dtype auto` (bf16). Must also set `VLLM_ATTENTION_BACKEND=FLASH_ATTN` (env var — not a `vllm serve` CLI flag on this build).
+> - **HARD CONSTRAINT — DFlash/EAGLE3 does NOT work on the Qwen3-Next hybrid family (Gated DeltaNet).** Tried pairing `Qwen3-Coder-Next-FP8` with `z-lab/Qwen3-Coder-Next-DFlash`: crashed with `RuntimeError: Model does not support EAGLE3 interface`. Traced to source: `Qwen3NextForCausalLM`'s actual base classes are `nn.Module, HasInnerState, SupportsLoRA, SupportsPP, QwenNextMixtureOfExperts, IsHybrid` — no `SupportsEagle`/`SupportsEagle3` mixin at all, on either plain or coder variant. By the same code trace, **Qwen3.5-122B-A10B (served via the multimodal `Qwen3_5MoeForConditionalGeneration` wrapper) would almost certainly hit the identical failure** despite its inner text backbone (`Qwen3_5ForCausalLMBase`) technically implementing `SupportsEagle3` and despite an official `z-lab/Qwen3.5-122B-A10B-DFlash` checkpoint existing — vLLM's `supports_eagle3()` check is a plain `isinstance()` on the top-level served model object with no multimodal unwrapping, and the wrapper class doesn't inherit/delegate the required aux-hidden-state methods. **Not empirically tested** (would require reviving the torn-down 2-box RDMA cluster) — reasoned from source, not measured.
+>   - **Conclusion: DFlash only works on this box's plain dense/MoE `Qwen3ForCausalLM`/`Qwen3MoeForCausalLM` family.** Every hybrid Qwen3-Next-derived model actually in production or recently deployed here (Qwen3-Next-80B, Qwen3-Coder-Next, and by inference Qwen3.5-122B) is blocked. This vLLM version's native MTP head (`qwen3_next_mtp`, already deployed on both boxes) is the correct/only spec-decode path for that family.
+> - **Measured on `Qwen3-Coder-30B-A3B-Instruct` (works — plain `Qwen3MoeForCausalLM`, 48 full-attention layers, no hybrid layers):** ~28.4 tok/s on a 300-token code-gen response (10.6s wall). Real draft-acceptance samples from logs: mean accept length 3.5–6.1 tokens per verify step (max 15), accept rate 16–34%, per-position acceptance decaying from ~89% at position 1 to ~12–24% by position 15 — DFlash's mechanism is genuinely working. Headline tok/s still trails spark1's FP8 MTP-2 80B (~49 tok/s) because this target is **BF16 only** (no FP8 checkpoint exists) — decode is bandwidth-bound, so BF16 pays ~2× the bytes/token vs FP8, a confound separate from DFlash itself. A same-precision non-spec baseline run would be needed to isolate DFlash's true multiplier.
+> - **KV pool measured tight:** 322,928 tokens total, only **1.23× concurrency at full 262,144 (256K)** — this is a full-attention MoE (every one of 48 layers carries KV), unlike the hybrid 80B's ~9.6× headroom. Don't push `MAX_SEQS` up without checking `docker logs vllm-chat | grep "GPU KV cache size"` first.
+> - **⚠️ CLIENT IMPACT — spark2 IS client-facing** (correction 2026-06-30: this doc previously assumed spark2 was sandbox-only — wrong). spark2's served model id changed from `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` to `Qwen/Qwen3-Coder-30B-A3B-Instruct` for the duration of this experiment — any client pointed at spark2:8001 expecting the production 80B id will 404 or get a different model's behavior until reverted. Which client(s) specifically point at spark2 is being tracked outside this doc (Kostadis managing directly) — **treat spark2 as production-adjacent, not a free sandbox, until that's resolved.** `dgxlib/models.yaml` NOT updated for this experiment id — verify whether it needs to be before leaving this running long-term.
+> **Revert spark2 to production MTP-2 Qwen3-Next-80B:** `ssh spark2 'bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
+> **Re-run this experiment:** `ssh spark2 'bash ~/spin-up-vllm-qwen3-coder-30b-a3b-dflash.sh'` (weights now cached, ~9 min instead of ~25 min fresh pull).
+>
+> ---
+>
+> **▶ PREV (2026-06-29): BOTH boxes swapped THROUGHPUT (plain, seqs 16) → LATENCY (MTP-2 spec decode, seqs 3) via `spin-up-vllm-qwen3-next-80b-mtp.sh`.**
+> Rationale: the +47% throughput A/B (2026-06-23) was for the concurrent batch document-conversion job; the current use is **low-concurrency background serving** (run it as a background task, do other things on the box), where MTP single-stream speedup wins. Both chat slots now: `Qwen3-Next-80B-A3B-Instruct-FP8`, **`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`**, **`--max-num-seqs 3`**, **util 0.80**, 256K, fp8 KV, `--max-num-batched-tokens 40960`, hermes, vLLM 0.22.0, image `vllm/vllm-openai:v0.22.0-aarch64`.
+> - **Measured:** draft acceptance **~95–99%** (mean accept length ~2.95 of 3), ~49 tok/s single-stream decode. Host headroom: spark1 **~14 GB**, spark2 **~8–10 GB** (fresh boot).
+> - **spark2 raised 0.70 → 0.80:** MTP's KV floor needs it — at 0.70 the 256K KV check fails to allocate even one request (`estimated maximum model length 15456`). 0.80 gives ~12 GiB KV (~3.5× full-256K seqs).
+> - **spark2 rebooted 2026-06-29** (host-RAM wedge: embed sidecar + MTP-0.80 crept to ~6 GB host over 2 days; on reboot only `vllm-embed` auto-restarted, `vllm-chat` relaunched manually). Restart: `ssh spark2 'MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
+> - **spark2 kernel panic 2026-06-30** (hard crash, no OOM in kern.log — silent between 15:00 and 18:03; root cause unknown, likely GPU/memory pressure under unified memory). Box manually rebooted at 18:03.
+> - **vllm-embed removed 2026-06-30:** `vllm-embed` (port 8000, util 0.05, always-on) replaced by Ollama `qwen3-embedding:0.6b` on port 11434 (lazy-load, unloads after 5 min idle). This frees the ~6 GB GPU reservation permanently and gives spark2 headroom matching spark1 (~14 GB host available with just vllm-chat). Embed endpoint changed: `spark2:8000` → `spark2:11434`, model id `Qwen/Qwen3-Embedding-0.6B` → `qwen3-embedding:0.6b`.
+> - **`dgxlib/models.yaml` unchanged:** served id is identical and MTP changes how fast it decodes, not how it's *called* (thinking default + timeouts unchanged).
+>
+> **Revert both boxes to THROUGHPUT (plain, seqs 16):** `ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'` and `ssh spark2 'GPU_UTIL=0.70 bash ~/spin-up-vllm-qwen3-next-80b.sh'`.
+
+> **▶ PREV (2026-06-25): spark1 `vllm-chat` REVERTED `inclusionAI/Ling-lite` → `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`. Both boxes are back on the production 80B; the Ling experiment is torn down.**
+> The Ling-lite throughput experiment (banner below) concluded; spark1 was
+> restored to the production model via `ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'`.
+> - **Verified:** `/v1/models` = `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`,
+>   `max_model_len 262144`; smoke returns "OK"; vLLM 0.22.0, util 0.80, seqs 16,
+>   fp8 KV, hermes tools — the documented spark1 throughput config. Warm restart
+>   (~10 min: cached weights, shard load + torch.compile).
+> - **Clients pinned to the 80B id work against spark1 again** (MemPalace,
+>   llm_wiki, CampaignGenerator, opencode — no repoint needed).
+> - **Kept for re-runs:** `spin-up-vllm-ling-lite.sh` (the experiment script,
+>   32K caveat baked in), the `inclusionAI/Ling-lite` `dgxlib/models.yaml` entry
+>   (inert while not served), and the `ling-ab-slice/` test slice + A/B commands.
+> **Re-run the Ling experiment:** `ssh spark 'bash ~/spin-up-vllm-ling-lite.sh'`.
+>
+> ---
+>
+> **▶ PREV (2026-06-25, superseded by the revert above): spark1 `vllm-chat` SWAPPED Qwen3-Next-80B → `inclusionAI/Ling-lite` — a fewer-active-MoE EXPERIMENT for the pdf-translators batch job.**
+> Ling-lite is a 16.8B-total / **~2.75B-active** full-attention MoE (vs the 80B's
+> ~3B active), serving on spark1:8001 via `spin-up-vllm-ling-lite.sh`. **BF16
+> weights** (~32 GB; no FP8 checkpoint exists for this 1.0 build), **fp8 KV**,
+> **util 0.75**, **seqs 16**, **NO tool-call parser** (plain chat — bailing_moe
+> has no vLLM tool parser, and the render job doesn't need one), image
+> `vllm/vllm-openai:v0.22.0-aarch64`.
+> - **Served at 32K context (`--max-model-len 32768`), NOT 128K.** The model
+>   card advertises 128K but this default-branch checkpoint's config caps
+>   `max_position_embeddings=32768`; the 128K needs YaRN rope-scaling that isn't
+>   enabled. Forcing it (`VLLM_ALLOW_LONG_MAX_MODEL_LEN=1`) on a RoPE model
+>   yields NaN/OOB past 32K — don't.
+> - **Verified:** arch `BailingMoeForCausalLM` resolved on the aarch64 image;
+>   `Application startup complete`; coherent generation (*"The ocean is a vast,
+>   interconnected body of saltwater that covers more than 70% of the Earth's
+>   surface."*), `reasoning:null`, **no `<think>` leak** (Ling is the non-thinking
+>   line; Ring is its reasoning sibling). KV pool **11.37M tokens → 347× @ 32K**
+>   (tiny weights leave a huge pool; KV is NOT the bound here). Host RAM healthy
+>   at **24 GB available**.
+> - **Why:** decode+prefill scale with *active* params; 2.75B < 3B, so Ling is a
+>   touch faster per token. The bet is throughput; the risk is quality
+>   (~Qwen2.5-7B-Instruct tier, well below the 80B). **Safe to try only because
+>   the pdf-translator has a HARD validator gate** (`validate_adventure.py`) —
+>   judge it on validated-docs/hour, not tok/s.
+> - **⚠️ CLIENT IMPACT:** spark1's served id changed, so clients pinned to
+>   `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` (MemPalace `llm_model`, opencode `dgx`
+>   default, llm_wiki provider, CampaignGenerator `DGX_DEFAULT_MODEL` — see §6)
+>   now 404 against spark1 until repointed or pointed at spark2 (still the 80B).
+>   Tool-calling clients (opencode) won't work against Ling (no parser).
+> - **⚠️ BATCH-JOB IMPACT:** `batch_convert.py` defaults assume spark1 is the
+>   large-context box (`--spark1-ctx 262144`, `--prompt-cap 40000 +
+>   --output-cap 80000 = 120K`). Ling at 32K can't hold that — you MUST run
+>   Ling with caps summing under 32768, or point the job at spark2 for big docs.
+>   `dgxlib/models.yaml` updated (new `inclusionAI/Ling-lite` entry, 32K note).
+> **Revert spark1 to the production 80B:** `ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b.sh'`.
+>
+> ---
+>
+> **▶ PREV (2026-06-24): spark2 `vllm-chat` dropped to `--gpu-memory-utilization 0.70` (was 0.80) for host-RAM headroom. Config otherwise unchanged (throughput: plain, seqs 16, 256K, fp8 KV, hermes, vLLM 0.22.0).**
+> Context: after spark2 rebooted (only the `--restart unless-stopped` embed
+> sidecar came back; the chat slot doesn't auto-restart), `vllm-chat` was
+> brought back at 0.80 and idle host RAM was only **9 GB available / 1 GB free**
+> — at the documented "drop to seqs 8 or util 0.78" edge, because spark2 also
+> carries the `vllm-embed` sidecar. Re-run at **0.70** via
+> `MAX_LEN=262144 GPU_UTIL=0.70 MAX_SEQS=16 bash ~/spin-up-vllm-qwen3-next-80b.sh`.
+> - **Measured @ 0.70:** `speculative_config=None`, seqs 16, fp8 KV,
+>   max_model_len 262144. **GPU KV pool 723,010 tok → 2.76× @ 256K** (was 1.84M
+>   / 7.0× at 0.80). Host RAM recovered **9 GB → 23 GB available** (~13 GB
+>   reservation freed). Verified serving the batch doc-conversion job at
+>   16 running reqs, ~187 tok/s aggregate.
+> - **Tradeoff:** 0.70 trades KV concurrency (7.0× → 2.76× at full 256K) for
+>   host headroom. Fine for the batch job (chapters are far short of 256K, and
+>   bandwidth — not KV — bounds decode here); if many concurrent requests each
+>   want huge contexts, vLLM will queue past the 2.76× full-length ceiling.
+> - **spark1 stays at 0.80** (no embed sidecar → more host headroom; the two
+>   boxes' chat util now differs by design).
+> - **No client config change**; `dgxlib/models.yaml` unchanged.
+> **Revert spark2 to 0.80:** `MAX_LEN=262144 GPU_UTIL=0.80 MAX_SEQS=16 bash ~/spin-up-vllm-qwen3-next-80b.sh`.
+>
+> ---
+>
+> **▶ PREV (2026-06-23, latest): BOTH boxes on the THROUGHPUT config (plain, NO spec decode, seqs 16). A/B concluded — throughput config won (+47%); spark2 moved to match spark1 to serve a batch document-conversion job.**
 > spark2's `vllm-chat` was swapped MTP-2/seqs-4 → **plain (no `--speculative-config`),
 > `--max-num-seqs 16`** via `spin-up-vllm-qwen3-next-80b.sh` (`IMAGE`
 > `v0.22.0-aarch64`, 256K, util 0.80, fp8 KV, hermes), so both boxes are now
@@ -256,22 +379,23 @@ spark2 (192.168.1.121:8000):  Qwen/Qwen3-Embedding-0.6B  (vllm-embed, unchanged)
 > spark2 `vllm-embed` (port 8000, `Qwen/Qwen3-Embedding-0.6B`) kept
 > running throughout — unaffected.
 
+**⚠ Superseded by the LIVE banner at the top of this doc (2026-07-01): spark2 is currently the MTP-2 80B *plus* APC prefix caching (agent-loop experiment), NOT the bare config described below and NOT the DFlash Coder-30B.** spark1 is unaffected — the snapshot below is still accurate for spark1.
+
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-06-23 (single-box Qwen3-Next-80B-A3B-Instruct-FP8 on each at
-util 0.80, both @ 256K on vLLM 0.22.0, **both now on the THROUGHPUT config**
-(plain, no spec decode, seqs 16) after the A/B concluded — see top LIVE
-banner. spark2 also runs the `vllm-embed` sidecar (port 8000); spark1 does not).
+2026-07-02 (single-box Qwen3-Next-80B-A3B-Instruct-FP8 on each, both @ 256K
+on vLLM 0.22.0, **both on the LATENCY config** (MTP-2 spec decode
+`qwen3_next_mtp`, num_speculative_tokens=2, seqs 3, util 0.80). Both boxes now
+at **util 0.80**; spark2 embed sidecar replaced: `vllm-embed` (port 8000, always-on)
+→ Ollama `qwen3-embedding:0.6b` (port 11434, lazy-load). spark2 host headroom
+now matches spark1 (~14 GB with just vllm-chat). The 2026-06-25 `inclusionAI/Ling-lite` experiment
+on spark1 was reverted — see top LIVE banner. **2026-06-26:** found spark1 had
+come back from that revert at `--max-num-seqs 8` (the *deployed* spin-up script
+was a stale copy still defaulting to 8); pushed the repo's seqs-16 script to the
+box and restarted — verified `max_num_seqs: 16` live.
 Use this as a "rebuild from scratch" reference if either box wipes, or as
 inventory when debugging.
 
-> **Two-box layout.** `spark1` is the primary box that backs production
-> LLM clients (MemPalace, llm_wiki, CampaignGenerator, opencode). It
-> runs `vllm-embed` (port 8000), `vllm-chat` (port 8001), and Ollama
-> (port 11434, mostly idle). `spark2` is the experimental sidecar: it
-> runs models that are incompatible with the primary clients (e.g.
-> reasoning models that emit `<think>` traces llm_wiki can't strip).
-> Only spark1 is wired into production workflows; spark2 is for
-> opencode sandboxing and side-by-side comparison.
+> **Two-box layout — CORRECTION 2026-06-30: spark2 IS client-facing, not sandbox-only.** This section previously claimed spark2 was purely experimental (opencode sandboxing / side-by-side comparison) — that's wrong. `spark1` backs production LLM clients (MemPalace, llm_wiki, CampaignGenerator, opencode) and runs `vllm-embed` (port 8000), `vllm-chat` (port 8001), and Ollama (port 11434, mostly idle). spark2 also has at least one real client pointed at it — which one(s) is being tracked outside this doc — so treat model swaps on spark2 (like the DFlash experiment in the top LIVE banner) as having real client impact, not as a free sandbox. spark2 still doubles as the box for models incompatible with spark1's clients (e.g. reasoning models that emit `<think>` traces llm_wiki can't strip).
 
 > **Fast interconnect up (2026-06-04): direct spark1↔spark2 200 GbE
 > cable.** A QSFP Direct Attach Copper cable now links the two boxes'
@@ -417,17 +541,16 @@ both pass on a stale IP config.)
 |---:|---|---|
 | 11434 | Ollama (systemd) | LLM serving + **currently the live embeddings path** (`nomic-embed-text`) while vllm-embed is down |
 | 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` — **DOWN** (stopped back during the cross-box experiment, still not restored; embeddings on Ollama 11434. Could now be restored — box is single-box again — but left on Ollama for continuity) |
-| 8001 | vllm-chat (docker) | Chat completions — **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** single-box TP=1, **256K** (`--max-model-len 262144`), **NO spec decode (plain)**, default chunked prefill, hermes tools, no reasoning parser, **gpu-util 0.80**, **seqs 16**, image **`vllm/vllm-openai:v0.22.0-aarch64`**. Via `spin-up-vllm-qwen3-next-80b.sh`. (2026-06-23 later: swapped MTP→plain + seqs 4→16 for the THROUGHPUT side of the A/B; spin-up script now pins `IMAGE` to v0.22.0 by default — was hardcoded `:latest` which resolved to 0.21.0, below the Qwen3-Next floor.) Independent endpoint. |
+| 8001 | vllm-chat (docker) | Chat completions — **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** single-box TP=1, **256K** (`--max-model-len 262144`), **MTP-2 spec decode** (`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`) **+ APC `--enable-prefix-caching`** (hybrid → experimental Mamba 'align' mode), chunked prefill **40K** (`--max-num-batched-tokens 40960`), hermes tools, no reasoning parser, **gpu-util 0.80**, **seqs 3**, fp8 KV, image **`vllm/vllm-openai:v0.22.0-aarch64`**. KV pool **1,002,438 tok → 3.82× @ 256K** (APC+MTP). Via `PREFIX_CACHING=1 MAX_SEQS=3 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh`. (2026-06-29: THROUGHPUT plain/seqs-16 → LATENCY MTP-2/seqs-3; 2026-07-01: + APC prefix caching.) **Auto-restarts on reboot (`--restart unless-stopped`, 2026-07-02).** Independent endpoint. |
 
 ### spark2 (192.168.1.121)
 
 | port | service | purpose |
 |---:|---|---|
-| 8000 | vllm-embed (docker) | Embeddings — `Qwen/Qwen3-Embedding-0.6B` — 1024-dim, instruction-aware, `--runner pooling --enforce-eager`, gpu-util 0.05, image `local/vllm-ray:26.05` (entrypoint overridden: `--entrypoint ""`), **`--restart unless-stopped`** (always-on). Smoke-tested 2026-06-15: `dim=1024`. |
-| 8001 | vllm-chat (docker) | Chat completions — **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** single-box TP=1, **256K** (`--max-model-len 262144`), **MTP-2 spec decode** (`qwen3_next_mtp`), **chunked prefill `--max-num-batched-tokens 40960`**, **gpu-util 0.80**, seqs 4, hermes tools, image **`vllm/vllm-openai:v0.22.0-aarch64`**. KV pool 1.01M tok (3.85× @ 256K); 85.2% draft acceptance, ~56 tok/s. Via `spin-up-vllm-qwen3-next-80b-mtp.sh`. (2026-06-20: was plain 128K @ 0.88.) Independent endpoint. |
+| 11434 | Ollama (systemd) | Embeddings — **`qwen3-embedding:0.6b`** — 1024-dim, instruction-aware, lazy-load (unloads after 5 min idle). Replaced `vllm-embed` on 2026-06-30 to free the always-on ~6 GB GPU reservation. Endpoint: `http://192.168.1.121:11434/v1/embeddings`. |
+| 8001 | vllm-chat (docker) | Chat completions — **CURRENTLY AN APC + MTP EXPERIMENT, not bare production**: **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`**, MTP-2 spec decode (`qwen3_next_mtp`, num_speculative_tokens=2) **+ `--enable-prefix-caching`** (hybrid → experimental Mamba 'align' mode), **256K** (`--max-model-len 262144`), **gpu-util 0.80**, **seqs 3**, **fp8 KV**, chunked prefill 40K, hermes tools, image **`vllm/vllm-openai:v0.22.0-aarch64`**. KV pool measured **927,989 tok → 3.54× @ 256K** (drafter + align cache both cost memory). Via `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`. Revert to bare production (no APC): `ssh spark2 'bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`. **Auto-restarts on reboot (`--restart unless-stopped`, 2026-07-02).** |
 
-(No Ollama on spark2. Briefly ran SGLang `sglang-chat` on 2026-06-11; reverted to vLLM same day — see the
-note under the LIVE banner.)
+(Port 8000 / `vllm-embed` removed 2026-06-30 — replaced by Ollama on 11434. Briefly ran SGLang `sglang-chat` on 2026-06-11; reverted to vLLM same day — see the note under the LIVE banner. **2026-06-30: swapped to a DFlash experiment; 2026-07-01: swapped again to MTP-2 80B + APC prefix caching — see top LIVE banner for full findings.**)
 
 ## VRAM budget (steady state)
 
@@ -436,7 +559,7 @@ note under the LIVE banner.)
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
 | vllm-embed | — | — | **DOWN** — embeddings on spark2:8000 (`Qwen/Qwen3-Embedding-0.6B`); spark1 left without a local embedder for continuity |
-| vllm-chat (single-box) | ~102 GB (**0.80** × ~128 GB) | ~76 GiB FP8 weights + fp8 KV + activations @ 256K (no MTP draft) | Qwen3-Next-80B-A3B, **plain (no spec decode), seqs 16** (THROUGHPUT side of the A/B, 2026-06-23 later), 256K, default chunked prefill (hybrid: only the periodic full-attn layers carry KV). KV pool **1.67M tok → 6.38× @ 256K**. **No embed sidecar on spark1**; dropping the MTP drafter freed memory — **18 GB host available** (vs 12 GB under the MTP build). |
+| vllm-chat (single-box) | ~102 GB (**0.80** × ~128 GB) | ~76.5 GiB FP8 weights (incl. MTP draft head) + fp8 KV + activations @ 256K | Qwen3-Next-80B-A3B, **MTP-2 spec decode (`qwen3_next_mtp`), seqs 3** (LATENCY) **+ APC prefix caching** (Mamba 'align' mode), 256K, chunked prefill 40K (hybrid: only the periodic full-attn layers carry KV). KV pool **1,002,438 tok → 3.82× full-256K seqs** (APC+MTP). **No embed sidecar on spark1** — **~14 GB host available** with the MTP draft loaded. Draft acceptance ~96% (unaffected by APC). (2026-06-29: THROUGHPUT plain/seqs-16 → MTP-2/seqs-3; 2026-07-01: + APC.) |
 | Ollama (idle) | ~0 | unloads after `OLLAMA_KEEP_ALIVE` | 5 min default |
 | Ollama (loaded) | varies | qwen2.5:14b ≈ 14.5 GB, nomic ≈ 600 MB | only when actively serving |
 
@@ -452,10 +575,12 @@ the 80B; spec the smaller container first if you ever co-host.**
 
 ### spark2
 
+**⚠ Table below describes the bare production MTP-2 80B config (the revert target if you turn APC off). As of 2026-07-01 BOTH boxes actually run that same 80B *plus* `--enable-prefix-caching` (APC + MTP) — same weights and fp8 KV, but the KV pool shrinks to ~3.82× @ 256K on spark1 / 3.54× on spark2 (drafter + Mamba 'align' cache). See top LIVE banner.**
+
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
-| vllm-chat (single-box) | ~102 GB (**0.80** × ~128 GB) | ~76 GiB FP8 weights + fp8 KV + activations @ 256K + MTP draft | Qwen3-Next-80B-A3B + **MTP-2 spec decode**, 256K via **chunked prefill 40k**. KV pool 1.01M tok → 3.85× @ 256K. With the embed sidecar co-resident, host runs ~31 GB free during load / ~12 GB steady at 0.80 — chunked-prefill's 40k warmup batch (not a 262K one) is what keeps it from wedging. |
-| vllm-embed | ~6 GB (0.05 × ~128 GB) | `Qwen/Qwen3-Embedding-0.6B` weights | Always-on; coexists with vllm-chat. This sidecar is why spark2 has less host headroom than spark1 (and why 0.88 wedged spark2 but not spark1). |
+| vllm-chat (single-box) | ~102 GB (**0.80** × ~128 GB) | ~76.5 GiB FP8 weights (incl. MTP draft head) + fp8 KV + activations @ 256K | Qwen3-Next-80B-A3B, **MTP-2 spec decode (`qwen3_next_mtp`), seqs 3** (LATENCY), 256K, chunked prefill 40K. KV pool ~12 GiB → ~3.5× full-256K seqs. **util 0.80** — MTP's 256K KV floor needs it. Host headroom now **~14 GB** (same as spark1) after removing the always-on embed sidecar. Draft acceptance ~95–99%. |
+| Ollama (idle) | ~0 | unloads after 5 min | `qwen3-embedding:0.6b` (639 MB GGUF). Lazy-load; when active ~640 MB GPU. Replaced the always-on `vllm-embed` (was ~6 GB reservation) on 2026-06-30. |
 
 ---
 
@@ -609,6 +734,23 @@ the same model on the same hardware).
 Chat completions + tool calling service. Backs llm_wiki, CampaignGenerator,
 opencode, future chat clients (see `desktop-chat-clients.md`), and any
 code calling `/v1/chat/completions`.
+
+> **▶ CURRENT (2026-06-29): MTP-2 LATENCY build on BOTH boxes.** Run command
+> (each box): `MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh`
+> → `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`, `--max-model-len 262144`,
+> `--max-num-seqs 3`, `--gpu-memory-utilization 0.80`, `--kv-cache-dtype fp8`,
+> `--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`,
+> `--max-num-batched-tokens 40960`, `--enable-auto-tool-choice --tool-call-parser hermes`,
+> `--restart unless-stopped` (added 2026-07-02 — the chat slot now survives
+> reboots/powercycles; before this, a reboot left it `Exited` until someone
+> noticed), image `vllm/vllm-openai:v0.22.0-aarch64`. **Why these flags:** seqs=3 is the
+> low-concurrency background-serving point the user chose — it keeps MTP active
+> (below the auto-disable-by-batch threshold) and leaves box headroom; MTP-2
+> drafts 2 tokens/step off the model's native MTP head and verifies in one
+> target pass. **Measured:** draft acceptance ~95–99% (mean accept length
+> ~2.95/3), ~49 tok/s single-stream decode. Revert to plain throughput:
+> `bash ~/spin-up-vllm-qwen3-next-80b.sh`. The banners below are PRIOR slot
+> occupants, kept as runbooks.
 
 > **PREV (2026-06-17, superseded 2026-06-20 → single-box 80B): this slot was `vllm-2box`** (cross-box TP=2),
 > brought up by `PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh` on
@@ -995,7 +1137,7 @@ any host on the LAN:
 | laptop, desktop, etc. | spark1 Ollama OpenAI-compat | `http://192.168.1.147:11434/v1/...` — **currently also the live embeddings path** (`/v1/embeddings`, model `nomic-embed-text`) while vllm-embed is down for the cross-box experiment |
 | laptop, desktop, etc. | spark1 vllm-embed | `http://192.168.1.147:8000/v1/embeddings` — **DOWN** (stopped during the cross-box experiment, not yet restored; embeddings served by Ollama 11434) |
 | laptop, desktop, etc. | spark1 vllm-chat | `http://192.168.1.147:8001/v1/chat/completions` |
-| laptop, desktop, etc. | spark2 vllm-embed | `http://192.168.1.121:8000/v1/embeddings` — `Qwen/Qwen3-Embedding-0.6B`, always-on |
+| laptop, desktop, etc. | spark2 Ollama embeddings | `http://192.168.1.121:11434/v1/embeddings` — `qwen3-embedding:0.6b`, lazy-load (was `spark2:8000/vllm-embed` until 2026-06-30) |
 | laptop, desktop, etc. | spark2 vllm-chat | `http://192.168.1.121:8001/v1/chat/completions` |
 
 No auth on any of them — fine for a private LAN, do not expose any of
@@ -1211,9 +1353,13 @@ the top-level `"model"` field to `dgx2/nemotron3-nano-30b`.
 
 ### Post-reboot (containers exist, just stopped)
 
-If both boxes were rebooted but the docker containers are intact
-(this is the common case), skip the rebuild and use `docker start`
-— it preserves all flags from the prior run:
+**As of 2026-07-02 this is mostly automatic:** `vllm-chat` on both boxes
+carries `--restart unless-stopped`, so after a reboot/powercycle the docker
+daemon relaunches it at boot with its original flags — no manual step, just
+wait ~5–10 min for weight reload + compile, then verify with
+`curl -sS http://<box>:8001/v1/models`. Ollama (spark2 embed) auto-starts
+via systemd. The recipe below is only needed for a container that was
+**manually stopped** (`docker stop` sticks despite the restart policy):
 
 ```bash
 # spark1: embed first, then chat
@@ -1222,7 +1368,7 @@ until curl -sS --max-time 2 http://192.168.1.147:8000/v1/models 2>/dev/null | gr
 ssh spark 'docker start vllm-chat'
 until curl -sS --max-time 2 http://192.168.1.147:8001/v1/models 2>/dev/null | grep -q '"id"'; do sleep 10; done
 
-# spark2 in parallel (independent box)
+# spark2 in parallel (independent box) — Ollama auto-starts via systemd; just start chat
 ssh spark2 'docker start vllm-chat'
 until curl -sS --max-time 2 http://192.168.1.121:8001/v1/models 2>/dev/null | grep -q '"id"'; do sleep 5; done
 ```
@@ -1309,17 +1455,36 @@ spark2 ships from NVIDIA with a few defaults that bit us:
    HF_TOKEN="$HF_TOKEN"` invoked over ssh. Verify with a grandchild
    process: `ssh spark2 'bash -c "echo \$HF_TOKEN"'`.
 
-4. **Start vllm-chat** with the Nemotron 3 Nano block from §4 above.
-   Expect ~10–20 min on first run (HF pulls ~60 GB of BF16 weights;
-   the spin-up script also wgets `nano_v3_reasoning_parser.py` into
-   `~/vllm-plugins/` on the host before mounting it). Driven by
-   `bash ~/spin-up-vllm-nemotron3-nano-30b.sh` (committed; scp it
-   along with `lib-vllm-spinup.sh`).
+4. **Install Ollama** (for embeddings — replaces vllm-embed):
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+   sudo mkdir -p /etc/systemd/system/ollama.service.d
+   sudo tee /etc/systemd/system/ollama.service.d/override.conf <<'EOF'
+   [Service]
+   Environment="OLLAMA_HOST=0.0.0.0:11434"
+   Environment="OLLAMA_FLASH_ATTENTION=1"
+   Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
+   Environment="OLLAMA_NUM_PARALLEL=8"
+   EOF
+   sudo systemctl daemon-reload && sudo systemctl enable ollama && sudo systemctl start ollama
+   ollama pull qwen3-embedding:0.6b
+   ```
+   Embed endpoint: `http://192.168.1.121:11434/v1/embeddings`, model `qwen3-embedding:0.6b`.
 
-5. **Smoke-test** with the curl command from §4.
+5. **Start vllm-chat** with the MTP-2 latency config:
+   ```bash
+   MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh
+   ```
 
-6. **Update opencode `dgx2` provider** to register the served model
-   id (see drift flag in §7).
+6. **Smoke-test** chat and embed:
+   ```bash
+   curl -sS http://192.168.1.121:8001/v1/chat/completions \
+     -H "Content-Type: application/json" \
+     -d '{"model":"Qwen/Qwen3-Next-80B-A3B-Instruct-FP8","messages":[{"role":"user","content":"Say only OK"}],"max_tokens":20}'
+   curl -sS http://192.168.1.121:11434/v1/embeddings \
+     -H "Content-Type: application/json" \
+     -d '{"model":"qwen3-embedding:0.6b","input":"hello"}'
+   ```
 
 ---
 

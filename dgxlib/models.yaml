@@ -46,17 +46,30 @@ models:
     idle_timeout: 900
 
   "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8":
-    # A3B (3B active) streams quickly once admitted; 120s of silence means the
-    # slot is wedged or queued behind a saturated box, not legitimately slow.
-    # Old behavior: a stuck chunk cost the full 600s before being skipped.
+    # A3B (3B active) streams quickly once admitted. 300s covers the ~2-minute
+    # cold-start window at batch startup (vLLM warms up before the first token
+    # flows); anything beyond that is a truly wedged or dead slot. 120s was too
+    # tight and killed the first wave of chunks on every fresh run.
     can_think: true
     thinking_default: false
     read_timeout: 600
-    idle_timeout: 120
+    idle_timeout: 300
 
   "Qwen/Qwen2.5-14B-Instruct-AWQ":
     can_think: false
     thinking_default: false
+
+  "inclusionAI/Ling-lite":
+    # 16.8B total / ~2.75B active full-attention MoE on spark1 (2026-06-25,
+    # experimental swap off the 80B). NOT a reasoning model — the Ring line is
+    # the thinking sibling; Ling-lite emits plain content (verified reasoning:null,
+    # no <think> leak). Fewer active params than the 80B → streams fast once
+    # admitted, so the 80B's 120s idle budget is plenty. NOTE: served at 32K
+    # native context (the card's 128K needs YaRN, not enabled in this checkpoint).
+    can_think: false
+    thinking_default: false
+    read_timeout: 600
+    idle_timeout: 120
 
 match:
   # Prefix fallbacks (longest match wins) for slots whose exact id isn't listed.

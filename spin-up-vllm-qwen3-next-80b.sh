@@ -40,9 +40,9 @@
 #      whatever else is sitting in the slot).
 #   2. Start a vLLM container on port 8001 serving
 #      Qwen/Qwen3-Next-80B-A3B-Instruct-FP8 with:
-#        - --max-model-len 131072 (128K — conservative start vs 256K native)
-#        - --max-num-seqs 4 (KV is tight; don't over-batch)
-#        - --gpu-memory-utilization 0.88
+#        - --max-model-len 262144 (256K native)
+#        - --max-num-seqs 16 (throughput config)
+#        - --gpu-memory-utilization 0.80
 #        - --kv-cache-dtype fp8
 #        - --enable-auto-tool-choice --tool-call-parser hermes
 #        - --trust-remote-code
@@ -83,6 +83,17 @@
 #   REASONING_PARSER  --reasoning-parser; default "" (off). Set to
 #                  "qwen3" when serving the Thinking variant so <think>
 #                  traces land in reasoning_content, not content.
+#   PREFIX_CACHING --enable-prefix-caching; default "" (off). Set 1 for batch
+#                  jobs whose requests share a stable leading prefix (e.g.
+#                  pdf-translators' fixed SYSTEM_PROMPT). TEST flag — Qwen3-Next
+#                  is hybrid; confirm the engine log's "Prefix cache hit rate"
+#                  rises above 0 before trusting it (see PREFIX_CACHE_ARGS).
+#   RESTART_POLICY docker restart policy; default "unless-stopped" so the chat
+#                  slot survives a reboot/powercycle (spark1 came back dead on
+#                  2026-07-02 because this was unset). `docker stop`/`rm -f`
+#                  still wins — a manually stopped container stays stopped, so
+#                  model swaps via these scripts behave as before. Set "no" to
+#                  opt out for a throwaway experiment.
 #
 # REVERT TO GEMMA 4 26B MoE (current default before this swap)
 #   bash ~/spin-up-vllm-gemma4-26b-moe-longctx.sh   # 128K variant
@@ -104,6 +115,16 @@ MAX_SEQS="${MAX_SEQS:-16}"
 KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 TOOL_PARSER="${TOOL_PARSER:-hermes}"
 REASONING_PARSER="${REASONING_PARSER:-}"
+# Off by default (matches current-setup.md "prefix caching left OFF"). Set
+# PREFIX_CACHING=1 for batch workloads where every request shares a byte-stable
+# leading prefix — e.g. pdf-translators sends the same fixed SYSTEM_PROMPT on
+# every chunk, so caching its KV skips re-prefilling it each call. See the
+# PREFIX_CACHE_ARGS block below for the hybrid-model caveat.
+PREFIX_CACHING="${PREFIX_CACHING:-}"
+# Restart policy: bring the chat slot back after a reboot/powercycle (docker
+# daemon restarts it at boot). "unless-stopped" NOT "always" — a manual
+# `docker stop` sticks, so experiments/swap scripts keep working unchanged.
+RESTART_POLICY="${RESTART_POLICY:-unless-stopped}"
 CONTAINER_NAME="vllm-chat"
 # Pin to the GB10-proven 0.22.0 by default — the documented FLOOR for Qwen3-Next
 # (fixes #40880 degenerate-output-under-CUDA-graph, which 0.21.0 hits with SILENT
@@ -147,6 +168,7 @@ echo "  max_seqs:    ${MAX_SEQS}"
 echo "  kv_dtype:    ${KV_CACHE_DTYPE}"
 echo "  tool_parser: ${TOOL_PARSER}"
 echo "  reasoning:   ${REASONING_PARSER:-<off>}"
+echo "  prefix_cache: ${PREFIX_CACHING:-<off>}"
 echo ""
 
 # Optional --reasoning-parser. Empty by default (Instruct variant); set
@@ -157,6 +179,25 @@ if [ -n "${REASONING_PARSER}" ]; then
     REASONING_ARGS=(--reasoning-parser "${REASONING_PARSER}")
 fi
 
+# Optional --enable-prefix-caching. OFF by default (matches current-setup.md).
+# When many requests share a byte-stable LEADING prefix, vLLM reuses the KV for
+# those tokens instead of re-prefilling them every call. The pdf-translators
+# batch job qualifies: pdf_to_5etools_v2.py sends a fixed module-constant
+# SYSTEM_PROMPT on every chunk, with all variable data in the user message.
+#   CAVEAT — Qwen3-Next is HYBRID (Gated DeltaNet, no KV, + periodic full-attn).
+#   vLLM's automatic prefix caching only covers full-attn KV blocks and may
+#   refuse or silently no-op on this arch. So this is a TEST flag, not a known
+#   win. After enabling, CONFIRM it engaged — watch the engine log's
+#   "Prefix cache hit rate" climb above ~0% under load; if it stays pinned at 0,
+#   the hybrid path didn't take it (unset the var to revert).
+#   MAGNITUDE — the saving ≈ system_tokens / (system + chunk_body) tokens, so it
+#   helps most when chunk bodies are small relative to SYSTEM_PROMPT; large
+#   chunks make it a rounding error. Measure docs/hr (batch_status.py), not vibes.
+PREFIX_CACHE_ARGS=()
+case "${PREFIX_CACHING}" in
+    1|true|yes|on) PREFIX_CACHE_ARGS=(--enable-prefix-caching) ;;
+esac
+
 vllm_stop_container "${CONTAINER_NAME}"
 vllm_gpu_healthcheck
 
@@ -164,6 +205,7 @@ echo "→ starting ${CONTAINER_NAME} with ${QWEN_MODEL}..."
 docker run -d \
     --runtime nvidia --gpus all \
     --name "${CONTAINER_NAME}" \
+    --restart "${RESTART_POLICY}" \
     -p "${QWEN_PORT}:${QWEN_PORT}" \
     --ipc=host \
     -e HF_TOKEN="${HF_TOKEN:-}" \
@@ -178,6 +220,7 @@ docker run -d \
     --enable-auto-tool-choice \
     --tool-call-parser "${TOOL_PARSER}" \
     "${REASONING_ARGS[@]}" \
+    "${PREFIX_CACHE_ARGS[@]}" \
     --host 0.0.0.0 --port "${QWEN_PORT}"
 
 # 40-min budget — first run pulls ~80 GB FP8 weights. Stricter error
