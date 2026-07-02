@@ -67,6 +67,21 @@
 #                  Set 1 for max acceptance / single-stream latency (MTP-1).
 #   KV_CACHE_DTYPE default "fp8". Set "auto" if spec decode rejects fp8 KV.
 #   TOOL_PARSER    default "hermes".
+#   RESTART_POLICY docker restart policy; default "unless-stopped" so the chat
+#                  slot survives a reboot/powercycle (spark1 came back dead on
+#                  2026-07-02 because this was unset). `docker stop`/`rm -f`
+#                  still wins — a manually stopped container stays stopped, so
+#                  model swaps via these scripts behave as before. Set "no" to
+#                  opt out for a throwaway experiment.
+#   PREFIX_CACHING --enable-prefix-caching; default "" (off). Set 1 to cache the
+#                  KV of a byte-stable leading prefix so repeated prefixes (agent
+#                  loops re-sending the whole conversation; batch jobs with a fixed
+#                  SYSTEM_PROMPT) skip re-prefill. VERIFIED to engage on this hybrid
+#                  in vLLM 0.22.0 (2026-07-01, plain build): Qwen3-Next flips the
+#                  Mamba cache to experimental 'align' mode; ~92% prefix hit,
+#                  ~10x TTFT on a repeated 7k-token prefix. APC + MTP together is
+#                  the combo this knob exists to test. Confirm the engine log's
+#                  "prefix_cache_hits_total" rises above 0 before trusting it.
 #
 # REVERT TO PLAIN (non-MTP) Qwen3-Next on this box
 #   bash ~/spin-up-vllm-qwen3-next-80b.sh
@@ -105,6 +120,18 @@ MAX_BATCHED_TOKENS="${MAX_BATCHED_TOKENS:-40960}"   # chunk size when chunked pr
 SPEC_TOKENS="${SPEC_TOKENS:-2}"
 KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 TOOL_PARSER="${TOOL_PARSER:-hermes}"
+# Restart policy: bring the chat slot back after a reboot/powercycle (docker
+# daemon restarts it at boot). "unless-stopped" NOT "always" — a manual
+# `docker stop` sticks, so experiments/swap scripts keep working unchanged.
+RESTART_POLICY="${RESTART_POLICY:-unless-stopped}"
+# Optional --enable-prefix-caching. OFF by default. Set PREFIX_CACHING=1 to reuse
+# the KV of a byte-stable leading prefix across requests — the agent-loop win
+# (each turn re-sends the whole conversation; only new tokens prefill). VERIFIED
+# to engage on hybrid Qwen3-Next in vLLM 0.22.0 via experimental Mamba 'align'
+# mode (see PREFIX_CACHE_ARGS below). This build pairs it with MTP spec decode;
+# after enabling, confirm BOTH engaged: prefix_cache_hits_total > 0 AND draft
+# acceptance still healthy.
+PREFIX_CACHING="${PREFIX_CACHING:-}"
 CONTAINER_NAME="vllm-chat"
 # Pin to the GB10-proven 0.22.0 by default — it's the documented FLOOR for
 # Qwen3-Next (fixes #40880 degenerate-output-under-CUDA-graph, which 0.21.0
@@ -113,6 +140,16 @@ CONTAINER_NAME="vllm-chat"
 IMAGE="${IMAGE:-vllm/vllm-openai:v0.22.0-aarch64}"
 
 SPEC_CONFIG="{\"method\": \"qwen3_next_mtp\", \"num_speculative_tokens\": ${SPEC_TOKENS}}"
+
+# Optional --enable-prefix-caching. OFF by default. On hybrid Qwen3-Next, vLLM
+# 0.22.0 auto-switches the Mamba/GDN layers to experimental 'align' mode so the
+# radix cache can cover them (verified 2026-07-01: ~92% prefix hit, ~10x TTFT on
+# a repeated prefix, output stays coherent). Built as an array so the flag is
+# omitted entirely when off.
+PREFIX_CACHE_ARGS=()
+case "${PREFIX_CACHING}" in
+    1|true|yes|on) PREFIX_CACHE_ARGS=(--enable-prefix-caching) ;;
+esac
 
 # Prefill batching: cap the warmup/prefill batch at MAX_BATCHED_TOKENS. Chunked
 # prefill stays ON (long prompts stream in MAX_BATCHED_TOKENS chunks) unless
@@ -160,6 +197,7 @@ echo "  spec_tokens: ${SPEC_TOKENS}  (MTP-${SPEC_TOKENS})"
 echo "  prefill:     chunked=$([ "${NO_CHUNKED_PREFILL}" = "1" ] && echo off || echo on), batch=${MAX_BATCHED_TOKENS}"
 echo "  kv_dtype:    ${KV_CACHE_DTYPE}"
 echo "  tool_parser: ${TOOL_PARSER}"
+echo "  prefix_cache: ${PREFIX_CACHING:-<off>}"
 echo "  spec_config: ${SPEC_CONFIG}"
 echo ""
 
@@ -170,6 +208,7 @@ echo "→ starting ${CONTAINER_NAME} with ${QWEN_MODEL} + MTP-${SPEC_TOKENS}..."
 docker run -d \
     --runtime nvidia --gpus all \
     --name "${CONTAINER_NAME}" \
+    --restart "${RESTART_POLICY}" \
     -p "${QWEN_PORT}:${QWEN_PORT}" \
     --ipc=host \
     -e HF_TOKEN="${HF_TOKEN:-}" \
@@ -182,6 +221,7 @@ docker run -d \
     --kv-cache-dtype "${KV_CACHE_DTYPE}" \
     --speculative-config "${SPEC_CONFIG}" \
     "${CHUNK_ARGS[@]}" \
+    "${PREFIX_CACHE_ARGS[@]}" \
     --trust-remote-code \
     --enable-auto-tool-choice \
     --tool-call-parser "${TOOL_PARSER}" \
