@@ -11,17 +11,21 @@ canonical/dedup decision from rpg-lib's API and records it there, so this tool
 never contacts rpg-lib (or its DB) directly. WAL + read-only mode let us read a
 consistent committed snapshot while a conversion is writing.
 
+It also reports the cumulative chunk count (every `*-parsed.json` the converter
+has produced, across all docs — a monotonic running total), and in --watch mode
+the per-interval chunk delta + a session chunks/hr, a finer-grained throughput
+signal than docs/hr (chunks tick steadily between whole-doc completions).
+
 Usage:
-    python3 batch_status.py                 # one-shot report
-    python3 batch_status.py --watch 30      # refresh every 30s, with docs/hr + ETA
-    python3 batch_status.py --fast          # state-only (skip the on-disk JSON stat)
+    python3 batch_status.py                 # one-shot report (incl. total chunks)
+    python3 batch_status.py --watch 30      # refresh 30s: docs/hr + ETA + chunks/30s
+    python3 batch_status.py --fast          # state-only (skip on-disk JSON + chunk scan)
     python3 batch_status.py --state-db X.db
 """
 from __future__ import annotations
 
 import argparse
 import os
-import re
 import sqlite3
 import subprocess
 import time
@@ -57,17 +61,6 @@ def driver_running() -> tuple[bool, str | None]:
     return True, pid
 
 
-def inflight_docs() -> list[tuple[str, str]]:
-    """(pdf_path, endpoint) for each live converter subprocess."""
-    docs = []
-    for ln in _pgrep(r"pdf_to_5etools_v2\.py"):
-        mp = re.search(r"pdf_to_5etools_v2\.py\s+(.+?)\s+--provider", ln)
-        me = re.search(r"--endpoint\s+(\S+)", ln)
-        if mp:
-            docs.append((mp.group(1), me.group(1) if me else "?"))
-    return docs
-
-
 def chunk_count(pdf_path: str) -> int:
     """JSON chunks the converter has produced so far for this doc — the
     `*-parsed.json` files in its `<stem>-responses/` dir. 0 if not started."""
@@ -76,6 +69,18 @@ def chunk_count(pdf_path: str) -> int:
     if not rdir.is_dir():
         return 0
     return sum(1 for _ in rdir.glob("*-parsed.json"))
+
+
+def total_chunks_on_disk(root: Path) -> int:
+    """Cumulative count of converter output chunks across the whole batch — every
+    `*-parsed.json` inside any `*-responses/` dir under `root`, not just in-flight
+    docs. batch_convert never deletes these (they back `--reuse-responses`), so
+    this is a true *running total* — monotonic across a run. The tree walk is
+    slow on network mounts, so callers skip it under `--fast`."""
+    if not root or not root.is_dir():
+        return 0
+    return sum(1 for p in root.rglob("*-parsed.json")
+               if p.parent.name.endswith("-responses"))
 
 
 def _bar(frac: float, width: int = 24) -> str:
@@ -106,11 +111,17 @@ def compute(state_db: Path, check_disk: bool) -> dict:
         meta = {r["key"]: r["value"]
                 for r in conn.execute("SELECT key, value FROM meta")}
         rows = conn.execute("SELECT rel, status, reason FROM docs").fetchall()
+        # In-flight docs: the encode phase runs in-process (no converter
+        # subprocess to pgrep), so it marks each doc status='running' with its
+        # endpoint while converting. Read that here.
+        running_rows = conn.execute(
+            "SELECT rel, endpoint FROM docs WHERE status='running'").fetchall()
     finally:
         conn.close()
 
     root = Path(meta.get("root", ""))
     saved_at = int(meta.get("saved_at", 0) or 0)
+    flights = [(str(root / r["rel"]), r["endpoint"] or "?") for r in running_rows]
 
     docs = {r["rel"]: {"status": r["status"], "reason": r["reason"]} for r in rows}
     canonical = {r: v for r, v in docs.items() if v["status"] != "skipped"}
@@ -135,23 +146,31 @@ def compute(state_db: Path, check_disk: bool) -> dict:
 
     skip_reasons = Counter(v["reason"] or "?" for v in skipped.values())
 
+    # Cumulative chunk total — the fine-grained progress signal between whole-doc
+    # completions. Same on-disk cost class as the converted-count, so gate it on
+    # check_disk; None under --fast.
+    chunks_total = total_chunks_on_disk(root) if check_disk else None
+
     return {
         "root": root, "saved_at": saved_at,
         "target": len(canonical), "converted": converted, "remaining": remaining,
         "failed": failed, "skipped": len(skipped), "stale": stale,
         "skip_reasons": skip_reasons, "source": source,
+        "chunks_total": chunks_total, "flights": flights,
     }
 
 
 def render(st: dict, verbose: bool) -> None:
     running, pid = driver_running()
-    flights = inflight_docs()
+    # In-flight docs come from the state DB (status='running'); only trust them
+    # while the driver is alive, else they're stale 'running' rows from a crash.
+    flights = st.get("flights", []) if running else []
     now = time.time()
 
     age = _age(now - st["saved_at"]) if st["saved_at"] else "unknown"
     print(f"Conversion progress   (state saved {age})")
     if running:
-        print(f"  batch RUNNING (pid {pid}) — {len(flights)} converter subprocess(es) in flight")
+        print(f"  batch RUNNING (pid {pid}) — {len(flights)} doc(s) in flight (in-process)")
     else:
         print(f"  batch NOT running")
     print()
@@ -171,6 +190,11 @@ def render(st: dict, verbose: bool) -> None:
         for reason, n in sorted(st["skip_reasons"].items()):
             print(f"      {reason}: {n}")
     print()
+
+    if st.get("chunks_total") is not None:
+        print(f"  Chunks produced (cumulative, *-parsed.json on disk): "
+              f"{st['chunks_total']}")
+        print()
 
     if flights:
         total_chunks = 0
@@ -209,18 +233,21 @@ def main(argv=None) -> int:
         render(compute(args.state_db, check_disk=not args.fast), args.verbose)
         return 0
 
-    # Watch mode: sample the rate from the converted-count delta.
-    first = None
-    t0 = time.time()
+    # Watch mode: sample docs/hr from the converted-count delta, and chunk
+    # throughput from the cumulative-chunk delta (per-interval + session avg).
+    first = None        # (t, converted) — anchors the docs/hr session rate + ETA
+    first_ch = None     # (t, chunks)    — anchors the chunks/hr session rate
+    prev_ch = None      # (t, chunks)    — previous tick, for the per-interval delta
     try:
         while True:
             st = compute(args.state_db, check_disk=not args.fast)
+            now = time.time()
             os.system("clear")
             render(st, args.verbose)
             if first is None:
-                first = (time.time(), st["converted"])
+                first = (now, st["converted"])
             else:
-                dt = (time.time() - first[0]) / 3600.0
+                dt = (now - first[0]) / 3600.0
                 dn = st["converted"] - first[1]
                 if dt > 0 and dn > 0:
                     rate = dn / dt
@@ -231,6 +258,22 @@ def main(argv=None) -> int:
                 else:
                     print()
                     print(f"  rate: measuring… (no completion yet in this window)")
+
+            # Chunk throughput — finer-grained than docs/hr (chunks tick between
+            # whole-doc completions). Skipped under --fast (chunks_total is None).
+            ch = st.get("chunks_total")
+            if ch is not None:
+                if first_ch is None:
+                    first_ch = (now, ch)
+                    print(f"  chunks: {ch} total   (measuring rate…)")
+                else:
+                    d_ch = ch - prev_ch[1]
+                    d_t = now - prev_ch[0]
+                    sess_dt = (now - first_ch[0]) / 3600.0
+                    sess_rate = (ch - first_ch[1]) / sess_dt if sess_dt > 0 else 0.0
+                    print(f"  chunks: {ch} total   +{d_ch} in last {d_t:.0f}s"
+                          f"   ({sess_rate:.0f} chunks/hr session avg)")
+                prev_ch = (now, ch)
             time.sleep(args.watch)
     except KeyboardInterrupt:
         return 0
