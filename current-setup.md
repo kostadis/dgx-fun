@@ -4,12 +4,44 @@
 
 ```
 spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 3, MTP-2 spec decode (qwen3_next_mtp) + APC PREFIX CACHING ON (Mamba 'align' mode), chunked prefill 40K, fp8 KV, vLLM 0.22.0)  ← LATENCY (MTP) + APC / production
-spark2 (192.168.1.121:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 3, MTP-2 spec decode (qwen3_next_mtp) + APC PREFIX CACHING ON (Mamba 'align' mode), chunked prefill 40K, fp8 KV, vLLM 0.22.0)  ← EXPERIMENT (APC + MTP), see LIVE banner
+spark2 (192.168.1.121:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 8, MTP-2 spec decode (qwen3_next_mtp) + APC PREFIX CACHING ON (Mamba 'align' mode), chunked prefill 40K, fp8 KV, vLLM 0.22.0)  ← MTP+seqs8 / Cognee-optimal batch box (KV 3.56x), see LIVE banner
 spark2 (192.168.1.121:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — unloads after 5 min idle; was vllm-embed on port 8000 until 2026-06-30)
 ```
-> **ctx = total context per request (prompt + generation), i.e. `--max-model-len`.** **BOTH boxes now run the MTP-2 latency build + APC prefix caching** (`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`, `--enable-prefix-caching`, `--max-num-seqs 3`, chunked prefill pinned at `--max-num-batched-tokens 40960`). MTP draft acceptance ~77% on a hard code prompt / higher on prose (APC does not degrade it — measured); APC gives ~5–10× TTFT on a re-sent prefix. **spark2 was the test bed and spark1 (production) now matches it** — see the LIVE banner immediately below.
+> **ctx = total context per request (prompt + generation), i.e. `--max-model-len`.** **The two boxes now run DIFFERENT configs by design (2026-07-03):** **spark1 = LATENCY** — MTP-2 latency build + APC prefix caching (`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`, `--enable-prefix-caching`, `--max-num-seqs 3`, chunked prefill pinned at `--max-num-batched-tokens 40960`; MTP draft acceptance ~77% on a hard code prompt / higher on prose, APC gives ~5–10× TTFT on a re-sent prefix). **spark2 = MTP-8 BATCH** (as of 2026-07-04, later) — MTP-2 spec decode + APC + `--max-num-seqs 8`, chunked prefill 40960; measured fastest on the Cognee JSON load (~138 t/s vs plain-16's ~125). Point latency/agent-loop work at spark1:8001, batch/structured-output jobs at spark2:8001 — same served model id on both. (spark2 was plain-seqs16 "THROUGHPUT" until the MTP-8 crossover result; revert command in the LIVE banner if a long-context batch job needs the higher KV.) See the LIVE banner immediately below.
 
-> **▶ LIVE (2026-07-02): spark1 powercycled overnight and came back with `vllm-chat` DEAD (`Exited (255)` — the container had no restart policy). Relaunched on the unchanged APC+MTP config, and the failure class is FIXED: `vllm-chat` now runs `--restart unless-stopped` on BOTH boxes.**
+> **▶ LIVE (2026-07-04, later): spark2 `vllm-chat` swapped plain-seqs16 → MTP-2 + APC + seqs 8 after a crossover experiment on the Cognee batch. This config MEASURED FASTEST for that workload. spark1 untouched (still MTP-2 + APC latency/production).**
+> Purpose: a 3-way throughput A/B on the real Cognee graph-extraction load (decode-bound, JSON-heavy, short contexts) to find the batch sweet spot between the latency box (MTP, seqs 3) and the throughput box (plain, seqs 16).
+> - **Measured aggregate generation throughput on the Cognee load:** MTP seqs 3 = **92 t/s**; plain seqs 16 = **~125 t/s**; **MTP seqs 8 = ~138 t/s (WINNER, +10% over plain-16, +50% over MTP-3).** Both extremes were on the wrong side of the crossover.
+> - **Why MTP wins here:** MTP draft acceptance on the rigid `KnowledgeGraph` JSON is **86–89%** (mean accept length ~2.75 of 3, per-position 0.93/0.82) — far above the ~77% on hard code. So each MTP stream decodes ~2.2× faster; 8 fast streams (138) beat 16 bandwidth-contended plain streams (125), and rejected-draft compute waste hasn't bitten by seqs 8. Enabled via `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=8 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
+> - **Verified live:** served id unchanged (`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` → **no client repoint**), `speculative_config={qwen3_next_mtp, num_speculative_tokens:2}`, `enable_prefix_caching=True`, `max_num_seqs=8`, chunked prefill 40960, fp8 KV, util 0.80, 256K. **GPU KV pool 933,232 tok → 3.56× @ 256K** (DOWN from plain-16's 6.41× — the MTP drafter + Mamba align cache eat KV). Reload ~17 min.
+> - **WORKLOAD-SPECIFIC — do not generalize.** MTP-8 wins for Cognee's shape (short ctx, JSON, decode-bound). A long-context / high-concurrency batch job (e.g. pdf-translation at ~120K ctx) may still prefer plain-16's 6.41× KV headroom and 16 slots. Pick by workload: JSON/structured-output decode → MTP-8; long-context or >8-way concurrency → plain-16.
+> - `dgxlib/models.yaml` **unchanged** (served id identical).
+> **Revert spark2 to plain-16 throughput (higher KV, 16 slots):** `ssh spark2 'PREFIX_CACHING=1 bash ~/spin-up-vllm-qwen3-next-80b.sh'`.
+> **Re-run this MTP-8 config:** `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=8 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
+>
+> ---
+>
+> **▶ PREV (2026-07-04): spark2 `vllm-chat` re-spun with APC PREFIX CACHING ON, keeping the throughput config (seqs 16, no spec decode). spark2 is now THROUGHPUT + APC — the batch box for prefix-sharing workloads. spark1 untouched (still MTP-2 + APC latency/production).**
+> Purpose: the overnight Cognee grounding-digestion job (108 docs, ~39-way concurrent graph-extraction) needs a batch box AND resends a byte-stable KnowledgeGraph-extraction system prompt on every chunk call — exactly what APC caches. Enabled via `ssh spark2 'PREFIX_CACHING=1 bash ~/spin-up-vllm-qwen3-next-80b.sh'` (deployed script verified current first: seqs 16 / util 0.80 / 256K defaults, PREFIX_CACHING knob present).
+> - **Verified live (docker logs + `/v1/models`):** served id `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` (**unchanged → no client repoint**), `enable_prefix_caching: True`, *"Mamba cache mode is set to 'align'"*, `speculative_config=None`, `max_num_seqs: 16`, fp8 KV, util 0.80, 256K. **GPU KV pool 1,679,392 tok → 6.41× @ 256K** (UP from the no-APC build's 6.11× — APC costs ~nothing here; the drafter is what eats KV, and there's no drafter on the throughput build). `Application startup complete`. Reload took **~17 min** (disk-bound weight load).
+> - **The box split is unchanged in spirit:** **spark1 = LATENCY** (MTP-2 + APC, seqs 3); **spark2 = THROUGHPUT + APC** (plain, seqs 16, prefix caching on). Both serve the identical model id — any client works against either.
+> - **CALIBRATION NOTE (2026-07-04): APC turned out IMMATERIAL for the Cognee batch it was enabled for.** That workload is output-decode-bound (short ~1k-token shared prefix ≈ 1s prefill, then a multi-thousand-token JSON decoded at ~4 t/s/stream = 30-60s+), so caching the prefix saves <3% even on a perfect hit — measured ~0% hit rate (the batch fires as a cold simultaneous burst, and APC accelerates prefill, not decode). **The batch speedup vs the earlier spark1 attempt was the 16 seqs, NOT APC.** APC left ON because it's free here (KV 6.41× ≥ the no-APC 6.11×, seqs unchanged), but don't attribute throughput to it. APC's real payoff is prefill/TTFT-bound work (agent loops re-sending long context) — which is why it stays on spark1 (latency).
+> - `dgxlib/models.yaml` **unchanged** (served id identical; APC changes prefill speed, not how the model is *called*).
+> **Revert spark2 to plain throughput (no APC):** `ssh spark2 'bash ~/spin-up-vllm-qwen3-next-80b.sh'`.
+> **Revert spark2 to latency (MTP-2 + APC):** `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
+>
+> ---
+>
+> **▶ PREV (2026-07-03): spark2 `vllm-chat` swapped MTP-2 + APC (latency) → PLAIN THROUGHPUT (seqs 16, no spec decode, no APC) — spark2 is now the dedicated BATCH box. spark1 untouched (still MTP-2 + APC latency/production).**
+> Purpose: keep a high-concurrency endpoint standing for batch jobs while spark1 stays the low-latency single-stream box. Swapped via `ssh spark2 'bash ~/spin-up-vllm-qwen3-next-80b.sh'` (deployed script verified current first: seqs 16, util 0.80, 256K, image `v0.22.0-aarch64`, `--restart unless-stopped`).
+> - **Verified live (docker logs + `/v1/models`):** served id `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` (**unchanged → no client repoint**), `max_num_seqs: 16`, `speculative_config=None`, `enable_prefix_caching=False`, fp8 KV, util 0.80, 256K. **GPU KV pool 1,601,403 tok → 6.11× @ 256K** (up from the APC+MTP build's 3.54× — dropping the MTP drafter + Mamba align cache frees KV). Coherent smoke (*"The ocean is a vast, dynamic expanse of saltwater that covers over 70% of Earth's surface..."*), `reasoning:null`, no `<think>` leak. Host RAM **~13 GB available** (healthy). Restart took **~17 min** (disk-bound weight load — slower than the usual ~10).
+> - **The box split is now intentional:** **spark1 = LATENCY** (MTP-2 + APC, seqs 3, ~49 tok/s single-stream) for agent-loop / read-heavy work; **spark2 = THROUGHPUT** (plain, seqs 16, 6.11× KV) for batch / high-concurrency. Both serve the identical model id, so any client works against either — the difference is latency vs aggregate-throughput characteristics.
+> - `dgxlib/models.yaml` **unchanged** (served id identical; seqs / spec-decode / APC change how *fast* it serves, not how it's *called*).
+> **Revert spark2 to latency (MTP-2 + APC):** `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
+>
+> ---
+>
+> **▶ PREV (2026-07-02): spark1 powercycled overnight and came back with `vllm-chat` DEAD (`Exited (255)` — the container had no restart policy). Relaunched on the unchanged APC+MTP config, and the failure class is FIXED: `vllm-chat` now runs `--restart unless-stopped` on BOTH boxes.**
 > - **Relaunch:** `PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh` (deployed script verified byte-identical to the repo copy first). Config, served id, and client wiring all unchanged — **the 2026-07-01 banner below remains the accurate description of what both boxes serve.** spark2 was verified healthy throughout the incident (chat + embed answering).
 > - **Auto-restart fix:** applied `docker update --restart unless-stopped vllm-chat` to the live containers on spark1 AND spark2 (no container restart needed), and both spin-up scripts (`spin-up-vllm-qwen3-next-80b.sh`, `spin-up-vllm-qwen3-next-80b-mtp.sh`) now default `RESTART_POLICY=unless-stopped` and pass `--restart` (updated copies pushed to both boxes). A reboot/powercycle now brings the chat slot back automatically (~5–10 min weight reload + compile before it answers). `docker stop`/`docker rm -f` still stick — a manually stopped container stays stopped — so the swap scripts and experiments behave exactly as before.
 > - **Gotcha to remember:** an auto-restarted container comes back with its ORIGINAL flags — fine today (both boxes run the production config), but if a box reboots mid-experiment, the *experiment* comes back, not production. Ollama (spark2 embed) already auto-starts via systemd, unchanged.
@@ -379,21 +411,21 @@ spark2 (192.168.1.121:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — unloa
 > spark2 `vllm-embed` (port 8000, `Qwen/Qwen3-Embedding-0.6B`) kept
 > running throughout — unaffected.
 
-**⚠ Superseded by the LIVE banner at the top of this doc (2026-07-01): spark2 is currently the MTP-2 80B *plus* APC prefix caching (agent-loop experiment), NOT the bare config described below and NOT the DFlash Coder-30B.** spark1 is unaffected — the snapshot below is still accurate for spark1.
+**⚠ Superseded by the LIVE banner at the top of this doc (2026-07-04, later): spark2 is now the MTP-8 BATCH box (MTP-2 spec decode + APC, seqs 8), NOT the plain-16 throughput or DFlash configs described below. spark1 is unaffected — still MTP-2 + APC latency/production (seqs 3).**
 
 Snapshot of what's actually running on **both** DGX Sparks as of
-2026-07-02 (single-box Qwen3-Next-80B-A3B-Instruct-FP8 on each, both @ 256K
-on vLLM 0.22.0, **both on the LATENCY config** (MTP-2 spec decode
-`qwen3_next_mtp`, num_speculative_tokens=2, seqs 3, util 0.80). Both boxes now
-at **util 0.80**; spark2 embed sidecar replaced: `vllm-embed` (port 8000, always-on)
+2026-07-04, later (single-box Qwen3-Next-80B-A3B-Instruct-FP8 on each, both @ 256K
+on vLLM 0.22.0, both at **util 0.80**, both fp8 KV, chunked prefill 40K, hermes tools). **The two boxes diverge by design:**
+**spark1 = LATENCY config** (MTP-2 spec decode `qwen3_next_mtp`,
+num_speculative_tokens=2, seqs 3, + APC prefix caching); **spark2 = MTP-8 BATCH
+config** (MTP-2 spec decode + APC, seqs 8 — measured fastest on the Cognee
+batch load). spark2 embed sidecar replaced: `vllm-embed` (port 8000, always-on)
 → Ollama `qwen3-embedding:0.6b` (port 11434, lazy-load). spark2 host headroom
-now matches spark1 (~14 GB with just vllm-chat). The 2026-06-25 `inclusionAI/Ling-lite` experiment
-on spark1 was reverted — see top LIVE banner. **2026-06-26:** found spark1 had
-come back from that revert at `--max-num-seqs 8` (the *deployed* spin-up script
-was a stale copy still defaulting to 8); pushed the repo's seqs-16 script to the
-box and restarted — verified `max_num_seqs: 16` live.
+now matches spark1 (~13-14 GB with just vllm-chat). The 2026-06-25 `inclusionAI/Ling-lite` experiment
+on spark1 was reverted — see top LIVE banner.
 Use this as a "rebuild from scratch" reference if either box wipes, or as
-inventory when debugging.
+inventory when debugging. **Verified live 2026-07-12: both boxes match this
+snapshot exactly (model id, image, flags, restart policy) — no drift.**
 
 > **Two-box layout — CORRECTION 2026-06-30: spark2 IS client-facing, not sandbox-only.** This section previously claimed spark2 was purely experimental (opencode sandboxing / side-by-side comparison) — that's wrong. `spark1` backs production LLM clients (MemPalace, llm_wiki, CampaignGenerator, opencode) and runs `vllm-embed` (port 8000), `vllm-chat` (port 8001), and Ollama (port 11434, mostly idle). spark2 also has at least one real client pointed at it — which one(s) is being tracked outside this doc — so treat model swaps on spark2 (like the DFlash experiment in the top LIVE banner) as having real client impact, not as a free sandbox. spark2 still doubles as the box for models incompatible with spark1's clients (e.g. reasoning models that emit `<think>` traces llm_wiki can't strip).
 
@@ -548,7 +580,7 @@ both pass on a stale IP config.)
 | port | service | purpose |
 |---:|---|---|
 | 11434 | Ollama (systemd) | Embeddings — **`qwen3-embedding:0.6b`** — 1024-dim, instruction-aware, lazy-load (unloads after 5 min idle). Replaced `vllm-embed` on 2026-06-30 to free the always-on ~6 GB GPU reservation. Endpoint: `http://192.168.1.121:11434/v1/embeddings`. |
-| 8001 | vllm-chat (docker) | Chat completions — **CURRENTLY AN APC + MTP EXPERIMENT, not bare production**: **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`**, MTP-2 spec decode (`qwen3_next_mtp`, num_speculative_tokens=2) **+ `--enable-prefix-caching`** (hybrid → experimental Mamba 'align' mode), **256K** (`--max-model-len 262144`), **gpu-util 0.80**, **seqs 3**, **fp8 KV**, chunked prefill 40K, hermes tools, image **`vllm/vllm-openai:v0.22.0-aarch64`**. KV pool measured **927,989 tok → 3.54× @ 256K** (drafter + align cache both cost memory). Via `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`. Revert to bare production (no APC): `ssh spark2 'bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`. **Auto-restarts on reboot (`--restart unless-stopped`, 2026-07-02).** |
+| 8001 | vllm-chat (docker) | Chat completions — **MTP-8 BATCH box (2026-07-04, later)**: **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`**, **MTP-2 spec decode** (`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`) **+ APC `--enable-prefix-caching`**, **256K** (`--max-model-len 262144`), **gpu-util 0.80**, **seqs 8**, **fp8 KV**, chunked prefill **40K** (`--max-num-batched-tokens 40960`), hermes tools, no reasoning parser, image **`vllm/vllm-openai:v0.22.0-aarch64`**. KV pool measured **933,232 tok → 3.56× @ 256K**. Measured fastest on the Cognee batch load (~138 t/s vs plain-16's ~125). Via `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=8 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`. Revert to plain throughput (higher KV, 16 slots): `ssh spark2 'PREFIX_CACHING=1 bash ~/spin-up-vllm-qwen3-next-80b.sh'`. Revert to latency (MTP-2 + APC, seqs 3): `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`. **Auto-restarts on reboot (`--restart unless-stopped`).** |
 
 (Port 8000 / `vllm-embed` removed 2026-06-30 — replaced by Ollama on 11434. Briefly ran SGLang `sglang-chat` on 2026-06-11; reverted to vLLM same day — see the note under the LIVE banner. **2026-06-30: swapped to a DFlash experiment; 2026-07-01: swapped again to MTP-2 80B + APC prefix caching — see top LIVE banner for full findings.**)
 
@@ -575,11 +607,11 @@ the 80B; spec the smaller container first if you ever co-host.**
 
 ### spark2
 
-**⚠ Table below describes the bare production MTP-2 80B config (the revert target if you turn APC off). As of 2026-07-01 BOTH boxes actually run that same 80B *plus* `--enable-prefix-caching` (APC + MTP) — same weights and fp8 KV, but the KV pool shrinks to ~3.82× @ 256K on spark1 / 3.54× on spark2 (drafter + Mamba 'align' cache). See top LIVE banner.**
+**As of 2026-07-04 (later) spark2 runs MTP-2 spec decode + APC at seqs 8 (the MTP-8 batch config) — measured fastest on the Cognee batch load. See top LIVE banner.**
 
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
-| vllm-chat (single-box) | ~102 GB (**0.80** × ~128 GB) | ~76.5 GiB FP8 weights (incl. MTP draft head) + fp8 KV + activations @ 256K | Qwen3-Next-80B-A3B, **MTP-2 spec decode (`qwen3_next_mtp`), seqs 3** (LATENCY), 256K, chunked prefill 40K. KV pool ~12 GiB → ~3.5× full-256K seqs. **util 0.80** — MTP's 256K KV floor needs it. Host headroom now **~14 GB** (same as spark1) after removing the always-on embed sidecar. Draft acceptance ~95–99%. |
+| vllm-chat (single-box) | ~102 GB (**0.80** × ~128 GB) | ~76.5 GiB FP8 weights (incl. MTP draft head) + fp8 KV + activations @ 256K | Qwen3-Next-80B-A3B, **MTP-2 spec decode (`qwen3_next_mtp`), seqs 8** (MTP-8 BATCH) **+ APC prefix caching** (Mamba 'align' mode), 256K, chunked prefill 40K. KV pool **933,232 tok → 3.56× full-256K seqs** (tighter than the plain-16 build's 6.11× — drafter + Mamba align cache eat KV). **util 0.80.** Host headroom **~13 GB** (just vllm-chat; embed is lazy-load Ollama). **This is the batch box (2026-07-04, later); spark1 stays MTP-2 + APC latency (seqs 3).** |
 | Ollama (idle) | ~0 | unloads after 5 min | `qwen3-embedding:0.6b` (639 MB GGUF). Lazy-load; when active ~640 MB GPU. Replaced the always-on `vllm-embed` (was ~6 GB reservation) on 2026-06-30. |
 
 ---
@@ -735,22 +767,29 @@ Chat completions + tool calling service. Backs llm_wiki, CampaignGenerator,
 opencode, future chat clients (see `desktop-chat-clients.md`), and any
 code calling `/v1/chat/completions`.
 
-> **▶ CURRENT (2026-06-29): MTP-2 LATENCY build on BOTH boxes.** Run command
-> (each box): `MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh`
+> **▶ CURRENT (2026-07-03): boxes split — spark1 = MTP-2 LATENCY, spark2 = PLAIN THROUGHPUT.**
+> **spark1 (latency)** — `MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 PREFIX_CACHING=1 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh`
 > → `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`, `--max-model-len 262144`,
 > `--max-num-seqs 3`, `--gpu-memory-utilization 0.80`, `--kv-cache-dtype fp8`,
 > `--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`,
-> `--max-num-batched-tokens 40960`, `--enable-auto-tool-choice --tool-call-parser hermes`,
+> `--enable-prefix-caching`, `--max-num-batched-tokens 40960`,
+> `--enable-auto-tool-choice --tool-call-parser hermes`,
 > `--restart unless-stopped` (added 2026-07-02 — the chat slot now survives
 > reboots/powercycles; before this, a reboot left it `Exited` until someone
 > noticed), image `vllm/vllm-openai:v0.22.0-aarch64`. **Why these flags:** seqs=3 is the
-> low-concurrency background-serving point the user chose — it keeps MTP active
+> low-concurrency background-serving point — it keeps MTP active
 > (below the auto-disable-by-batch threshold) and leaves box headroom; MTP-2
 > drafts 2 tokens/step off the model's native MTP head and verifies in one
 > target pass. **Measured:** draft acceptance ~95–99% (mean accept length
-> ~2.95/3), ~49 tok/s single-stream decode. Revert to plain throughput:
-> `bash ~/spin-up-vllm-qwen3-next-80b.sh`. The banners below are PRIOR slot
-> occupants, kept as runbooks.
+> ~2.95/3), ~49 tok/s single-stream decode.
+> **spark2 (throughput / batch, 2026-07-03)** — `ssh spark2 'bash ~/spin-up-vllm-qwen3-next-80b.sh'`
+> → same model, **plain** (`speculative_config=None`, `enable_prefix_caching=False`),
+> `--max-num-seqs 16`, util 0.80, 256K, fp8 KV, hermes, `--restart unless-stopped`.
+> **Measured:** KV pool 1,601,403 tok → 6.11× @ 256K. Point batch / high-concurrency
+> jobs here; single-stream reads slower (~30 tok/s, no MTP) but aggregate throughput
+> is higher under load (won a +47% A/B). Revert spark2 to latency:
+> `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
+> The banners below are PRIOR slot occupants, kept as runbooks.
 
 > **PREV (2026-06-17, superseded 2026-06-20 → single-box 80B): this slot was `vllm-2box`** (cross-box TP=2),
 > brought up by `PROFILE=qwen35 ./spin-up-vllm-2box-rdma.sh` on
