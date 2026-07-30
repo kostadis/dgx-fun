@@ -226,37 +226,28 @@ does not touch it. Keeping it is free and desirable:
   Ollama loads on demand and unloads after keep-alive, so an idle Ollama
   costs no GPU memory at DSpark launch time.
 
-**The one real hazard — on-demand loads eating host headroom.** Unified
-memory means Ollama's allocation competes with vLLM's reservation. Measured
-today with Qwen3-Next at util 0.80: **121 GB total, ~108 used, ~13
-available** on spark1. DSpark will hold ~78 GB of weights per box plus KV.
-spark1 still has big models pulled that a stray request would page in:
+**Theoretical hazard, no live trigger.** Unified memory means an Ollama
+load competes with vLLM's reservation, and spark1 still has large models
+*pulled* — `llama3.3:70b` (42.5 GB), `qwen2.5:32b` (19.9 GB),
+`qwen2.5:14b` (9.0 GB). Loading any of those on top of a DSpark
+reservation would repeat the `feedback_gpu_util_080_default` wedge (~15 GB
+host headroom starved sshd's fork; needed a physical reboot).
 
-| Model | Size | Risk during a DSpark run |
-|---|---|---|
-| `qwen3-embedding:0.6b` | 0.64 GB | fine — this is the one we want |
-| `nomic-embed-text` | 0.27 GB | fine (superseded, still pulled) |
-| `qwen2.5:14b` | 8.99 GB | tight — llm_wiki uses this |
-| `qwen2.5:32b` | 19.85 GB | dangerous |
-| `llama3.3:70b` | 42.52 GB | **would wedge the box** |
+But per the user (2026-07-30): **llm_wiki no longer uses `qwen2.5:14b`, and
+the 32b/70b models haven't been used in ages.** So nothing actually drives
+them — the only live Ollama consumer is `qwen3-embedding:0.6b` for
+MemPalace, which is 0.64 GB and harmless. Being pulled is not being
+loaded, and `/api/ps` confirms nothing is resident.
 
-`feedback_gpu_util_080_default` is the precedent: ~15 GB host headroom
-starved sshd's fork and needed a physical reboot. A 42 GB Ollama load on
-top of a DSpark reservation is that failure, on purpose.
+Conclusion: **no mitigation needed before bring-up.** Don't bother capping
+`OLLAMA_MAX_LOADED_MODELS` or shortening keep-alive for this experiment.
+If we ever want the risk gone rather than merely dormant, the clean move is
+`ollama rm llama3.3:70b qwen2.5:32b qwen2.5:14b` (frees ~71 GB of disk and
+removes the failure mode outright) — but disk is not tight (2.3 TB free),
+so this is hygiene, not a prerequisite.
 
-Mitigation before Step 3 (cheap, reversible, no service impact):
-
-```bash
-# cap concurrent resident models and shorten the hold
-sudo systemctl edit ollama    # add:
-#   Environment="OLLAMA_MAX_LOADED_MODELS=1"
-#   Environment="OLLAMA_KEEP_ALIVE=60s"
-```
-
-Current env on both boxes is only `OLLAMA_HOST`, `OLLAMA_FLASH_ATTENTION=1`,
-`OLLAMA_KV_CACHE_TYPE=q8_0`, `OLLAMA_NUM_PARALLEL=8` — no load cap today.
-Also worth pointing llm_wiki away from `qwen2.5:14b` for the duration, or
-simply not driving it while DSpark is up.
+Note: this corrects the `project_llmwiki_perf` memory, which recorded
+`qwen2.5:14b` as llm_wiki's active ingest model.
 
 **Step 3 — launch worker (spark2) first, then head (spark1).**
 
