@@ -3,13 +3,36 @@
 **Current `vllm-chat` model ids** (copy-paste for client configs):
 
 ```
-spark1 (192.168.1.147:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 3, MTP-2 spec decode (qwen3_next_mtp) + APC PREFIX CACHING ON (Mamba 'align' mode), chunked prefill 40K, fp8 KV, vLLM 0.22.0)  ← LATENCY (MTP) + APC / production
-spark2 (192.168.1.121:8001):  Qwen/Qwen3-Next-80B-A3B-Instruct-FP8  (vllm-chat, single-box TP=1, 256K ctx, util 0.80, seqs 8, MTP-2 spec decode (qwen3_next_mtp) + APC PREFIX CACHING ON (Mamba 'align' mode), chunked prefill 40K, fp8 KV, vLLM 0.22.0)  ← MTP+seqs8 / Cognee-optimal batch box (KV 3.56x), see LIVE banner
+spark1 (192.168.1.147:8001):  deepseek-ai/DeepSeek-V4-Flash-DSpark  (vllm-dspark, CROSS-BOX TP=2 head, 256K ctx, util 0.80, seqs 6, dspark spec decode (3 tok), APC ON by default, nvfp4_ds_mla KV, block 256, moe flashinfer_b12x, vLLM 0.25.2.dev0)  ← EXPERIMENT 2026-07-30, consumes BOTH boxes
+spark2 (192.168.1.121:8001):  (NO API — worker node for the above: --node-rank 1 --headless. Port 8001 is NOT listening on spark2.)
+spark1 (192.168.1.147:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — the live MemPalace embedding path; UNAFFECTED by the DSpark swap)
 spark2 (192.168.1.121:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — unloads after 5 min idle; was vllm-embed on port 8000 until 2026-06-30)
 ```
+> **⚠ Both boxes are currently one cross-box endpoint.** There is no second
+> chat endpoint while DSpark is up — batch/throughput work that used to go to
+> spark2:8001 has nowhere to land. Revert command in the LIVE banner below.
+>
+> **Previous config (restore target):** both boxes single-box
+> `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`, 256K, util 0.80, MTP-2 + APC,
+> fp8 KV, vLLM 0.22.0 — spark1 seqs 3 (latency), spark2 seqs 8 (Cognee batch).
 > **ctx = total context per request (prompt + generation), i.e. `--max-model-len`.** **The two boxes now run DIFFERENT configs by design (2026-07-03):** **spark1 = LATENCY** — MTP-2 latency build + APC prefix caching (`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`, `--enable-prefix-caching`, `--max-num-seqs 3`, chunked prefill pinned at `--max-num-batched-tokens 40960`; MTP draft acceptance ~77% on a hard code prompt / higher on prose, APC gives ~5–10× TTFT on a re-sent prefix). **spark2 = MTP-8 BATCH** (as of 2026-07-04, later) — MTP-2 spec decode + APC + `--max-num-seqs 8`, chunked prefill 40960; measured fastest on the Cognee JSON load (~138 t/s vs plain-16's ~125). Point latency/agent-loop work at spark1:8001, batch/structured-output jobs at spark2:8001 — same served model id on both. (spark2 was plain-seqs16 "THROUGHPUT" until the MTP-8 crossover result; revert command in the LIVE banner if a long-context batch job needs the higher KV.) See the LIVE banner immediately below.
 
-> **▶ LIVE (2026-07-04, later): spark2 `vllm-chat` swapped plain-seqs16 → MTP-2 + APC + seqs 8 after a crossover experiment on the Cognee batch. This config MEASURED FASTEST for that workload. spark1 untouched (still MTP-2 + APC latency/production).**
+> **▶ LIVE (2026-07-30): BOTH boxes swapped Qwen3-Next-80B (single-box each) → ONE cross-box `deepseek-ai/DeepSeek-V4-Flash-DSpark` (TP=2, `mp` backend, NO Ray). spark1 = head + API on :8001; spark2 = headless worker, no API. This is an EXPERIMENT — see the verdict, it is not yet a keeper.**
+> Brought up with `./spin-up-vllm-dspark-2box.sh` (run from the workstation). Full detail: `deepseek-v4-flash-dspark-observations.md`; plan: `deepseek-v4-flash-dspark-2box-plan.md`.
+> - **Config verified live:** served id `deepseek-ai/DeepSeek-V4-Flash-DSpark` (**clients MUST be repointed — different id from the Qwen it displaced**), image `ghcr.io/anemll/dspark-vllm-gx10:0.1.1` (`sha256:a8394849…`, vLLM `0.25.2.dev0+g752a3a504`, torch 2.11.0+cu130 — **not** our pinned `v0.22.0-aarch64`), `--nnodes 2 --tensor-parallel-size 2 --distributed-executor-backend mp`, `--master-addr 10.100.16.1 --master-port 25440` over the DAC cable (TCP sockets, **no RoCE**), 256K ctx, util 0.80, seqs 6, `--kv-cache-dtype nvfp4_ds_mla`, `--block-size 256`, `--moe-backend flashinfer_b12x`, `--async-scheduling`, spec `{"method":"dspark","num_speculative_tokens":3,"draft_sample_method":"probabilistic"}`, `enable_prefix_caching=True` (**on by default in this build, not passed**), `quantization=deepseek_v4_fp8` / `scale_fmt=ue8m0`. Boot ~5.5 min (weights warm in page cache). Coherent smoke ("The capital of France is Paris." + correct 1-10 count) — **no gibberish**, the known failure mode did not appear.
+> - **GPU KV pool 859,040 tok → 3.28× @ 256K.** The recipe expected ~1.9–2.04M. **859K ÷ 1,048,576 = 0.82×, so the recipe's `--max-model-len 1048576` would NOT have booted at util 0.80** — starting at 256K per `feedback_size_context_by_kv_pool` avoided a failed bring-up. 1M needs util ≥0.85, which collides with the host-memory risk below.
+> - **Measured (prefill first, per `user_workflow_read_heavy`; unique-nonce prompts so APC can't fake a cold number).** Cold prefill is **LINEAR and flat ~1,000–1,180 tok/s out to 176K** — no long-context cliff, which **contradicts the 1-box thread's alarming ~13 min at 250K** (flat 1,045 tok/s extrapolates to ~4 min): 11,100 tok → **11.04s / 1,005 t/s**; 43,999 tok → **37.39s / 1,177 t/s**; 176,428 tok → **168.83s / 1,045 t/s**. **APC scales with context and is transformative at length: 17.9× at 176K (168.83s cold → 9.45s warm)**; 5.7× at 44K; only 1.3× at 11K (anomalous, needs re-run). Single-stream decode **30.3 tok/s — ~half the advertised 60–67**, and below spark1's ~49 t/s MTP Qwen3-Next. Draft acceptance **~63%** (mean accept length 2.89 of 4; per-position 0.857/0.619/**0.419** — the 3rd draft token is mostly wasted, so `num_speculative_tokens=2` is a cheap A/B) vs **95–99%** for our own Qwen3-Next MTP-2.
+> - **⚠ HOST MEMORY RISK:** ~14-15 GB available idle, ~11-12 GB at 44K prefill, **~9-10 GB at 176K prefill** — at/below the headroom that once wedged spark2 into needing a physical reboot (`feedback_gpu_util_080_default`). util 0.80 with a 156 GB 2-box model is NOT the comfortable 0.80 we know from an 80 GB single-box model. **Do not raise to 0.85 for 1M context without accepting reboot risk**; consider 0.75 if this becomes a keeper. Both boxes stayed ssh-responsive throughout (watched with a low-memory alarm).
+> - **Tuning lever not yet tried:** vLLM warns at boot that `max_num_scheduled_tokens` is clipped to **8180** to make room for draft slots, and to raise `--max-num-batched-tokens`. The recipe's 8192 is a small chunked-prefill window — our Qwen3-Next builds use **40960**. That's the most promising single knob for the prefill axis we care about.
+> - **⚠ Recipe corrections (the published recipes are wrong on 3 points)** — worker MUST get `--headless` and a distinct `--node-rank` ("identical command on both nodes" is false); node discovery is `--master-addr`/`--master-port` CLI flags, not env vars; and 5 of the 9 "not optional" env vars don't exist in this image. Proof in the header of `spin-up-vllm-dspark-2box.sh`.
+> - **Ollama on :11434 untouched on both boxes** — it's a systemd service, unaffected by stopping the `vllm-chat` containers, so the `qwen3-embedding:0.6b` MemPalace path kept working through the swap. `:8000` (`vllm-embed`) is not running on either box and was not involved.
+> - `dgxlib/models.yaml` **UPDATED** (new `deepseek-ai/DeepSeek-V4-Flash-DSpark` entry: `read_timeout: 1800`, `idle_timeout: 420` — the wide idle budget covers a ~2-min cold prefill at 128K before any token streams).
+> - **VERDICT so far: MIXED — the decision hinges on quality, which is untested.** *For:* flat long-context cold prefill (no cliff) and a **17.9× APC payoff at 176K**, which is exactly the read-heavy "load context once, live in it" shape. *Against:* decode 30.3 vs spark1's ~49 tok/s, acceptance 63% vs 95-99%, no context advantage (3.28× vs spark1's 3.56×), it consumes **both** boxes so no batch endpoint remains, and host headroom sits at 9-12 GB under load. Net: two boxes for one endpoint that decodes slower than one box of Qwen3-Next, bought with better long-context prefill. Subjective coding quality vs the Qwen bar is **not yet tested** — that's the only thing that could justify the fleet cost. **Nothing measured forces a revert; nothing measured justifies keeping it.**
+> **REVERT to the two-box Qwen3-Next world:** `ssh spark 'bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'` (spark1 latency: `PREFIX_CACHING=1 MAX_SEQS=3 GPU_UTIL=0.80 SPEC_TOKENS=2`) and `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=8 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`. Weights are cached — a load, not a download. **Also stop the DSpark containers first:** `ssh spark 'docker rm -f vllm-dspark'; ssh spark2 'docker rm -f vllm-dspark'`.
+>
+> ---
+>
+> **▶ PREV (2026-07-04, later): spark2 `vllm-chat` swapped plain-seqs16 → MTP-2 + APC + seqs 8 after a crossover experiment on the Cognee batch. This config MEASURED FASTEST for that workload. spark1 untouched (still MTP-2 + APC latency/production).**
 > Purpose: a 3-way throughput A/B on the real Cognee graph-extraction load (decode-bound, JSON-heavy, short contexts) to find the batch sweet spot between the latency box (MTP, seqs 3) and the throughput box (plain, seqs 16).
 > - **Measured aggregate generation throughput on the Cognee load:** MTP seqs 3 = **92 t/s**; plain seqs 16 = **~125 t/s**; **MTP seqs 8 = ~138 t/s (WINNER, +10% over plain-16, +50% over MTP-3).** Both extremes were on the wrong side of the crossover.
 > - **Why MTP wins here:** MTP draft acceptance on the rigid `KnowledgeGraph` JSON is **86–89%** (mean accept length ~2.75 of 3, per-position 0.93/0.82) — far above the ~77% on hard code. So each MTP stream decodes ~2.2× faster; 8 fast streams (138) beat 16 bandwidth-contended plain streams (125), and rejected-draft compute waste hasn't bitten by seqs 8. Enabled via `ssh spark2 'PREFIX_CACHING=1 MAX_SEQS=8 GPU_UTIL=0.80 SPEC_TOKENS=2 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'`.
@@ -411,9 +434,12 @@ spark2 (192.168.1.121:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — unloa
 > spark2 `vllm-embed` (port 8000, `Qwen/Qwen3-Embedding-0.6B`) kept
 > running throughout — unaffected.
 
+**⚠⚠ SUPERSEDED 2026-07-30 by the top LIVE banner: BOTH boxes are now one cross-box `deepseek-ai/DeepSeek-V4-Flash-DSpark` endpoint (spark1 head :8001, spark2 headless worker with NO API). The two-single-box Qwen3-Next world described from here down is the REVERT TARGET, not the current state. Everything below still describes the restore config accurately.**
+
 **⚠ Superseded by the LIVE banner at the top of this doc (2026-07-04, later): spark2 is now the MTP-8 BATCH box (MTP-2 spec decode + APC, seqs 8), NOT the plain-16 throughput or DFlash configs described below. spark1 is unaffected — still MTP-2 + APC latency/production (seqs 3).**
 
-Snapshot of what's actually running on **both** DGX Sparks as of
+Snapshot of the previous steady state (**restore target** as of 2026-07-30) on
+**both** DGX Sparks as of
 2026-07-04, later (single-box Qwen3-Next-80B-A3B-Instruct-FP8 on each, both @ 256K
 on vLLM 0.22.0, both at **util 0.80**, both fp8 KV, chunked prefill 40K, hermes tools). **The two boxes diverge by design:**
 **spark1 = LATENCY config** (MTP-2 spec decode `qwen3_next_mtp`,
@@ -567,7 +593,20 @@ both pass on a stale IP config.)
 
 ## Ports in use
 
-### spark1 (192.168.1.147)
+> **⚠ 2026-07-30 — CURRENT STATE (supersedes both tables below):**
+>
+> | box | port | service | what |
+> |---|---:|---|---|
+> | spark1 | 8001 | **`vllm-dspark`** (docker) | `deepseek-ai/DeepSeek-V4-Flash-DSpark`, **cross-box TP=2 HEAD**, `--node-rank 0`, 256K, util 0.80, seqs 6, `nvfp4_ds_mla` KV, block 256, `flashinfer_b12x` MoE, dspark spec (3 tok), APC on, image `ghcr.io/anemll/dspark-vllm-gx10:0.1.1` (vLLM 0.25.2.dev0). KV pool **859,040 tok → 3.28× @ 256K**. **NO `--restart` policy — will NOT survive a reboot.** |
+> | spark2 | 8001 | **nothing listening** | spark2 runs `vllm-dspark` as `--node-rank 1 --headless` — a worker with **no API server**. Do not point clients here. |
+> | spark1 | 11434 | Ollama (systemd) | `qwen3-embedding:0.6b` — **untouched by the DSpark swap**, still the live MemPalace embedding path |
+> | spark2 | 11434 | Ollama (systemd) | `qwen3-embedding:0.6b`, lazy-load — untouched |
+> | both | 8000 | — | not running on either box (confirmed 2026-07-30) |
+>
+> The two tables below describe the **revert target** (two independent
+> single-box Qwen3-Next endpoints), not what is live now.
+
+### spark1 (192.168.1.147) — REVERT TARGET, not current
 
 | port | service | purpose |
 |---:|---|---|
@@ -575,7 +614,7 @@ both pass on a stale IP config.)
 | 8000 | vllm-embed (docker) | Embeddings — `nomic-embed-text-v1.5` — **DOWN** (stopped back during the cross-box experiment, still not restored; embeddings on Ollama 11434. Could now be restored — box is single-box again — but left on Ollama for continuity) |
 | 8001 | vllm-chat (docker) | Chat completions — **`Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** single-box TP=1, **256K** (`--max-model-len 262144`), **MTP-2 spec decode** (`--speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'`) **+ APC `--enable-prefix-caching`** (hybrid → experimental Mamba 'align' mode), chunked prefill **40K** (`--max-num-batched-tokens 40960`), hermes tools, no reasoning parser, **gpu-util 0.80**, **seqs 3**, fp8 KV, image **`vllm/vllm-openai:v0.22.0-aarch64`**. KV pool **1,002,438 tok → 3.82× @ 256K** (APC+MTP). Via `PREFIX_CACHING=1 MAX_SEQS=3 bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh`. (2026-06-29: THROUGHPUT plain/seqs-16 → LATENCY MTP-2/seqs-3; 2026-07-01: + APC prefix caching.) **Auto-restarts on reboot (`--restart unless-stopped`, 2026-07-02).** Independent endpoint. |
 
-### spark2 (192.168.1.121)
+### spark2 (192.168.1.121) — REVERT TARGET, not current
 
 | port | service | purpose |
 |---:|---|---|
@@ -586,7 +625,30 @@ both pass on a stale IP config.)
 
 ## VRAM budget (steady state)
 
-### spark1
+> **⚠ 2026-07-30 — CURRENT (DSpark cross-box) budget, per box:**
+>
+> | | |
+> |---|---|
+> | Reserved cap | ~97 GB (**0.80** × ~121 GB usable) |
+> | Model share | ~78 GiB per box (156 GiB FP4-expert/FP8-dense checkpoint split TP=2) + draft module |
+> | KV | `nvfp4_ds_mla`, pool **859,040 tok → 3.28× @ 256K** |
+> | Host available, idle | **~14-15 GB** |
+> | Host available, 44K prefill | ~11-12 GB |
+> | Host available, 176K prefill | **~9-10 GB** ← danger zone |
+>
+> **This is materially tighter than the same util 0.80 on the single-box
+> 80B**, because a 156 GB model split two ways still puts ~78 GB on each box.
+> 9-10 GB available is at/below what wedged spark2 into a physical reboot at
+> util 0.88 (`gpu-reservation-and-kv-tradeoffs.md`,
+> `feedback_gpu_util_080_default`). **Do not raise util to 0.85** to chase the
+> recipe's 1M context; if DSpark is kept, drop to 0.75 instead. Ollama's big
+> pulled models (`llama3.3:70b` 42.5 GB, `qwen2.5:32b` 19.9 GB) would be fatal
+> if loaded on top of this — the user confirms nothing drives them, but that
+> is a behavioural guarantee, not an enforced one.
+>
+> The two sections below are the **revert target** budget.
+
+### spark1 — REVERT TARGET, not current
 
 | service | reserved cap | actual model size | notes |
 |---|---:|---:|---|
@@ -605,7 +667,7 @@ host (sshd couldn't fork) and wedged spark2; see
 anyway (bandwidth-bound). **Any third vLLM sidecar will not fit alongside
 the 80B; spec the smaller container first if you ever co-host.**
 
-### spark2
+### spark2 — REVERT TARGET, not current
 
 **As of 2026-07-04 (later) spark2 runs MTP-2 spec decode + APC at seqs 8 (the MTP-8 batch config) — measured fastest on the Cognee batch load. See top LIVE banner.**
 
@@ -1193,7 +1255,21 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 
 ## 7. Client-side configuration
 
-> **⚠️ LIVE (2026-06-20): spark1:8001 AND spark2:8001 serve `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** (single-box on each box).
+> **⚠⚠ LIVE (2026-07-30): CLIENTS ARE CURRENTLY BROKEN AGAINST spark1:8001 — the served id changed.**
+> spark1:8001 now serves **`deepseek-ai/DeepSeek-V4-Flash-DSpark`**, and
+> **spark2:8001 serves nothing at all** (headless TP worker). Any client that
+> sends an explicit model id — MemPalace `llm_model`, llm_wiki's
+> custom-provider Model, CampaignGenerator's `DGX_MODEL` /
+> `DGX_DEFAULT_MODEL`, the opencode `dgx` provider — **will 400** until it is
+> either repointed to `deepseek-ai/DeepSeek-V4-Flash-DSpark` or the revert is
+> run. **No client configs were changed** as part of the 2026-07-30
+> experiment: this is a deliberately reversible state, and repointing four
+> clients for an experiment whose verdict is "mixed, quality untested" would
+> be churn. Decide keep-or-revert first, then flip clients once.
+> **Unaffected:** anything using Ollama `:11434` for embeddings (MemPalace's
+> embedding path still works).
+
+> **⚠️ PREV (2026-06-20): spark1:8001 AND spark2:8001 serve `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8`** (single-box on each box).
 > Any client that sends an explicit model id — MemPalace `llm_model`,
 > llm_wiki's custom-provider Model, CampaignGenerator's `DGX_MODEL` /
 > `DGX_DEFAULT_MODEL`, the opencode `dgx` provider — must send

@@ -55,6 +55,23 @@ models:
     read_timeout: 600
     idle_timeout: 300
 
+  "deepseek-ai/DeepSeek-V4-Flash-DSpark":
+    # 284B total / 13B active FP4-expert + FP8-dense hybrid, served CROSS-BOX
+    # (spark1 head + spark2 worker, TP=2, mp backend) as of 2026-07-30.
+    # Measured single-stream decode ~30 tok/s — slower than the single-box
+    # Qwen3-Next-80B it displaced, so give it a wider budget than that model.
+    # Cold prefill is ~1,000-1,200 tok/s, so a large read-heavy prompt spends
+    # real time before the first token: a 128K prompt is ~2 min of prefill with
+    # nothing streamed yet. idle_timeout must cover that whole cold-prefill
+    # window or long-context calls die before their first token.
+    # can_think: the checkpoint has a reasoning path, but note this build emits
+    # `reasoning` (NOT `reasoning_content`) — the shape that silently drops
+    # traces in opencode. Default thinking OFF until that's re-verified.
+    can_think: true
+    thinking_default: false
+    read_timeout: 1800
+    idle_timeout: 420
+
   "Qwen/Qwen2.5-14B-Instruct-AWQ":
     can_think: false
     thinking_default: false
