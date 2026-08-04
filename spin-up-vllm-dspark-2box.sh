@@ -2,8 +2,11 @@
 #
 # spin-up-vllm-dspark-2box.sh
 #
-# Bring up deepseek-ai/DeepSeek-V4-Flash-DSpark across spark1 + spark2
-# (TP=2, `mp` backend — NO Ray) serving the chat slot on spark1:8001.
+# Bring up a DeepSeek-V4-Flash checkpoint across spark1 + spark2 (TP=2, `mp`
+# backend — NO Ray) serving the chat slot on spark1:8001. Default MODEL is
+# now `deepseek-ai/DeepSeek-V4-Flash-0731` (2026-08-03 — see "2026-08-03
+# UPGRADE" below); override with MODEL=... to run any other DeepSeek-V4-Flash
+# checkpoint (e.g. the original DSpark preview) that's staged in the HF cache.
 #
 # Run this FROM THE WORKSTATION (it SSHes to `spark` and `spark2`).
 #
@@ -11,15 +14,50 @@
 #
 # ---------------------------------------------------------------------------
 # WHAT THIS REPLACES
-#   Stops `vllm-chat` (Qwen/Qwen3-Next-80B-A3B-Instruct-FP8) on BOTH boxes.
-#   That is the model MemPalace/llm_wiki/CampaignGenerator point at, so this
-#   is a service outage for the chat endpoint. Ollama on :11434 is a systemd
-#   service and is NOT touched — the qwen3-embedding path keeps working.
+#   Stops whatever is currently in the `vllm-dspark` (or `vllm-chat`) slot on
+#   BOTH boxes and starts $MODEL there. That is the model MemPalace/llm_wiki/
+#   CampaignGenerator point at, so this is a service outage for the chat
+#   endpoint. Ollama on :11434 is a systemd service and is NOT touched — the
+#   qwen3-embedding path keeps working.
 #
 # REVERT
+#   Nearest: rerun this script with the previous checkpoint, e.g.
+#     MODEL=deepseek-ai/DeepSeek-V4-Flash-DSpark SPEC_TOKENS=3 ./spin-up-vllm-dspark-2box.sh
+#   (that checkpoint is left on disk on both boxes on purpose — this is a
+#   container restart, not a re-download.)
+#   Furthest, back to Qwen3-Next-80B:
 #   ssh spark  'bash ~/spin-up-vllm-qwen3-next-80b.sh'
 #   ssh spark2 'bash ~/spin-up-vllm-qwen3-next-80b-mtp.sh'
 #   (weights are cached — a load, not a download)
+#
+# ---------------------------------------------------------------------------
+# 2026-08-03 UPGRADE: DSpark preview -> DeepSeek-V4-Flash-0731
+#   0731 is DeepSeek's official V4-Flash release (2026-07-31), same
+#   architecture/quant format as the DSpark preview (byte-identical
+#   config.json: 284B/13B active, fp8/e4m3/ue8m0, 43 layers, dspark_block_size
+#   5, same fused draft module) — a retrain, not a new architecture. Verified
+#   against the live preview container's own logs/code before swapping, not
+#   assumed from the community recipes (which disagreed with each other and,
+#   in two cases, targeted a different image lineage entirely). Two changes
+#   made here as a result:
+#     - SPEC_TOKENS default 3 -> 5, matching config.json's dspark_block_size
+#       (the drafter emits exactly that many tokens per pass; the original
+#       preview bring-up's "3, not the card's 7" note undersold the real
+#       constraint — 3 boots and serves but isn't the checkpoint's native
+#       block size).
+#     - VLLM_USE_BREAKABLE_CUDAGRAPH=0 added — a real, recognized flag in
+#       this image (confirmed via the installed vllm/config/vllm.py, which
+#       auto-enables it otherwise), reported to cost 13-29% decode if left
+#       unset. Unverified ON THIS IMAGE at the time of this change — carried
+#       over from a community report on a different image lineage.
+#   NOT changed: tool-call parser (deepseek_v4, unchanged), image tag
+#   (0.1.1 already meets 0731's vLLM>=0.25.0 requirement), gpu-memory-
+#   utilization (0.80 unchanged). Checked and NOT an issue: omitted
+#   `reasoning_effort` (what every current client sends) passes through this
+#   image's tokenizer wrapper as None, unaffected by the low/high/max scheme
+#   0731 introduces — only an explicit `reasoning_effort="low"` would be
+#   mis-mapped to "high" by this image's pre-0731 wrapper, and nothing sends
+#   that today.
 #
 # ---------------------------------------------------------------------------
 # CORRECTIONS TO THE PUBLISHED RECIPES (verified against the image, not
@@ -100,7 +138,7 @@ CABLE_IF=enp1s0f0np0
 IMAGE=ghcr.io/anemll/dspark-vllm-gx10:0.1.1
 CONTAINER=vllm-dspark
 OLD_CONTAINER=vllm-chat                 # what we are displacing on both boxes
-MODEL=deepseek-ai/DeepSeek-V4-Flash-DSpark
+MODEL="${MODEL:-deepseek-ai/DeepSeek-V4-Flash-0731}"
 HF_CACHE=/home/kostadis/.cache/huggingface
 CHAT_PORT="${CHAT_PORT:-8001}"
 MASTER_PORT="${MASTER_PORT:-25440}"
@@ -113,9 +151,20 @@ BLOCK_SIZE="${BLOCK_SIZE:-256}"
 KV_DTYPE="${KV_DTYPE:-nvfp4_ds_mla}"
 MOE_BACKEND="${MOE_BACKEND:-flashinfer_b12x}"
 SPEC="${SPEC:-1}"
-SPEC_TOKENS="${SPEC_TOKENS:-3}"         # 3, NOT the card's 7 — CUDA-graph
-                                        # ladder constraint at max_num_seqs=6
+SPEC_TOKENS="${SPEC_TOKENS:-5}"         # 5, matching config.json's
+                                        # dspark_block_size (the drafter emits
+                                        # exactly this many tokens per pass).
+                                        # NOT the card's 7 (4xGB300 stack, a
+                                        # different serving config). The
+                                        # original preview default of 3 also
+                                        # boots and serves, just not at the
+                                        # checkpoint's native block size.
 RDMA="${RDMA:-0}"
+TOOL_PARSER="${TOOL_PARSER:-deepseek_v4}"  # HEAD only. Without --enable-auto-tool-choice
+                                        # + a parser, vLLM 400s ANY request carrying
+                                        # tools ('"auto" tool choice requires ...'),
+                                        # so every agent client dies before inference.
+                                        # This image offers deepseek_v3/_v31/_v32/_v4.
 BOOT_BUDGET="${BOOT_BUDGET:-3600}"      # 60 min: ~78 GB/box cold load + compile
 
 run_remote() { ssh -o ConnectTimeout=10 "$1" "${2}"; }
@@ -159,6 +208,8 @@ fi
 COMMON_ENV=(
   -e VLLM_USE_B12X_MOE=1
   -e VLLM_USE_FLASHINFER_SAMPLER=1
+  -e VLLM_USE_BREAKABLE_CUDAGRAPH=0        # added 2026-08-03 for 0731 — see
+                                            # the UPGRADE note at top of file
   -e HF_HUB_OFFLINE=1
   -e NCCL_SOCKET_IFNAME=${CABLE_IF}
   -e GLOO_SOCKET_IFNAME=${CABLE_IF}
@@ -219,14 +270,15 @@ run_remote "$HEAD" "docker run -d --name ${CONTAINER} --network host \
   -e VLLM_HOST_IP=${HEAD_IP} \
   -v ${HF_CACHE}:/root/.cache/huggingface \
   ${IMAGE} ${COMMON_SERVE[*]} ${SPEC_ARG} \
-  --node-rank 0 --host 0.0.0.0 --port ${CHAT_PORT}"
+  --node-rank 0 --host 0.0.0.0 --port ${CHAT_PORT} \
+  --enable-auto-tool-choice --tool-call-parser ${TOOL_PARSER}"
 
 # ---- 4. wait for the endpoint ----------------------------------------------
 echo ">>> [4/6] Waiting for ${HEAD_LAN}:${CHAT_PORT} (budget ${BOOT_BUDGET}s)..."
 ok=0
 deadline=$(( $(date +%s) + BOOT_BUDGET ))
 while [[ $(date +%s) -lt $deadline ]]; do
-  if curl -sS --max-time 5 "http://${HEAD_LAN}:${CHAT_PORT}/v1/models" 2>/dev/null | grep -q "DSpark"; then
+  if curl -sS --max-time 5 "http://${HEAD_LAN}:${CHAT_PORT}/v1/models" 2>/dev/null | grep -qF "${MODEL##*/}"; then
     echo "    Endpoint live."
     ok=1; break
   fi
@@ -242,6 +294,13 @@ done
 # ---- 5. KV pool + spec-decode boot signature -------------------------------
 echo ">>> [5/6] Boot signature (read the REAL numbers, don't trust the recipe):"
 run_remote "$HEAD" "docker logs ${CONTAINER} 2>&1 | grep -aE 'GPU KV cache size|Maximum concurrency|Speculative|dspark|graph capturing|Application startup' | tail -12 || true"
+echo ">>> Weight-mapping sanity (should be 0 on both ranks — a >0 count means"
+echo ">>> draft-model tensors are being silently dropped, see the 2026-08-03"
+echo ">>> UPGRADE note at top of file):"
+for box in "$HEAD" "$WORKER"; do
+  n=$(run_remote "$box" "docker logs ${CONTAINER} 2>&1 | grep -c 'Skipping unknown' || true")
+  echo "    ${box}: ${n} 'Skipping unknown' warnings"
+done
 
 # ---- 6. smoke: check MEANING, not HTTP 200 ---------------------------------
 if [[ "$ok" != "1" ]]; then
