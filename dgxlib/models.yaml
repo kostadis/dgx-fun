@@ -55,6 +55,45 @@ models:
     read_timeout: 600
     idle_timeout: 300
 
+  "deepseek-ai/DeepSeek-V4-Flash-DSpark":
+    # 284B total / 13B active FP4-expert + FP8-dense hybrid, served CROSS-BOX
+    # (spark1 head + spark2 worker, TP=2, mp backend) 2026-07-30 -> 2026-08-04,
+    # then upgraded to the -0731 checkpoint below. Kept here (not deleted) as
+    # the revert target — MODEL=... SPEC_TOKENS=3 still boots this checkpoint
+    # from the HF cache without a re-download.
+    # Measured single-stream decode ~30 tok/s — slower than the single-box
+    # Qwen3-Next-80B it displaced, so give it a wider budget than that model.
+    # Cold prefill is ~1,000-1,200 tok/s, so a large read-heavy prompt spends
+    # real time before the first token: a 128K prompt is ~2 min of prefill with
+    # nothing streamed yet. idle_timeout must cover that whole cold-prefill
+    # window or long-context calls die before their first token.
+    # can_think: the checkpoint has a reasoning path, but note this build emits
+    # `reasoning` (NOT `reasoning_content`) — the shape that silently drops
+    # traces in opencode. Default thinking OFF until that's re-verified.
+    can_think: true
+    thinking_default: false
+    read_timeout: 1800
+    idle_timeout: 420
+
+  "deepseek-ai/DeepSeek-V4-Flash-0731":
+    # DeepSeek's official V4-Flash release (2026-07-31), upgraded onto the
+    # same cross-box slot 2026-08-04, displacing the DSpark preview above.
+    # Byte-identical architecture/quant format to the preview (284B/13B
+    # active, fp8/e4m3/ue8m0, dspark_block_size 5) -- a retrain, not a new
+    # architecture -- so the preview's timing budget carries over unchanged:
+    # same cold-prefill shape (~1,000-1,200 tok/s), same reason a 128K prompt
+    # needs idle_timeout to cover ~2 min of silent prefill before the first
+    # token. Single-stream decode sanity-checked at ~21-31 tok/s (noisy,
+    # 3-run spot check, not a controlled A/B) -- comparable to the preview's
+    # 30.3 tok/s point measurement, no gross regression.
+    # can_think: same caveat as the preview carried over unverified for 0731
+    # specifically -- reasoning path exists but reasoning/reasoning_content
+    # framing not re-checked on this checkpoint. Default thinking OFF.
+    can_think: true
+    thinking_default: false
+    read_timeout: 1800
+    idle_timeout: 420
+
   "Qwen/Qwen2.5-14B-Instruct-AWQ":
     can_think: false
     thinking_default: false
