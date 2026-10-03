@@ -1,0 +1,45 @@
+# Paired NPC-behaviour scenarios. Each pair changes one fact; `expect` names the
+# probability that should move and its direction. Directions are Claude's judgement,
+# open to GM challenge. `flex` maps each side onto FlexAI's (role, size, stance).
+PARTY = ("The party: Thorin (dwarf fighter, plate armour, front line), Gyrgum (dwarf cleric, "
+         "second rank), Daz (drow evoker, at the back, casting ranged spells), Zalthir "
+         "(ranged attacker with a crossbow, at the back).")
+
+PAIRS = [
+ dict(id="goblin_morale", metric=("outcome", "flee"), sign=+1,
+      a=("A goblin skirmisher with a spear and shortbow, unhurt, fighting beside six other goblins.", ("skirmisher", "normal", "fresh")),
+      b=("A goblin skirmisher with a spear and shortbow, down to 3 of 12 hit points. All six of its goblin allies lie dead. An open tunnel is behind it.", ("skirmisher", "normal", "overwhelmed"))),
+ dict(id="cornered_goblin", metric=("outcome", "flee"), sign=-1,
+      a=("A goblin skirmisher with a spear and shortbow, down to 3 of 12 hit points. All six of its goblin allies lie dead. An open tunnel is behind it.", ("skirmisher", "normal", "overwhelmed")),
+      b=("A goblin skirmisher with a spear and shortbow, down to 3 of 12 hit points. All six of its goblin allies lie dead. It stands in a dead-end alcove; the party blocks the only way out.", ("skirmisher", "normal", "cornered"))),
+ dict(id="mindless_zombie", metric=("outcome", "flee"), sign=-1,
+      a=("A goblin, down to 3 of 12 hit points, alone, an open tunnel behind it.", ("skirmisher", "normal", "overwhelmed")),
+      b=("A mindless zombie, down to 3 of 22 hit points, alone, an open tunnel behind it. It has no intelligence and no fear.", ("brute", "normal", "mindless"))),
+ dict(id="archer_engaged", metric=("outcome", "maneuver"), sign=+1,
+      a=("A drow archer with a hand crossbow and a shortsword, on a ledge 60 feet from the party, unhurt.", ("artillery", "normal", "fresh")),
+      b=("A drow archer with a hand crossbow and a shortsword, unhurt. Thorin has just climbed onto its ledge and stands adjacent to it.", ("artillery", "normal", "fresh"))),
+ dict(id="priest_potion", metric=("outcome", "use_defend"), sign=+1,
+      a=("A duergar priest with a warhammer and no items. Its two duergar allies are unhurt.", ("leader", "normal", "fresh")),
+      b=("A duergar priest with a warhammer and a healing potion on its belt. Its duergar ally beside it has just fallen, dying, at 0 hit points.", ("leader", "normal", "fresh"))),
+ dict(id="berserker", metric=("outcome", "flee"), sign=-1,
+      a=("An orc warrior with a greataxe, down to a quarter of its hit points.", ("brute", "normal", "bloodied")),
+      b=("A quaggoth in a berserk frenzy with claws, down to a quarter of its hit points. Quaggoths in frenzy fight to the death.", ("brute", "normal", "relentless"))),
+ dict(id="mindflayer_recharge", metric=("outcome", "ability"), sign=+1,
+      a=("A mind flayer with tentacles. Its Mind Blast was used last round and has not recharged.", ("controller", "elite", "fresh")),
+      b=("A mind flayer with tentacles. Its Mind Blast has just recharged and three party members stand within its cone.", ("controller", "elite", "fresh"))),
+ dict(id="no_ranged_weapon", metric=("outcome", "attack_secondary"), sign=-1,
+      a=("A hobgoblin soldier with a longsword and a longbow, unhurt.", ("soldier", "normal", "fresh")),
+      b=("An ogre with a greatclub and no ranged weapon or thrown objects, unhurt.", ("brute", "large" if False else "normal", "fresh"))),
+ dict(id="no_ranged_enemies", metric=("target", "ranged_enemy"), sign=-1,
+      a=("A drow archer with a hand crossbow, unhurt, being shot at by the party's crossbowman and caster.", ("artillery", "normal", "fresh")),
+      b=("A drow archer with a hand crossbow, unhurt. The party it faces this time is two dwarves with axes and hammers only; nobody in the party has any ranged attack or spell.", ("artillery", "normal", "fresh"))),
+ dict(id="assassin_targets_weak", metric=("target", "weakest"), sign=+1,
+      a=("An ogre guarding a door, unhurt. It is stupid and swings at whatever is in front of it.", ("brute", "normal", "fresh")),
+      b=("A drow assassin, unhurt, hidden in shadow. It is trained to kill spellcasters first and the caster at the back is badly wounded.", ("lurker", "normal", "ambushing"))),
+ dict(id="leader_fled", metric=("outcome", "flee"), sign=+1,
+      a=("A hobgoblin soldier, unhurt, in formation. Its captain stands behind the line shouting orders.", ("soldier", "normal", "fresh")),
+      b=("A hobgoblin soldier, unhurt, in formation. Its captain has just been killed and the line behind it is breaking and running.", ("soldier", "normal", "overwhelmed"))),
+ dict(id="cornered_rat", metric=("outcome", "attack_main"), sign=+1,
+      a=("A giant rat, bloodied, at the mouth of an open tunnel it can run down.", ("skirmisher", "minion", "bloodied")),
+      b=("A giant rat, bloodied, trapped in a corner with no way out; the party closes in.", ("skirmisher", "minion", "cornered"))),
+]

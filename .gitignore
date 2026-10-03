@@ -18,3 +18,10 @@ queries*.jsonl
 5e-mempalace/
 lora-stormgiants/
 my_quest.md
+
+# Clef / Decision 2.0 eval DATA stays local: it quotes campaign chapters verbatim and
+# table-chatter labels name real people. The scripts that rebuild it are tracked.
+clef/spell-pass-eval/*.json
+clef/social-npc-eval/*.json
+clef/social-npc-eval/review.html
+clef/ensemble-typing-eval/*.json
