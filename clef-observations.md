@@ -119,3 +119,42 @@ never executes package code). Setup, GB10 memory patch and revert: `current-setu
 - **Nox-4B is the family's sweet spot:** same combat score as Clef/Lux, triage between Lux and clef 27B, 80 ms, ~19 GB RSS.
 - **Open:** `batching`/`max_speed` profiles; registering fla Triton kernels for CUDA;
   why Lux's RSS is 2× its weights.
+
+## 2026-10-03 (evening) — fine-tuning Decision-2.0-Nox-4B on the GM's rulings
+
+Scripts: `clef/finetune/` (extract.py caches backbone features via `vllm_sr_runtime` exactly as
+`serve` does; train_head.py = stage 1, head only; train_lora.py = stage 2, rank-16 LoRA on MLP +
+attention projections + head, gradients through the native backbone). Loss: valid-k cross-entropy
+(the release's own loss family) with an L2 pull toward the released head. Cached features reproduce
+the server's probabilities (mean |dP| 0.0009). The released HF wrapper refuses `train()`; training
+works on the runtime's plain nn.Modules. All splits by session (triage) or entity (typing).
+
+**A. Spell-pass triage** (864 tokens, 9 sessions, 3 folds):
+
+| | AUC | forwarded at 0 held-out misses | at ≤2 misses |
+|---|---|---|---|
+| released | 0.900 | 82 % | 34 % |
+| head-only (lr 1e-4, L2-SP 0.1, 20 ep) | **0.963** | **67 %** | 34 % |
+| LoRA r16 + head (2 ep) | 0.915 | 80 % | 53 % |
+
+Weak regularisation overfits badly (train-chosen threshold: 19 held-out misses). The same three
+names (`Heel Strike`, `Zoom`, `Pick / Shine`) are missed by every model and every tuning — label
+limit, not capacity. Clef 27B untuned still the only zero-miss filter (44–51 % forwarded held-out).
+
+**B. Entity typing** (2,538 facts, 147 entities, 5 folds):
+
+| | per-fact accuracy | split (repair 92 / control 55) | facts to event/thread/date | entity-majority correct |
+|---|---|---|---|---|
+| released | 87.2 % | 45 / 12 | 70 | 137 / 147 |
+| head-only | **91.6 %** | 35 / 11 | 1 | — |
+| LoRA r16 | 80.6 % | **18 / 9** | 0 | **120 / 147** |
+
+- Head-only consolidates entities whose text points one way (Glabbagool npc 146→180) but does **not**
+  learn the GM's conventions: Zuggtmoy/Juiblex (GM: monster) moved *toward* npc; Yeenoghu (GM: npc)
+  contradicts the rest. Sparse, inconsistent conventions are outvoted (1,630/2,538 facts are npc).
+- LoRA cuts splits by **collapsing to the majority class**: all 63 monster-gold facts → npc, 140/468
+  location → npc. Consistent and wrong is worse than split — a split is visible in review, a wrong
+  dossier is not.
+- **Finding:** fine-tuning on a few hundred to a few thousand rulings recalibrates the readout (A: AUC
+  0.90→0.96) but cannot teach conventions the text does not carry, and backbone adaptation on this
+  little data trades accuracy for consistency. Typing once per entity remains the fix.

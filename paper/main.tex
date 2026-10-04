@@ -42,7 +42,9 @@ direction on 11 of 12 paired scenarios against 5 of 12 for a published dice-tabl
 where the label is a string-level judgment (choosing a canonical spelling: 66\% accuracy with 71
 confident wrong answers, against 94.5\% of answered items for a local generative model with
 reasoning enabled), a house convention, or a consistency property across many items (typing extracted facts:
-re-typing per fact created about as many split entities as it repaired). We also report that an
+re-typing per fact created about as many split entities as it repaired). Fine-tuning a 4B decision model on the GM's rulings
+recalibrated it (triage AUC 0.90 to 0.96) but did not teach the conventions, and LoRA adaptation
+reduced splits only by collapsing to the majority class. We also report that an
 apparently strong verdict-prediction result (AUC~0.89) was an artifact of the classifier reading the
 upstream model's own hedging, and that vendor latency claims did not transfer to the GB10 (127~ms
 measured vs.\ 18.4~ms claimed).
@@ -86,7 +88,8 @@ We ask four questions:
 including two strong negative results; (ii) a characterization of \emph{which kinds of label} decision models
 can and cannot learn from the input; (iii) two methodological pitfalls that produced convincing but
 spurious results in this study (label leakage through upstream prose; selection bias in a
-repair-only test set); (iv) deployment notes for the GB10, including a unified-memory accounting bug
+repair-only test set); (iv) a fine-tuning test showing that the convention failure survives training on the
+GM's own rulings; (v) deployment notes for the GB10, including a unified-memory accounting bug
 in an upstream runtime.
 
 \section{Background}
@@ -388,7 +391,55 @@ Decision-2.0-Nox-4B a suggestion takes 0.25--0.8~s including the NPC's dossier, 
 2.5--3~s. A labelled evaluation of social responses against 60 past moments has been prepared but
 not yet adjudicated by the GM; we do not report it.
 
-\subsection{E6: Serving on the GB10}
+\subsection{E6: Fine-tuning a decision model on the GM's rulings}
+\textbf{Question.} Can the failures above be trained away? We fine-tuned Decision-2.0-Nox-4B on
+the GM's rulings for two tasks: triage (E3) and per-fact entity typing (E4, where the labels encode
+the GM's filing conventions).
+
+\textbf{Method.} The released Transformers wrapper refuses \texttt{train()}, but the runtime's
+native backbone and head are ordinary PyTorch modules. We loaded the model through the runtime
+exactly as the server does and confirmed that cached features reproduced the served probabilities
+(mean $|\Delta p| = 0.0009$). We then trained in two stages: \emph{head only} on cached features,
+and a \emph{rank-16 LoRA} on the MLP and attention projections plus the head, with gradients through
+the backbone. The loss is valid-$k$ cross-entropy ($-\log\sum_{k\in\text{valid}}p_k$, the loss
+family the release reports), with an L2 pull toward the released head. Evaluation is
+cross-validated by \emph{session} for triage (3 folds) and by \emph{entity} for typing (5 folds),
+so no test entity or session is seen in training.
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\textwidth}{!}{\begin{tabular}{lrrrrrr}
+\toprule
+& \multicolumn{3}{c}{Triage (864 tokens)} & \multicolumn{3}{c}{Entity typing (2{,}538 facts, 147 entities)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Nox-4B & AUC & Fwd.\ @ 0 miss & Fwd.\ @ $\leq$2 & Per-fact acc. & Split (92 / 55) & Entity majority \\
+\midrule
+released & 0.900 & 82\% & 34\% & 87.2\% & 45 / 12 & 137 / 147 \\
+head only & \textbf{0.963} & \textbf{67\%} & 34\% & \textbf{91.6\%} & 35 / 11 & --- \\
+LoRA r16 + head & 0.915 & 80\% & 53\% & 80.6\% & \textbf{18 / 9} & 120 / 147 \\
+\bottomrule
+\end{tabular}}
+\caption{E6, held-out results. ``Fwd.'' is the share of tokens forwarded at the best held-out
+threshold for the stated number of missed names. ``Split'' counts entities whose facts land in more
+than one entity type (repair set / control set). Head-only settings were chosen from four
+candidates on the same cross-validation, so its rows are mildly optimistic.}
+\label{tab:e7}
+\end{table}
+
+\textbf{Result (Table~\ref{tab:e7}).} Head-only tuning \emph{recalibrates} the readout. Triage
+AUC rose from 0.900 to 0.963, and per-fact typing accuracy from 87.2\% to 91.6\%, with almost no
+facts drifting into non-entity types. It did not learn the conventions. The demon lords the GM files
+as \emph{monster} moved \emph{toward} \emph{npc} (Juiblex: 7 of 14 facts \emph{monster} released,
+1 of 14 tuned), outvoted by a label distribution that is 64\% \emph{npc} and by the GM's own
+contrary ruling on Yeenoghu. Weak regularisation overfit badly: a threshold chosen on the training
+sessions missed 19 held-out names. The LoRA stage cut entity splits sharply (45 to 18) by
+\emph{collapsing to the majority class}: all 63 facts the GM filed as \emph{monster} became
+\emph{npc}, and entity-level accuracy fell from 137 to 120 of 147. Three triage names
+(\emph{Heel Strike}, \emph{Zoom}, \emph{Pick / Shine}) were missed by every model and every
+tuning, which suggests a limit of the label given this input rather than of model capacity.
+
+\subsection{E7: Serving on the GB10}
 \textbf{Latency.} Table~\ref{tab:models} summarises it. Decision~2.0's runtime ships custom kernels only for
 AMD's gfx942; on CUDA it uses pure-PyTorch reference kernels, and its CUDA path is marked unvalidated
 upstream. Measured medians on the GB10 were 3--7$\times$ the model-card figures (Kai 16 vs.\ 4.9~ms; Lux 127 vs.\ 18.4~ms). For Clef, the GB10 was
@@ -413,7 +464,10 @@ token chatter or a campaign name; would a cornered creature flee. They failed wh
 (a) a \emph{string-level} judgment (which spelling, exactly which words), (b) a \emph{convention}
 the text does not reveal (how this GM files demon lords), or (c) a \emph{consistency property across
 items} (one type per entity across many facts). Most judgment steps in this pipeline are of the second
-kind, which is why the decision models' role ended up narrow.
+kind, which is why the decision models' role ended up narrow. Fine-tuning (E6) did not move this
+boundary: training on a few thousand of the GM's own rulings sharpened the readout on clear cases,
+but a sparse, partly contradictory convention was outvoted rather than learned, and backbone
+adaptation traded accuracy for a false consistency.
 
 \paragraph{Filters and flags, not deciders.} Every useful configuration kept the human checkpoint
 intact: triage that orders work without deleting it, a second opinion that adds subjects to a review
@@ -437,7 +491,8 @@ option descriptions were written once and not tuned, which is fair to a drop-in 
 unfavourable to it. We did not verify that the locally served Clef matches Cloudflare's hosted
 service. Decision~2.0 ran on a runtime path its authors mark as unvalidated on CUDA; our own CPU/GPU
 parity check covers only the smallest model. Latencies are single-stream; the runtime's batching
-profiles were not tested.
+profiles were not tested. Fine-tuning explored one LoRA configuration (rank 16, one or two epochs) and
+selected head-only settings on the same cross-validation folds.
 
 \section{Conclusion}
 Decision models are a useful addition to a local LLM toolkit, in a narrow role: fast, calibrated

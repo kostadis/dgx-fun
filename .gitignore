@@ -25,3 +25,5 @@ clef/spell-pass-eval/*.json
 clef/social-npc-eval/*.json
 clef/social-npc-eval/review.html
 clef/ensemble-typing-eval/*.json
+clef/finetune/*.json
+clef/finetune/*.pt
