@@ -97,7 +97,11 @@ def test_consume_stream_tolerates_unparseable_chunk():
 
 def test_idle_timeout_explicit_for_fast_slot():
     c = dgxlib.resolve_model_config("Qwen/Qwen3-Next-80B-A3B-Instruct-FP8")
-    assert c.idle_timeout == 120.0
+    # 300, not 120: models.yaml raised this deliberately — 120s was too tight and
+    # killed the first wave of chunks on every fresh batch run while vLLM warmed
+    # up. This assertion had been stale against models.yaml (pre-existing
+    # failure, unrelated to the 2026-09-10 Qwen3.8-Flash-Next swap).
+    assert c.idle_timeout == 300.0
     assert c.read_timeout == 600.0  # legacy budget unchanged
 
 
