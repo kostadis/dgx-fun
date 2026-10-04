@@ -94,6 +94,47 @@ models:
     read_timeout: 1800
     idle_timeout: 420
 
+  "qwen3.8-flash-next":
+    # Qwen3.8-Flash-Next on spark1 AND spark2 (2026-09-10), single-box on each,
+    # NVFP4 routed experts + blockwise-fp8 side layers ("hybrid"), 262K native
+    # ctx, MTP-2, APC on. Served via the blazux recipe (~/qwen3.8-Flash-DGX on
+    # each box). Both boxes run the same image and a byte-identical checkpoint,
+    # so this ONE entry covers both endpoints — the registry keys on the served
+    # id, not the host, and the id is the same on 192.168.1.147:8001 and
+    # 192.168.1.121:8001.
+    #
+    # ⚠ The served id is LOWERCASE and does NOT match the "Qwen/Qwen3" prefix
+    # entry under `match:` below (startswith is case-sensitive — see
+    # registry.py:93). Without this explicit entry it falls through to
+    # `default` at idle_timeout 120, which kills long-context calls during
+    # prefill. Verified by resolve_model_config() before this entry existed.
+    #
+    # Timeouts: measured cold prefill ~1,140 tok/s with a COLD PLE page cache
+    # (the 47.7 GiB n-gram table is mmapped from NVMe; a first pass over a cold
+    # region is 2-3x slower than warm). A full 262K prompt is therefore ~4 min
+    # of silent prefill worst case before the first token streams, so idle must
+    # cover that whole window — same reasoning as the DSpark entry above, not a
+    # guess carried over from it.
+    #
+    # can_think: TRUE — the slot runs --reasoning-parser qwen3 and the model
+    # emits real reasoning traces, ON BY DEFAULT.
+    # ⚠ This build populates `reasoning` and leaves `reasoning_content` NULL —
+    # the same shape as the nano_v3 / DeepSeek-R1 parsers that opencode and
+    # openclaw silently drop (memory `todo_nano_v3_reasoning_leak`). Traces are
+    # billed against completion_tokens either way: measured 24 of 28 completion
+    # tokens (86%) on a trivial "Reply with exactly: OK".
+    # THE SUPPRESSION SWITCH IS `chat_template_kwargs: {"enable_thinking": false}`
+    # (verified 2026-09-10: 28 tok -> 2 tok, reasoning_tokens 24 -> 0), which is
+    # exactly what thinking_default: false emits via extra_body — so dgxlib
+    # consumers are already correct. ⚠ `/no_think` in the prompt does NOT work
+    # on this model: it is echoed into the answer verbatim and the trace still
+    # fires (41 completion tok, 33 reasoning). Do not use it, despite the
+    # upstream recipe's smoke-test.sh doing so.
+    can_think: true
+    thinking_default: false
+    read_timeout: 1800
+    idle_timeout: 420
+
   "Qwen/Qwen2.5-14B-Instruct-AWQ":
     can_think: false
     thinking_default: false
