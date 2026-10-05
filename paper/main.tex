@@ -17,9 +17,9 @@
 Where Non-Generative Classifiers Help and Fail\\
 in LLM Tooling for Tabletop Role-Playing Campaigns}
 
-\author{\TODO{Author name}\\
-\TODO{Affiliation / independent researcher}\\
-\TODO{contact email}}
+\author{Kostadis Roussos\\
+Independent researcher\\
+\texttt{kostadis@gmail.com}}
 
 \date{October 2026}
 
@@ -42,7 +42,8 @@ direction on 11 of 12 paired scenarios against 5 of 12 for a published dice-tabl
 where the label is a string-level judgment (choosing a canonical spelling: 66\% accuracy with 71
 confident wrong answers, against 94.5\% of answered items for a local generative model with
 reasoning enabled), a house convention, or a consistency property across many items (typing extracted facts:
-re-typing per fact created about as many split entities as it repaired). Fine-tuning a 4B decision model on the GM's rulings
+re-typing per fact created about as many split entities as it repaired; a model-free per-entity
+vote matched the GM's filing 32 times in 33 where it decided). Fine-tuning a 4B decision model on the GM's rulings
 recalibrated it (triage AUC 0.90 to 0.96) but did not teach the conventions, and LoRA adaptation
 reduced splits only by collapsing to the majority class. We also report that an
 apparently strong verdict-prediction result (AUC~0.89) was an artifact of the classifier reading the
@@ -346,8 +347,51 @@ clef-flash (18, 8/10) did nearly as well.
 \textbf{Interpretation.} The failure is structural. Per-fact typing gives an entity with dozens of
 facts dozens of independent chances to draw one odd label, and one odd label is a split. A
 deterministic model guarantees the same answer for the same input, but every fact is a different
-input. The repair is to type once per entity, which needs no model; we have proposed that design
-separately.
+input. The repair is to type once per entity, which needs no model.
+
+\textbf{Replaying entity-level typing.} We then specified that repair as a resolution chain run
+before dossiers are built: (1) GM filing conventions, (2) the GM's prior merge rulings, (3) the entity
+registry's type, (4) a majority vote over the subject's own facts if one type holds at least 60\%,
+otherwise (5) a GM review queue. No step calls a model. We replayed it, read-only, against the real
+bundling rules on the 438 subjects of the campaign's extraction corpus that have at least one
+\emph{monster}-typed fact (50 of them named), scoring against the 41 GM merge rulings whose files fall
+in that corpus (Table~\ref{tab:e4r}). The informative arm is the vote alone, because it uses no GM
+data: it is what a new, unreviewed chapter gets. When it decides, it matches the GM's primary type 32
+times in 33; the one miss is a subject the GM had already flagged as mis-attributed. What it declines
+to decide is the right set to show the GM: the nine queued named subjects are mostly the demon-lord,
+deity and place-versus-organisation questions above. A threshold sweep put the knee at 60\%: 50\% adds
+three wrong types, 67\% more than doubles the queue. Adding the GM's merge rulings reproduces all 40
+merged groups that fell in the slice (partly circular, since it is scored against those rulings).
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\textwidth}{!}{\begin{tabular}{lrrr}
+\toprule
+ & Per-fact types (today) & Vote only, $\geq$60\% & GM rulings + vote \\
+\midrule
+Named subjects split across types (of 50) & 43 & 9 & 1$^\dagger$ \\
+GM groups in one dossier under the GM's primary (of 41) & 0 & 32 & 40 \\
+GM groups in one dossier under the wrong type & 1 & 1 & 0 \\
+Named subjects sent to the GM queue & --- & 9 & 0 \\
+Dossiers & 667 & 592 & 577 \\
+\bottomrule
+\end{tabular}}
+\caption{E4, entity-level typing replayed on the \emph{monster} slice. $^\dagger$The remaining split is
+one the GM ruled: a group whose \emph{npc} and \emph{monster} files were merged while its
+\emph{faction} file was kept separate.}
+\label{tab:e4r}
+\end{table}
+
+The replay also surfaced two defects in the specification and one in the pipeline. Keep-separate
+rulings must apply to a \emph{file} (type and subject), not a subject, because a single group can be
+partly merged and partly kept apart. The review queue must hold named subjects only; all 20 subjects
+queued once the GM's rulings were applied were generic creatures. And subjects are canonicalised only
+through the registry's aliases, so misspellings known to the spelling glossary but not the registry,
+and extractions made before a source-text correction, split subjects before typing ever runs. The
+underlying flaw is general: the pipeline asks the generative model for precision decisions (a fact's
+type decides its scope, its subject decides its identity) and then stores the GM's corrections where
+the pipeline never reads them, so every run rebuilds what the GM already fixed.
 
 \subsection{E5: NPC behaviour}
 \textbf{Task.} Twelve paired combat scenarios, each pair differing in one fact, with the expected
@@ -473,6 +517,13 @@ adaptation traded accuracy for a false consistency.
 intact: triage that orders work without deleting it, a second opinion that adds subjects to a review
 queue, and sampled NPC suggestions the GM reads. None of these removes a decision from the human.
 
+\paragraph{A ruling should be made once.} The checkpoint only pays if its output flows back in. The
+ensemble pipeline asked a generative model for per-fact precision decisions and stored the GM's 109
+corrective merges where no stage read them, so each run recreated the same splits for the GM to fix
+again. Resolving each precision field against the GM's accumulated rulings, with a deterministic
+default and a queue for the rest, did more for consistency than any classifier we tried (E4 replay).
+The better model was not the missing piece; the missing piece was reading the rulings back.
+
 \paragraph{Calibration has two uses.} Graded probabilities mattered in two different ways: to set a
 zero-loss filter threshold (E3) and to sample plausible behaviour (E5). The generative baseline's
 self-reported probabilities served neither purpose.
@@ -492,7 +543,9 @@ unfavourable to it. We did not verify that the locally served Clef matches Cloud
 service. Decision~2.0 ran on a runtime path its authors mark as unvalidated on CUDA; our own CPU/GPU
 parity check covers only the smallest model. Latencies are single-stream; the runtime's batching
 profiles were not tested. Fine-tuning explored one LoRA configuration (rank 16, one or two epochs) and
-selected head-only settings on the same cross-validation folds.
+selected head-only settings on the same cross-validation folds. The entity-level typing replay
+covers only subjects with a \emph{monster}-typed fact in one of two extraction corpora, and 41 of the
+64 relevant GM rulings; the other entity types are not yet replayed.
 
 \section{Conclusion}
 Decision models are a useful addition to a local LLM toolkit, in a narrow role: fast, calibrated
@@ -500,7 +553,8 @@ classification of coarse properties, placed where it orders or flags work rather
 In this pipeline that meant triaging transcript tokens without silent losses and generating
 situation-aware NPC behaviour at the table. They did not replace a generative model with reasoning for
 spelling decisions, could not infer house conventions, and cannot impose consistency across items
-that are judged one at a time. On the GB10, the smaller Decision~2.0 models give most of the
+that are judged one at a time; that consistency came instead from typing once per entity and feeding
+the GM's own rulings back into the pipeline. On the GB10, the smaller Decision~2.0 models give most of the
 behavioural quality at a fraction of the memory, but published latency claims should be re-measured
 on the target hardware.
 
@@ -560,8 +614,8 @@ L.~Philips.
 \newblock The double metaphone search algorithm.
 \newblock \emph{C/C++ Users Journal}, 18(6):38--43, 2000.
 
-\bibitem[\TODO{author}(2026)]{dgxfun}
-\TODO{Author}.
+\bibitem[Roussos(2026)]{dgxfun}
+K.~Roussos.
 \newblock dgx-fun: experiments with local LLM serving on NVIDIA DGX Spark.
 \newblock \url{https://github.com/kostadis/dgx-fun}, 2026.
 
