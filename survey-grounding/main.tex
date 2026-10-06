@@ -1,0 +1,588 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\setlist{itemsep=2pt,topsep=4pt}
+
+\title{Grounding Documents for Long-Running Tabletop Campaigns:\\
+A Practitioner's Survey of Twelve Approaches,\\
+from LLM Extraction to Authored Structure}
+
+\author{Kostadis Roussos\\
+Independent researcher\\
+\texttt{kostadis@gmail.com}}
+
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A game master who uses language models to prepare sessions of a long-running tabletop role-playing
+campaign needs \emph{grounding documents}: a current world state, campaign state, party record,
+planning notes and per-character dossiers, distilled from dozens of recorded sessions and fed to the
+models as context. Producing these documents is easy to start and hard to get right, because the
+details that matter are exactly the ones generative models get wrong: who did what, in what order,
+which name denotes which entity, and whether something happened at all. Over seven months
+(March--October 2026) and six campaigns of up to 70 chapters, one practitioner built, measured and
+retired twelve distinct approaches to the problem. We reconstruct them from the git history,
+design documents and experiment write-ups of the repositories involved, and organise them by two
+axes: the \emph{substrate} a pipeline reads (narrated chapter prose, atomic extracted facts,
+retrieval indexes, or the structured session summaries the GM already reviews) and \emph{who makes
+the precision decisions} (ordering, attribution, identity, scope). Approaches that let a model make
+those decisions failed in ways that were silent and that compounded: a consolidated extraction shrank
+a planning document from 513 to 109 lines; an atomic-fact ensemble reported a slain antagonist as
+alive, and 98\% of its 15{,}465 facts were seen by only one sample, so agreement could not serve
+as a filter; a knowledge-graph library stored 1.18 characters of generated text per character of
+source and answered ``what was the most recent session'' with session~8 of~11. The approach that the
+GM finally promoted parses the scene order, entity sections and memorable moments already authored in
+reviewed session summaries, with no model call (67 summaries, 409 scenes, 868 dossiers,
+byte-identical across runs), and uses a model only to render the final prose; it also flagged 51
+claims in the GM's own tracking files as unsupported by the record. We distil the history into ten
+cross-cutting findings and a set of design rules for grounding long-horizon generative work.
+\end{abstract}
+
+\section{Introduction}
+
+Tabletop role-playing campaigns are long. A weekly game runs for years, and the record of what the
+players have done---who they met, what they promised, which villain is dead and which only appears to
+be---is the substrate from which the game master (GM) prepares every subsequent session. When the GM
+asks a language model to help with preparation (draft an encounter, voice a returning character,
+check a plot thread), the model needs that record as context. Feeding it hundreds of thousands of
+words of transcript is impractical and, past a point, counter-productive~\cite{liu2024lost}. The
+practical answer is a small set of \emph{grounding documents}: compact, current, authoritative
+summaries of the world, the campaign, the party and the plans, together with per-entity dossiers.
+
+This paper surveys how one practitioner tried to build those documents. The work was done in an
+open-source toolkit for campaign management (CampaignGenerator~\cite{campaigngen}), a private
+repository of campaign data for six campaigns, a public repository of local-model experiments on two
+NVIDIA DGX Spark machines~\cite{dgxfun}, and a number of local-only scratch directories. Several
+approaches are still live, several survive only in history, and some never reached version control.
+The aim is to make that history usable: to describe each approach precisely enough that it can be
+compared with the others, to record the measured reason each one was kept or dropped, and to extract
+what generalises.
+
+The problem looks like summarisation, and the first approaches treated it that way. It is better
+understood as \emph{record keeping under precision constraints}. A grounding document is consumed by
+another model that cannot tell a confident error from a fact. Errors in four kinds of decision are
+both likely and expensive: \emph{ordering} (what happened before what), \emph{attribution} (who did
+it, to whom), \emph{identity} (which names denote the same entity) and \emph{scope} (what belongs in
+this document, and what actually happened as opposed to what was planned). The toolkit's governing
+rule, stated before any of the work surveyed here, is that a model may draft but these
+\emph{precision decisions} require a human checkpoint before they feed another model. Much of the
+history below is the gradual discovery of where that rule had been violated without anyone noticing,
+and of how to remove the model from those decisions rather than merely review its output.
+
+\paragraph{Contributions.}
+\begin{itemize}
+  \item A catalogue of twelve approaches to producing grounding documents for long-running campaigns,
+        reconstructed from primary sources, with status, lineage and measured outcomes
+        (Sections~\ref{sec:taxonomy}--\ref{sec:approaches}).
+  \item A two-axis taxonomy (substrate $\times$ locus of precision decisions) under which the
+        successes and failures separate cleanly (Section~\ref{sec:taxonomy}).
+  \item Ten cross-cutting findings, each with a measurement, that apply beyond tabletop games to any
+        long-horizon generative pipeline that must keep a record (Section~\ref{sec:findings}).
+\end{itemize}
+
+\section{Background}
+\label{sec:background}
+
+\subsection{The campaigns and their record}
+Six campaigns contributed evidence. They are adaptations of published adventures: \emph{Out of the
+Abyss} (70 chapters at the time of writing), a hybrid of \emph{Dragon of Icespire Peak} and
+\emph{Lost Mine of Phandelver} (53 sessions), \emph{Storm King's Thunder}, \emph{Temple of Elemental
+Evil}, an organised-play adventure set in Hillsfar, and a second \emph{Lost Mine} table (12
+sessions). Each session is recorded and transcribed. A post-session pipeline produces, in order: a
+reviewed transcript (spelling and speaker attribution corrected by the GM); a structured
+\emph{session summary} with fixed sections (\texttt{Summary}, \texttt{Memorable Moments}, an ordered
+\texttt{Scenes} list, and entity sections for NPCs, locations, items and spells); scene extractions;
+and finally a narrated prose chapter. The narrated chapters are concatenated into a campaign
+\emph{bible} of several megabytes.
+
+\subsection{The grounding documents}
+Four documents form the core: \emph{world state} (the setting as it now stands), \emph{campaign
+state} (where the story is, open threads, recent events), \emph{party} (characters, resources, arcs)
+and \emph{planning} (NPC dossiers, factions, threat tracking). They are read by the toolkit's
+preparation agents and by interactive assistants. A per-campaign \emph{entity registry} records
+canonical names, types and approved aliases for about a thousand entities per campaign; it is the
+toolkit's authority on identity and spelling and, as Section~\ref{sec:findings} argues, it is
+deliberately a names layer, not a state layer.
+
+\subsection{Related work}
+Retrieval-augmented generation~\cite{lewis2020rag} and graph-structured retrieval~\cite{edge2024graphrag}
+are the standard alternatives to static context documents; tiered memory systems for agents
+\cite{packer2023memgpt,park2023generative} maintain summaries and reflections that are themselves
+model-written. Book-length summarisation~\cite{chang2024booookscore} measures the coherence errors
+that accumulate when a model compresses a long narrative incrementally. Work on language models in
+\emph{Dungeons \& Dragons} has used actual-play logs and structured game state as training and
+evaluation data~\cite{callisonburch2022dnd,zhu2023fireball} and has built assistants for the
+dungeon master at the table~\cite{zhu2023calypso}. None of these addresses the maintenance problem
+surveyed here: keeping a reviewed, provenance-bearing record of a campaign current over months, under
+a rule that a human, not a model, settles ordering, attribution and identity. The hallucination
+literature~\cite{ji2023survey} catalogues the failure modes; this survey records which pipeline shapes
+expose a practitioner to them and which do not.
+
+\section{Survey method}
+\label{sec:method}
+The sources are (i) the full git history of the toolkit repository, including all 28 local and remote
+branches, deleted files and merged pull requests; (ii) the campaign-data repository (two clones,
+about 130 branches); (iii) the experiment repository and eleven further repositories or forks, of
+which only the practitioner's own commits were considered; (iv) local directories outside version
+control; and (v) the design documents and experiment write-ups committed alongside the code, which
+record measurements and kill decisions at the time they were made. Three independent passes
+catalogued the repositories, and their reports were reconciled against the primary documents; every
+number in this paper is quoted from a design document, experiment write-up or commit message.
+
+An approach is counted as \emph{distinct} if it changes the substrate, the locus of a precision
+decision, or the output form; a parameter change within an approach is not counted. Status is one
+of: \emph{live} (on the main branch and used for at least one campaign's current documents);
+\emph{dormant} (on main, not used); \emph{history} (deleted, recoverable from git);
+\emph{proposal} (designed and measured, not built); \emph{local} (exists only outside version
+control).
+
+\section{A taxonomy}
+\label{sec:taxonomy}
+
+Two axes separate the approaches.
+
+\paragraph{Substrate.} What the pipeline reads: (P) narrated \emph{prose}, the bible chapters;
+(F) atomic \emph{facts} extracted from prose by a model; (R) a \emph{retrieval} index over some
+corpus, queried at preparation time; (S) the \emph{structured} session summaries that the GM already
+reviews as part of the post-session pipeline. The narrated prose is downstream of the summaries: a
+pipeline that reads prose to recover structure is undoing a rendering step.
+
+\paragraph{Locus of precision decisions.} Who decides ordering, attribution, identity and scope:
+a model (M); deterministic code over declared structure (D); or the GM through a recorded ruling (G).
+Most approaches mix loci; Table~\ref{tab:catalogue} gives the dominant one for the step that
+determines what the document asserts.
+
+\begin{table}[t]
+\centering
+\small
+\caption{The twelve approaches. Substrate: P prose, F atomic facts, R retrieval index,
+S structured summaries. Locus: who makes the ordering/attribution/identity/scope decisions---M model,
+D deterministic code, G GM ruling.}
+\label{tab:catalogue}
+\begin{tabularx}{\textwidth}{@{}r L c c l L@{}}
+\toprule
+\# & Approach & Subst. & Locus & Active & Status \\
+\midrule
+1  & Per-document extract-and-synthesise scripts         & P & M     & Mar--Aug & live (3 campaigns), dormant elsewhere \\
+2  & Shared chapter-extract consolidation                & P & M     & Apr      & history (killed) \\
+3  & Hand curation and dossier merge                     & P & G     & Apr--    & live as stopgap \\
+4  & Local atomic-fact ensemble                          & F & M     & May--Sep & live, no longer feeds OOTA \\
+5  & Ensemble repairs: recency, offsets, coverage        & F & D/G   & Jul      & live (within 4) \\
+6  & Two-stage finder/claim extraction                   & F & D     & Sep      & proposal \\
+7  & Entity-level typing and ruling replay               & F & D/G   & Oct      & proposal, replayed \\
+8  & Model work over ensemble dossiers                   & F & M     & Jul--Aug & local \\
+9  & State stores and per-section projections            & F & D/G   & Jul--Aug & dormant \\
+10 & Knowledge-graph and semantic retrieval              & R & M     & Jul--Sep & dormant (graph); live (search) \\
+11 & Event-ordinal graph over authored scenes            & S & D/G   & Sep      & proposal, local outputs \\
+12 & Summary-native grounding                            & S & D/G   & Oct      & live (OOTA) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The table already shows the result of the survey: the approaches that a GM promoted, or that measured
+well, are those in which the precision decisions moved out of the model, and the two that read
+structured summaries (11 and 12) are the only ones in which the model is never asked to recover
+an order or an identity.
+
+\section{The approaches}
+\label{sec:approaches}
+
+\subsection{Family P/M: extract from prose, synthesise with a model}
+
+\paragraph{1. Per-document scripts (March 2026).}
+Four scripts---one per grounding document---each split the bible into chapter-aligned chunks of up
+to about 60{,}000 characters, ran a model extraction per chunk into their own extraction directory,
+and ran a second model call to synthesise the document from those extractions. A
+\texttt{-{}-build-dossiers} mode of the planning script wrote per-NPC dossiers. The human role was
+review after the fact. The approach is simple and the documents read well, and three campaigns still
+use it. Its failures are of staleness and invention rather than style. An issue note from July
+records that ``the extraction layer has Chapter~62. The synthesis layer did not consume it'': all four
+documents were stamped Chapter~62 and described Chapter~61. In another campaign the synthesis
+introduced a non-existent NPC that had to be removed by hand. Each script also re-reads the same
+input, which motivated approach~2.
+
+\paragraph{2. Shared chapter extract (killed, April 2026).}
+The consolidation replaced three narrow extractions with one rich extraction per chapter, in an
+eight-section schema, consumed by three synthesisers. At the extraction layer it looked better: the
+schema held across chapters of 2.7K--54K characters and one file per chapter was easier to review. At
+the synthesis layer every document regressed. World state fell from 268 to 193 lines and lost its
+party and items sections; campaign state's NPC table fell from 40 to 23 rows; planning fell from 513
+to 109 lines, with 17 NPC dossiers collapsing to 5 and threat-tracker values ``\emph{guessed}
+(`6--8 estimated')'' instead of read. Outputs were well under the token cap; this was depth loss, not
+truncation. The kill note's diagnosis is general: ``Consolidating $N$ narrow LLM extracts into one
+broad extract is not free. The narrowness \emph{is} the depth.'' It also named the principle that
+recurs throughout this survey: ``the rough extraction pass is the ceiling, not the floor.''
+
+\paragraph{3. Hand curation.}
+Underneath every generated approach sits human repair: merging duplicate dossiers (one pass merged 54
+files into 25), sidecar files of new notes, candidate files for the party document so that a
+regeneration would not overwrite curated text, and hand fold-ins that carry a document forward from
+the latest session summaries without regenerating it. A commit message records the cost: dossiers
+``are generated and \emph{then hand-curated}\ldots\ Regenerating produces the machine output, not the
+curated state.'' Hand fold-in is the current state of two campaigns' documents, and it coexists
+uneasily with a stated rule that generated documents are not hand-edited.
+
+\subsection{Family F: atomic facts}
+
+\paragraph{4. Local atomic-fact ensemble (May--September 2026).}
+To extract once and share the result, extraction moved to local hardware: five extraction
+\emph{lenses} (prompts emphasising different material) times three samples, served from an
+80B-parameter open model across two DGX Spark machines, emit atomic facts with a type and a subject.
+A deterministic merge groups facts by (type, normalised subject), or optionally by embedding
+similarity. A bundling step writes per-entity dossiers, with a listing mode documented as ``the human
+checkpoint on what will be aggregated''. GM skills review alias and type merges. One model call per
+document then synthesises the grounding documents from selected dossiers. The first full run
+(1~June) produced 22{,}240 facts over 56 chapters and 703 dossiers; a parallel set of documents was
+written but, per its own commit, they were ``not drop-in replacements\ldots\ campaign\_state is a
+derivation-of-derivation,'' and that set was later deleted. One smaller campaign promoted ensemble drafts
+after GM review; the largest campaign never did.
+
+A July investigation of the stale-chapter report found that the approach's deepest problem was not a
+bug. ``Atomization strips the syntax that carries attribution.'' A sentence that identifies a dead
+antagonist is unambiguous in its paragraph and unrecoverable as a fragment; in the case that drove the
+investigation, three facts were extracted from one quote, two correct and one inverting the roles,
+and because bundling is by subject the inverted fact became the \emph{only} fact in the antagonist's
+dossier. Synthesis then amplified it to ``Current status: Alive''. The obvious filter does not exist:
+98\% of facts (15{,}220 of 15{,}465) were produced by a single sample, because the lenses extract
+different material by design. Embedding similarity does not help either, since two statements that
+disagree about who died are far apart by construction (cosine 0.85 between the correct and inverted
+fact, below the merge threshold), and a contradiction detector found 15 candidate groups, 14 of
+them benign.
+
+\paragraph{5. Repairs within the ensemble (July 2026).}
+The investigation's through-line was: ``The pipeline computes a signal, serialises it, and then
+ignores it---forcing a later stage to guess what it was already told.'' Four instances were fixed in a
+day. A dossier frequency floor ranked by fact count, which ``deleted the newest chapter'' because
+new entities have the fewest facts; a recency window restored all seven entities of the latest chapter.
+The embedding merge was unreachable from the interface, so ``62 chapters silently merged with the
+weaker algorithm''. Quote positions were reduced to a boolean, which lost within-chapter order;
+stamping offsets made the inverted fact visibly 800 characters after the scene that refutes it.
+Entities attested only through other entities' facts were invisible; a coverage report surfaced 30,
+including one with zero facts of its own and 34 mentions that had no dossier at all. A chapter--summary
+mapping and a per-chapter narrative pass were added, both gated on explicit GM approval. These repairs
+made errors \emph{legible}; they did not make the facts correct.
+
+\paragraph{6. Two-stage extraction (proposal, September 2026).}
+Replaying the shipped merge over a fresh corpus of 13{,}731 facts measured what the prose comparator
+costs: 2{,}384 pairs of rows whose source spans overlap but were kept separate (821 with
+byte-identical quotes), and 43 merged rows whose members sit on disjoint spans---in one, three of a
+chapter's own date headings fused into a row asserting one date. The proposal splits extraction into a
+finder stage that produces spans and a claim stage that cites them, so the span becomes the merge key.
+An open-source grounded-extraction library was evaluated as the finder and rejected: on facts it was
+not stable across chapter size, falling to 6.2\% source coverage on a 14K-character chapter against
+75.6\% for the ensemble union, as extractions degenerated into bare names.
+
+\paragraph{7. Entity-level typing and ruling replay (October 2026).}
+Typing each fact independently splits an entity across types (an NPC in one chapter, a monster in the
+next); the GM had resolved 109 such splits by hand in one campaign. A companion study~\cite{roussos2026decision}
+found that re-typing facts with a non-generative decision model ``creates roughly as many splits as it
+repairs.'' The replacement types once per entity through a deterministic chain: GM filing conventions,
+then prior GM merge rulings, then the registry type, then a 60\% majority vote, then a GM queue. The
+model-free vote matched the GM's filing 32 times in 33 where it decided. The proposal's sharper
+conclusion was that the pipeline ``asks the LLM for precision decisions and never reads the GM's
+rulings back'': rulings were recorded and then ignored on the next run.
+
+\paragraph{8. Model work layered on ensemble dossiers (July--August 2026).}
+Several local jobs, run by a locally served model through an agent harness and kept outside version
+control, worked on the ensemble's dossiers: appending matching facts to each dossier; answering each
+dossier's uncertainty bullets from the cited chapters (327 dossiers: 158 resolved, 140 partial, 11
+unresolved, 18 malformed outputs; four dossiers found contradicted by the chapters); per-entity chapter
+scans and an inferred calendar timeline; and a cross-campaign ``scholar persona'' wiki with a sampling
+fact-checker. None was promoted. Their main yield was evidence that unreviewed model digests drift on
+names and that dossiers built from atomic facts carry contradictions that a later pass can find but
+not settle.
+
+\paragraph{9. State stores and projections (July--August 2026).}
+This approach changed the output form rather than the extraction. Durable stores---a deduplicated
+per-chapter event spine, a registry of GM-ratified plot threads with model-proposed candidates, and a
+GM-approved chapter--session map---feed per-section renders, and a document is the assembly of its
+sections. A build without a model backend makes ``zero model calls; a re-run with unchanged stores
+rebuilds nothing.'' Planning is layered by certainty, from ratified threads down to explicitly labelled
+non-canon speculation. The design is sound; its inputs were not. The event spine was built from
+ensemble facts, and near-duplicate phrasings of one event survived its 60-character deduplication key.
+In the one campaign that used it, four threads had been ratified and 148 proposals were pending when work
+stopped, and that campaign's live world state returned to hand fold-in.
+
+\subsection{Family R: retrieval instead of documents}
+
+\paragraph{10. Knowledge graphs and semantic search (July--September 2026).}
+A knowledge-graph library~\cite{cognee} was used to ingest grounding documents and dossiers for one
+campaign and session summaries for another, with a locally served model building the graph. The first
+attempt never completed in about six runs; a later retest completed in 27 minutes and answered five
+evaluation queries correctly, but the graph was never adopted, because the structure was written by a
+model with no review. The September investigation explains why that matters. The library stored
+2{,}468{,}434 characters of generated text for 2{,}093{,}539 characters of source (1.18$\times$),
+including paraphrase drift, facts imported from the published adventure that never happened at the
+table (327 edges about a castle the party has never found), and a false identity merge of a villain
+with his master. A stripped prompt did not stop it: with structured output, ``the schema is the
+stronger instruction.'' Asked for the most recent session of an eleven-session campaign, the graph
+returned Chapter~8, a vector search tool returned session~6 and a semantic memory store~\cite{mempalace}
+returned session~8. ``Every semantic tool failed the time question.'' The verbatim tools never
+fabricated; their failures were in ranking. A semantic search skill over the summaries remains live as
+a \emph{lookup} aid alongside the documents, with filename ordering and an explicit absence check added
+because ``vector search structurally cannot'' supply them.
+
+\subsection{Family S: authored structure}
+
+\paragraph{11. Event-ordinal graph (September 2026).}
+The September investigation's conclusion was that ``the sequence of events is already authored'':
+filenames give session order, each summary's \texttt{Scenes} section gives scene order, and its bullets
+give beat order. ``Time is the event ordinal, not the calendar.'' A graph keyed on that ordinal, with
+state snapshots from the summaries' entity sections and identity taken from the GM-reviewed alias file
+(``the one precision decision''), was built in about a second for twelve sessions (72 events, 936 beats,
+253 snapshots), answered every time question the semantic tools failed, and was reproduced
+byte-identically by three independent extractions. Retargeted to a 53-session campaign it ran in
+0.8~s (356 events, 5{,}255 beats). Identity resolution through the alias file raised one NPC's
+mentions from 4 to 15 and, unlike the model-built graph, did not merge the villain with his master.
+The investigation also observed that the alias file mixed surface-form equivalences with secret
+identities known only to the GM, and that an identity revelation is itself an event. Deterministic
+state documents were generated from the graph by exact search and copy, with no model. They were
+never promoted, and the proposal to replace the per-document campaign-state script was not built.
+
+\paragraph{12. Summary-native grounding (October 2026).}
+The approach now in use for the largest campaign reached the same design independently, starting from a
+failed attempt to run the ensemble over summaries instead of prose (a four-lens extraction projected at
+7--10 hours on the available hardware). It reads a directory of structured summaries and nothing else.
+Validation runs first, collects every problem across the corpus, and refuses to proceed on any error in
+range: filename number, title number and scene identifiers must agree, and a file without a
+\texttt{Scenes} section is never treated as one undifferentiated block. A deterministic parse then
+produces a chronology of every scene, the memorable-moments sections preserved character for
+character, and one dossier per entity with the source file and scene of every observation. Headings
+are grouped only when identical within a category or listed as exact same-type aliases in the
+registry. Likely duplicates (similarity $\ge 0.88$, or a name with and without a parenthetical
+qualifier) are \emph{listed, never merged}: ``No merge decision MAY be made by a model or a similarity
+score''---the GM corrects the summary, or records the pair as distinct in a rulings file the pipeline
+only reads. Every deterministic artifact is byte-identical across runs given identical inputs.
+
+Only then does a model write: world state, campaign state, party and planning drafts, from dossiers
+selected by recency and recurrence and from the full chronology. Tracking and planning files are given
+to campaign-state synthesis as \emph{questions to audit}, not as evidence, and any claim the summaries
+do not support is labelled rather than narrated. A draft feeds the next synthesis only when the GM names
+it as reviewed; drafts never overwrite live documents; exact prompts, input digests and selection
+decisions are retained. On the full corpus the parse covered 67 of 67 summaries, 409 scenes and 868
+dossiers; the drafts extended the live documents from Chapter~63 to Chapter~70; and the campaign-state
+audit marked 51 tracking claims as not found in the summaries---planned or module-default events that
+never happened at the table. The GM judged the results ``much better than the other ones we have
+built'' and promoted all four.
+
+\subsection{Cross-cutting: the entity registry}
+Every approach from 4 onward depends on the entity registry for identity. It was built from module
+inventories through a model pass, a deterministic merge and GM rulings, imported by tooling rather than
+edited by hand (954 entities in one campaign, ``no manual YAML surgery''), and later cut from 990 to 922
+entries in another by removing misspellings that had been recorded as aliases. The rule that emerged is
+that the registry records names, types and aliases, never state or history.
+
+\section{Findings}
+\label{sec:findings}
+
+\paragraph{F1. The extraction pass is the ceiling, not the floor.}
+An impressive first-pass extraction predicts nothing about the synthesis built on it (approach~2), and
+a synthesis cannot recover detail that the extraction never wrote down at the needed granularity.
+
+\paragraph{F2. Atomisation destroys attribution.}
+Decontextualised facts are what make deduplication and counting possible, and they are also why ``who
+did what to whom'' cannot be recovered downstream by clustering, voting or embedding (approach~4).
+
+\paragraph{F3. Agreement is not available as a filter.}
+Ensembles are usually justified by agreement. With lenses designed to extract different material, 98\%
+of facts had a single supporting sample, and embeddings measure paraphrase, not contradiction.
+
+\paragraph{F4. Computed signals get discarded, and the system then guesses.}
+Chapter ranges, merge method, quote positions and mention counts were all computed and then ignored by
+the next stage (approach~5). The repair in each case was to carry the signal forward, not to add a model.
+
+\paragraph{F5. Silent success is the dominant failure mode.}
+A library ingested a file path as text and reported success; a merge fell back to a weaker algorithm with
+a message that read as configuration; a reasoning model spent its whole completion budget thinking and
+returned no content; three tools reported success over work they had not done. Instruments need positive
+controls.
+
+\paragraph{F6. Time is an ordinal, and semantic retrieval cannot find it.}
+Every semantic tool failed ``most recent session''. Calendar dates are sparse and inconsistently
+formatted; the authored scene order is always present (approaches~10, 11).
+
+\paragraph{F7. Generative structure invents the record.}
+Graph-building and summarising layers import module canon as history, drift in paraphrase and merge
+identities, and store the result as fact (approach~10). Verbatim tools fail by omission, which a
+reviewer can detect; generative layers fail by commission, which a reviewer must catch.
+
+\paragraph{F8. Identity is the precision decision.}
+Which names denote the same entity is the one decision that cannot be read off the text, so it belongs
+to the GM, recorded once and read back every run (approaches~7, 11, 12). Surface-form equivalence and
+secret identity are different decisions and need different scopes.
+
+\paragraph{F9. Plans are not evidence.}
+Tracking files, planning notes and module text describe what was expected. Treating them as audit
+questions exposed 51 claims that never happened (approach~12).
+
+\paragraph{F10. Do not undo a rendering step.}
+The narrated bible is rendered from the structured summaries. Re-extracting structure from it is a
+lossy round trip---``structure $\to$ render to prose $\to$ re-extract structure from the prose''---and
+the dimension it loses (order, attribution) is the one the extractors then spend tokens guessing. The
+cheapest, fastest and most accurate approach read the structure that already existed.
+
+\section{Discussion}
+
+\paragraph{Where the model belongs.}
+Across the twelve approaches the model's role shrank from extractor, structurer and renderer
+(approaches~1--2) to renderer only (approach~12), and each step of that shrinkage was forced by a
+measured failure, not by principle. The final division is: authored structure supplies order; the
+registry and recorded GM rulings supply identity; deterministic code supplies grouping, selection and
+provenance; the model supplies prose. The human checkpoint did not move---it was always the GM---but
+it moved \emph{earlier}, from reviewing generated documents to reviewing the summaries and rulings the
+documents are computed from, where a correction is made once and persists.
+
+\paragraph{Rulings must be inputs.}
+Several approaches asked the GM for a decision, recorded it, and asked again on the next run. A
+ruling store that every stage reads---conventions, merges, aliases, not-a-duplicate pairs---is the
+mechanism that keeps a checkpoint from becoming a recurring chore that an exhausted reviewer
+eventually rubber-stamps.
+
+\paragraph{What remains open.}
+Summary-native grounding moves the precision problem upstream; it does not eliminate it. The summaries
+are themselves produced with model assistance and reviewed by the GM, and their quality bounds
+everything downstream; chapters without recordings need summaries written from the narrated prose,
+reintroducing a rendering step. The store-and-projection design (approach~9) is the natural way to make
+summary-native outputs incremental and section-addressable, but it was built over ensemble facts and
+has not been retargeted. Three campaigns still run approach~1, and migrating them requires their
+summaries to conform to the structured schema. Finally, the history itself was at risk: the prototype
+that led to approach~12 was built in a temporary worktree whose code was never committed, and the
+event-ordinal outputs and several local experiments exist only on one machine. A practitioner running
+many exploratory approaches should commit the evidence even when the code is disposable.
+
+\paragraph{Cost and local hardware.}
+The local ensemble was attractive because extraction on owned hardware is nearly free per run. It
+was not free in wall-clock time (hours per corpus, 7--10 hours projected for one summary run) or in
+review time (tens of thousands of facts no one reads). The deterministic approaches run in seconds.
+The decisive saving was not cheaper extraction but not extracting.
+
+\section{Limitations}
+This is a retrospective survey of one practitioner's work, reconstructed by an AI agent from
+repositories and documents written during the work; it inherits their framing. The approaches were not
+evaluated on a common benchmark: measurements were taken on different campaigns, corpus versions and
+models, and comparisons across approaches are qualitative. The GM's judgement of the final documents is
+a single expert's assessment, not a blind comparison. Status labels for campaigns not examined in depth
+(in particular which method produced one campaign's latest refresh) are uncertain. Local-only work was
+assessed from its outputs and scripts, without commit history. Summary-native grounding has been
+promoted for one campaign; its behaviour on campaigns with less regular summaries is untested.
+
+\section{Conclusion}
+Twelve attempts to build grounding documents for long-running campaigns, spread over seven months and
+six campaigns, converge on a simple conclusion: the record a GM needs is already written, in the
+structured session summaries the GM reviews after every session, and the job of tooling is to
+read that structure faithfully, keep identity decisions with the GM, and let a model do only what it is
+good at, which is writing. The approaches that asked a model to recover order, attribution or identity
+from prose or fragments failed silently and compounded their errors; the approaches that read authored
+order and recorded rulings were faster, reproducible and better, by the only judge whose opinion
+counted.
+
+\section*{Data and code availability}
+The toolkit, including the design documents, experiment write-ups and the summary-native pipeline,
+is public~\cite{campaigngen}, as are the local-model experiments~\cite{dgxfun}. The campaign data is
+not released because it quotes play sessions verbatim and names real people.
+
+\section*{Use of AI assistance}
+The approaches surveyed were largely implemented by AI coding agents (Claude, Anthropic, and others)
+under the author's direction. This survey was compiled by an AI agent from the repositories' history and
+documents, and drafted by it; the author made the decisions the paper records and takes full
+responsibility for the content.
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{99}
+
+\bibitem[Roussos(2026a)]{campaigngen}
+K.~Roussos.
+\newblock CampaignGenerator: tooling for tabletop campaign management with language models.
+\newblock \url{https://github.com/kostadis/CampaignGenerator}, 2026.
+
+\bibitem[Roussos(2026b)]{dgxfun}
+K.~Roussos.
+\newblock dgx-fun: experiments with local LLM serving on NVIDIA DGX Spark.
+\newblock \url{https://github.com/kostadis/dgx-fun}, 2026.
+
+\bibitem[Roussos(2026c)]{roussos2026decision}
+K.~Roussos.
+\newblock Decision models at the game table: where non-generative classifiers help and fail in LLM
+  tooling for tabletop role-playing campaigns.
+\newblock Manuscript, October 2026.
+
+\bibitem[Topoteretes(2026)]{cognee}
+Topoteretes.
+\newblock Cognee: memory for AI agents.
+\newblock \url{https://github.com/topoteretes/cognee}, 2026.
+
+\bibitem[MemPalace(2026)]{mempalace}
+MemPalace contributors.
+\newblock MemPalace: a semantic memory palace for agents.
+\newblock Open-source software, 2026.
+
+\bibitem[Lewis et~al.(2020)]{lewis2020rag}
+P.~Lewis, E.~Perez, A.~Piktus, F.~Petroni, V.~Karpukhin, N.~Goyal, H.~K{\"u}ttler, M.~Lewis,
+  W.~Yih, T.~Rockt{\"a}schel, S.~Riedel, and D.~Kiela.
+\newblock Retrieval-augmented generation for knowledge-intensive {NLP} tasks.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2020.
+
+\bibitem[Edge et~al.(2024)]{edge2024graphrag}
+D.~Edge, H.~Trinh, N.~Cheng, J.~Bradley, A.~Chao, A.~Mody, S.~Truitt, and J.~Larson.
+\newblock From local to global: a graph {RAG} approach to query-focused summarization.
+\newblock arXiv:2404.16130, 2024.
+
+\bibitem[Packer et~al.(2023)]{packer2023memgpt}
+C.~Packer, S.~Wooders, K.~Lin, V.~Fang, S.~G. Patil, I.~Stoica, and J.~E. Gonzalez.
+\newblock {MemGPT}: towards {LLMs} as operating systems.
+\newblock arXiv:2310.08560, 2023.
+
+\bibitem[Park et~al.(2023)]{park2023generative}
+J.~S. Park, J.~C. O'Brien, C.~J. Cai, M.~R. Morris, P.~Liang, and M.~S. Bernstein.
+\newblock Generative agents: interactive simulacra of human behavior.
+\newblock In \emph{Proceedings of UIST}, 2023.
+
+\bibitem[Chang et~al.(2024)]{chang2024booookscore}
+Y.~Chang, K.~Lo, T.~Goyal, and M.~Iyyer.
+\newblock {BooookScore}: a systematic exploration of book-length summarization in the era of {LLMs}.
+\newblock In \emph{International Conference on Learning Representations}, 2024.
+
+\bibitem[Liu et~al.(2024)]{liu2024lost}
+N.~F. Liu, K.~Lin, J.~Hewitt, A.~Paranjape, M.~Bevilacqua, F.~Petroni, and P.~Liang.
+\newblock Lost in the middle: how language models use long contexts.
+\newblock \emph{Transactions of the Association for Computational Linguistics}, 12:157--173, 2024.
+
+\bibitem[Callison-Burch et~al.(2022)]{callisonburch2022dnd}
+C.~Callison-Burch, G.~S. Tomar, L.~J. Martin, D.~Ippolito, S.~Bailis, and D.~Reitter.
+\newblock Dungeons and dragons as a dialog challenge for artificial intelligence.
+\newblock In \emph{Proceedings of EMNLP}, 2022.
+
+\bibitem[Zhu et~al.(2023a)]{zhu2023fireball}
+A.~Zhu, K.~Aggarwal, A.~Feng, L.~J. Martin, and C.~Callison-Burch.
+\newblock {FIREBALL}: a dataset of dungeons and dragons actual-play with structured game state
+  information.
+\newblock In \emph{Proceedings of ACL}, 2023.
+
+\bibitem[Zhu et~al.(2023b)]{zhu2023calypso}
+A.~Zhu, L.~J. Martin, A.~Head, and C.~Callison-Burch.
+\newblock {CALYPSO}: {LLMs} as dungeon masters' assistants.
+\newblock In \emph{Proceedings of AIIDE}, 2023.
+
+\bibitem[Ji et~al.(2023)]{ji2023survey}
+Z.~Ji, N.~Lee, R.~Frieske, T.~Yu, D.~Su, Y.~Xu, E.~Ishii, Y.~J. Bang, A.~Madotto, and P.~Fung.
+\newblock Survey of hallucination in natural language generation.
+\newblock \emph{ACM Computing Surveys}, 55(12), 2023.
+
+\end{thebibliography}
+
+\end{document}
