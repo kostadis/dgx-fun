@@ -29,26 +29,27 @@ Independent researcher\\
 \begin{abstract}
 \emph{Decision models} are a recent class of non-generative language models: a backbone reads a
 \emph{state} once and a small head returns a probability for every option of every typed question
-(multiple choice, yes/no, ordinal score), with no text generated. Two open families appeared in
-October 2026, Cloudflare's Clef and vLLM Semantic Router's Decision~2.0, both promising fast,
-calibrated classification. We test whether they can replace or assist a generative model in the
-judgment steps of a working LLM pipeline for tabletop role-playing campaigns, served on a local
-NVIDIA DGX Spark (GB10). We use labels taken from the game master's own past rulings: 525 reviewed
-transcript-correction cards, 864 triaged tokens, 335 spelling rulings, and 115 entity-type merge
-decisions, plus 12 paired NPC-behaviour scenarios. Decision models work where the label is a coarse
-property readable from meaning: Clef~27B forwarded only 37--56\% of a transcript's unknown-token pile
-without discarding any of 84 real names, and four decision models moved NPC behaviour in the expected
-direction on 11 of 12 paired scenarios against 5 of 12 for a published dice-table system. They fail
-where the label is a string-level judgment (choosing a canonical spelling: 66\% accuracy with 71
-confident wrong answers, against 94.5\% of answered items for a local generative model with
-reasoning enabled), a house convention, or a consistency property across many items (typing extracted facts:
-re-typing per fact created about as many split entities as it repaired; a model-free per-entity
-vote matched the GM's filing 32 times in 33 where it decided). Fine-tuning a 4B decision model on the GM's rulings
-recalibrated it (triage AUC 0.90 to 0.96) but did not teach the conventions, and LoRA adaptation
-reduced splits only by collapsing to the majority class. We also report that an
-apparently strong verdict-prediction result (AUC~0.89) was an artifact of the classifier reading the
-upstream model's own hedging, and that vendor latency claims did not transfer to the GB10 (127~ms
-measured vs.\ 18.4~ms claimed).
+(multiple choice, yes/no, ordinal score), with no text generated. We test six of them: TypeSafe's
+hosted Jev, which introduced the SystemOne interface, and two open families released in October 2026, Cloudflare's
+Clef and vLLM Semantic Router's Decision~2.0, served on a local NVIDIA DGX Spark (GB10). We ask
+whether they can replace or assist a generative model in the judgment steps of a working LLM
+pipeline for tabletop role-playing campaigns. Labels are the game master's own past rulings,
+frozen into one versioned dataset: 766 reviewed transcript-correction cards, 864 triaged tokens,
+497 spelling rulings and 115 entity-type merge decisions, plus 12 paired NPC-behaviour scenarios.
+Decision models work where the label is a coarse property readable from meaning: Clef~27B and Jev
+each forwarded about half of a transcript's unknown-token pile on a held-out split without
+discarding any of 84 real names, and five of six models moved NPC behaviour in the expected
+direction on 11 of 12 paired scenarios against 5 of 12 for a published dice-table system. They
+fall short where the label is a string-level judgment (choosing a canonical spelling: 66--69\% for
+the best decision models against 76\% for a local generative model), a house convention, or a
+consistency property across many items (typing extracted facts one at a time created about as many
+split entities as it repaired; a model-free per-entity vote matched the GM's filing 32 times in 33
+where it decided). Jev is the exception that shows what to ask for: on spelling it abstained
+instead of guessing, with 28 confident wrong names against 109 for Clef~27B. Fine-tuning a 4B decision model
+on the GM's rulings recalibrated it (triage AUC 0.90 to 0.96) but did not teach the conventions. We
+also report that an apparently strong verdict-prediction result was an artifact of the classifier
+reading the upstream model's own hedging, and that vendor latency claims did not transfer to the
+GB10 (127~ms measured vs.\ 18.4~ms claimed).
 \end{abstract}
 
 \section{Introduction}
@@ -62,17 +63,19 @@ therefore wants two things from the model making those calls: it should be right
 decided.
 
 Decision models address both wants directly. Instead of generating an answer, they score a fixed set of options
-and return a probability for each, in one forward pass. Two open families were released within days
+and return a probability for each, in one forward pass. TypeSafe's \emph{Jev}~\cite{typesafe} is a
+hosted model behind the \emph{SystemOne} request format. Two open families exposing the same format were released within days
 of each other in October 2026: Cloudflare's \emph{Clef} (27B and 9B
 backbones)~\cite{clef} and vLLM Semantic Router's \emph{Decision~2.0} (0.6B to 27B)~\cite{decision2},
-both exposing the same \emph{SystemOne} request format and both advertising low latency.
+both advertising low latency.
 
 This paper reports a practitioner's evaluation of these models against real workloads rather than
 benchmarks. The workloads come from an open-source campaign-management toolkit used to run several
 tabletop role-playing campaigns; the labels come from one game master's (GM's) recorded rulings on
-earlier model output. All models ran on local hardware (two NVIDIA DGX Spark systems, GB10, 128~GB
-unified memory each), deliberately: part of the aim was to calibrate what local serving of such
-models is like in practice.
+earlier model output. The open models ran on local hardware (two NVIDIA DGX Spark systems, GB10,
+128~GB unified memory each), deliberately: part of the aim was to calibrate what local serving of
+such models is like in practice. Jev, whose weights are not released, was called through its
+hosted API as a reference point.
 
 We ask four questions:
 \begin{description}
@@ -85,13 +88,15 @@ We ask four questions:
   \item[RQ4] Do the published speed claims hold on this hardware?
 \end{description}
 
-\paragraph{Contributions.} (i) Results on five tasks with labels taken from a GM's own rulings,
-including two strong negative results; (ii) a characterization of \emph{which kinds of label} decision models
-can and cannot learn from the input; (iii) two methodological pitfalls that produced convincing but
-spurious results in this study (label leakage through upstream prose; selection bias in a
-repair-only test set); (iv) a fine-tuning test showing that the convention failure survives training on the
-GM's own rulings; (v) deployment notes for the GB10, including a unified-memory accounting bug
-in an upstream runtime.
+\paragraph{Contributions.} (i) Results on five tasks for six decision models and a generative
+baseline, with labels taken from a GM's own rulings and frozen into a versioned dataset, including
+two strong negative results; (ii) a characterization of \emph{which kinds of label} decision models
+can and cannot learn from the input, and of the failure mode (abstain or guess) that separates
+otherwise similar models; (iii) two methodological pitfalls that produced convincing but spurious
+results in this study (label leakage through upstream prose; selection bias in a repair-only test
+set); (iv) a fine-tuning test showing that the convention failure survives training on the GM's
+own rulings; (v) deployment notes for the GB10, including a unified-memory accounting bug in an
+upstream runtime.
 
 \section{Background}
 
@@ -100,11 +105,14 @@ A request is a \texttt{state} (text) and a dictionary of named \texttt{questions
 \texttt{choice} (a dictionary of option keys to descriptions), \texttt{noul} (yes/no) or
 \texttt{score} (an ordered list of levels). The model prefills the state and the question text once;
 a small head scores every option of every question jointly. The response carries a probability per
-option. Clef's release implements the head as a separate set of weights (``joint schema head'') on
-Qwen-family backbones~\cite{clef}. Decision~2.0 is served by a standalone runtime in vLLM Semantic
-Router~\cite{vllmsr,vllmsrvision} that exposes \texttt{POST /v1/decisions}, a superset of SystemOne,
-with \texttt{/v1/systemone} as an alias~\cite{vllmsrruntime}. Because the two families share the
-interface, every experiment here ran against either family by changing only the endpoint.
+option. TypeSafe defined the interface (\texttt{POST /v1/systemone}) for Jev, which it trains for
+calibrated decisions rather than generated text and serves only as a hosted
+API~\cite{typesafe}. Clef's release implements the head as a separate set of weights (``joint
+schema head'') on Qwen-family backbones~\cite{clef}. Decision~2.0 is served by a standalone runtime
+in vLLM Semantic Router~\cite{vllmsr,vllmsrvision} that exposes \texttt{POST /v1/decisions}, a
+superset of SystemOne, with \texttt{/v1/systemone} as an alias~\cite{vllmsrruntime}. Because all
+three share the interface, every experiment here ran against any model by changing only the
+endpoint.
 
 \subsection{The workloads}
 The toolkit's pipeline turns a session's audio transcript into a reviewed transcript, a structured
@@ -136,49 +144,63 @@ dropped silently.
 Table~\ref{tab:models} lists the models. Clef and clef-flash were served by a thin FastAPI wrapper
 around the release's own model code using PyTorch~2.11 (CUDA~13.0); the release's suggested vLLM
 command would load only the chat backbone and silently drop the decision head. Decision~2.0 was served by
-\texttt{vllm-sr-runtime}~\cite{vllmsrruntime} at a pinned commit, one model per container. The
-generative baseline was \texttt{qwen3.8-flash-next} (NVFP4/FP8 hybrid quantisation, served by vLLM) with
-reasoning either disabled (``fast'') or enabled with a 4{,}000-token budget (``thinking'').
+\texttt{vllm-sr-runtime}~\cite{vllmsrruntime} at a pinned commit, one model per container. Jev was
+called as \texttt{jev-1.13.0}, pinned rather than the moving \texttt{jev-latest} alias, through
+TypeSafe's public API from the same workstation that drove the local runs. The generative baseline
+was \texttt{qwen3.8-flash-next} (NVFP4/FP8 hybrid quantisation, served by vLLM) with reasoning
+either disabled (``fast'') or enabled with a 4{,}000-token budget (``thinking''). Questions,
+option descriptions and prompts are identical across models.
 
 \begin{table}[t]
 \centering
 \small
 \begin{tabular}{lllr}
 \toprule
-Model & Family & Backbone & Measured median latency (GB10) \\
+Model & Family & Backbone & Median latency per request \\
 \midrule
-clef & Clef & Qwen3.8-27B & 400--750 ms \\
-clef-flash & Clef & Qwen3.5-9B & 130--250 ms \\
-Decision-2.0-Lux-9B & Decision 2.0 & Qwen3.5-9B & 127 ms (claimed 18.4 ms) \\
-Decision-2.0-Nox-4B & Decision 2.0 & Qwen3.5 (4B) & 80 ms \\
-Decision-2.0-Kai-0.6B & Decision 2.0 & Qwen3-0.6B & 16 ms (claimed 4.9 ms) \\
-qwen3.8-flash-next, fast & generative & --- & 2.0--3.8 s \\
-qwen3.8-flash-next, thinking & generative & --- & $\approx$33 s (answered items) \\
+clef & Clef & Qwen3.8-27B & 420--960 ms \\
+clef-flash & Clef & Qwen3.5-9B & 125--270 ms \\
+Decision-2.0-Lux-9B & Decision 2.0 & Qwen3.5-9B & 127--295 ms (claimed 18.4 ms) \\
+Decision-2.0-Nox-4B & Decision 2.0 & Qwen3.5 (4B) & 79--206 ms \\
+Decision-2.0-Kai-0.6B & Decision 2.0 & Qwen3-0.6B & 17--53 ms (claimed 4.9 ms) \\
+jev-1.13.0 & TypeSafe (hosted) & not disclosed & 116--121 ms$^\ast$ \\
+qwen3.8-flash-next, fast & generative & --- & 2.0--4.9 s \\
+qwen3.8-flash-next, thinking & generative & --- & \TODO{QT-LAT} s \\
 \bottomrule
 \end{tabular}
-\caption{Models and measured per-request latency for the request shapes used here (one request,
-one to two questions, a few hundred to $\sim$2{,}000 input tokens). Ranges reflect different tasks.
-Claimed latencies are from the model cards, measured on an unnamed GPU.}
+\caption{Models and measured median per-request latency for the request shapes used here (one
+request, one to two questions, a few hundred to $\sim$2{,}000 input tokens). Ranges span tasks.
+Local decision models were measured single-stream on the GB10; the generative model ran 8-way
+(fast) or 6-way (thinking) concurrent. $^\ast$Jev's figure is end to end from the workstation,
+including the internet round trip, and is not comparable to the GB10 rows. Claimed latencies are
+from the model cards, measured on an unnamed GPU.}
 \label{tab:models}
 \end{table}
 
-\subsection{Labels}
+\subsection{Labels and the frozen dataset}
 All labels are rulings the GM made on earlier model output in one campaign (an adapted
 \emph{Out of the Abyss}). Four sources are used:
 \begin{enumerate}
-  \item \textbf{525 transcript-correction review cards} across 42 sessions: 438 approved, 82
-        discussed, 4 ruled table chatter, 1 rejected.
+  \item \textbf{766 transcript-correction review cards} across 59 sessions: 662 approved, 98
+        discussed, 4 ruled table chatter, 2 rejected.
   \item \textbf{864 triaged tokens} from the nine sessions whose review pages enumerated what was
         left alone: 628 left alone, 152 ruled table chatter, 84 that became approved
         name-correction cards. ``Left alone'' means the GM saw the token listed and did not pull it
         back, a weaker label than a card ruling.
-  \item \textbf{335 spelling items}: 323 GM-approved name corrections whose canonical form exists
+  \item \textbf{497 spelling items}: 485 GM-approved name corrections whose canonical form exists
         in the campaign's name lists, plus 12 ruled table chatter (correct answer: leave as spoken).
   \item \textbf{115 entity-type merge rulings} over ensemble dossiers: 109 merged (with a GM-chosen
         primary type) and 9 kept separate (some groups mix outcomes).
 \end{enumerate}
-The campaign text is not released: it quotes play sessions verbatim and the table-chatter labels
-name real people. The evaluation scripts are public~\cite{dgxfun}.
+The original per-experiment scripts rebuilt their inputs from the live campaign tree on every run,
+so the label sets grew while the study ran (the review cards from 525 to 766). For this paper every
+input was rendered once, with each model-facing \texttt{state} already built, and frozen into a
+read-only, versioned dataset; every model below was run against those same bytes, and a manifest
+records each file's hash and the source commits. Rerunning on the frozen set reproduced the
+deterministic results of the earlier, unfrozen runs exactly where the inputs had not changed (E4
+per-fact typing, the E4 replay, E6 head-only triage). The campaign text is not released: it quotes
+play sessions verbatim and the table-chatter labels name real people. The evaluation scripts and
+the manifest are public~\cite{dgxfun}.
 
 \subsection{Metrics}
 For verdict prediction we report ROC AUC~\cite{hanley1982}. For filters we report, at each threshold,
@@ -190,38 +212,41 @@ approves.
 \section{Experiments and results}
 
 \subsection{E1: Predicting the GM's verdict (and how it fooled us)}
-\textbf{Task.} For each of the 525 review cards, ask ``Will the GM approve this proposed correction
+\textbf{Task.} For each of the 766 review cards, ask ``Will the GM approve this proposed correction
 as written?'' (\texttt{noul}). If this worked, the review page could be sorted so the GM looks
 hardest at the likely rejections.
 
-\textbf{Result.} On the cards as the upstream model wrote them, clef reached AUC~0.887 and
-clef-flash 0.815. Rebuilding each card from raw sources only (transcript lines, the second
-transcription, a canon lookup) raised clef to 0.911.
+\textbf{Result.} On the cards as the upstream model wrote them, clef reached AUC~0.799 and Jev 0.807
+(the other decision models 0.71--0.82). Rebuilding each card from raw sources only (transcript
+lines, the second transcription, a canon lookup) raised clef to 0.919.
 
 \textbf{Why it is not a result.} A one-feature baseline, ``does the card propose a fix at all'',
-scores 0.908: 77 of the 107 cards with no proposed fix were not approved, against 10 of 418 cards
+scores 0.897: 88 of the 123 cards with no proposed fix were not approved, against 16 of 643 cards
 with one. Splitting by card type (Table~\ref{tab:e1}) shows that on open questions the strong score
 existed only when the classifier could read the upstream model's prose, and fell \emph{below
-chance} (0.398) without it. The classifier was reading the drafting model's hedges (``could be X or
-Y'', ``what was said?'') back to us. On proposals, the verdict is saturated (97.6\% approved) and the
-10 non-approvals are too few to measure.
+chance} without it (clef 0.439, Jev 0.470). The classifiers were reading the drafting model's hedges (``could be X or
+Y'', ``what was said?'') back to us. On proposals, the verdict is saturated (97.5\% approved) and the
+16 non-approvals are too few to measure.
 
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{lrrr}
+\resizebox{\textwidth}{!}{\begin{tabular}{lrrrrr}
 \toprule
-Card subset & $n$ (not approved) & AUC, upstream prose & AUC, raw sources \\
+& & \multicolumn{2}{c}{clef} & \multicolumn{2}{c}{jev} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+Card subset & $n$ (not approved) & upstream prose & raw sources & upstream prose & raw sources \\
 \midrule
-All cards & 525 (87) & 0.887 & 0.911 \\
-Proposes a fix & 418 (10) & 0.665 & 0.658 \\
-Open question, no fix & 107 (77) & 0.800 & 0.398 \\
+All cards & 766 (104) & 0.799 & 0.919 & 0.807 & 0.630 \\
+Proposes a fix & 643 (16) & 0.549 & 0.722 & 0.418 & 0.689 \\
+Open question, no fix & 123 (88) & 0.803 & 0.439 & 0.749 & 0.470 \\
 \midrule
-Baseline: ``has a fix'' & 525 (87) & \multicolumn{2}{c}{0.908} \\
+Baseline: ``has a fix'' & 766 (104) & \multicolumn{4}{c}{0.897} \\
 \bottomrule
-\end{tabular}
-\caption{E1, clef 27B predicting the GM's verdict. The headline AUC comes from card type and from
-upstream prose, not from judgment about the correction itself.}
+\end{tabular}}
+\caption{E1, AUC for predicting the GM's verdict. The headline AUC comes from card type and from
+upstream prose, not from judgment about the correction itself. The pattern holds for every decision
+model tested (open-question AUC 0.73--0.81 with prose, 0.44--0.60 without).}
 \label{tab:e1}
 \end{table}
 
@@ -233,7 +258,7 @@ in the list) and \textsc{leave} (not a misheard name). Candidates came from cano
 the glossary's wrong-form column was excluded because it contains these very rulings.
 
 \textbf{Candidate recall caps every model.} The correct name was among the eight candidates for
-258 of 323 items (80\%). The misses are mostly cases where neither spelling nor sound is close enough
+385 of 485 items (79\%). The misses are mostly cases where neither spelling nor sound is close enough
 to retrieve the name (\emph{Vira} $\rightarrow$ Ilvara, \emph{Peto} $\rightarrow$ Buppido), plus a
 house convention of transcribing the GM's own name as ``GM''.
 
@@ -245,29 +270,40 @@ spoken'', the generative model complied and clef did not.
 \begin{table}[t]
 \centering
 \small
-\resizebox{\textwidth}{!}{\begin{tabular}{lrrrr}
+\resizebox{\textwidth}{!}{\begin{tabular}{lrrrrr}
 \toprule
-Model & Accuracy & Confident wrong names & Unanswered & Median latency \\
+Model & Accuracy & Confident wrong names & Said \textsc{other} & Most-confident half & Median latency \\
 \midrule
-clef-flash & 30.4\% & 52 & 0 & 0.25 s \\
-clef & 66.0\% & 71 & 0 & 0.75 s \\
-qwen, fast & 75.8\% & 56 & 0 & 3.8 s \\
-qwen, thinking & 62.1\% (94.5\% of 220 answered) & 7 & 115 & $\approx$33 s answered \\
+Decision-2.0-Kai-0.6B & 15.3\% & 54 & --- & 16.5\% & 0.05 s \\
+Decision-2.0-Nox-4B & 19.7\% & 29 & --- & 20.2\% & 0.21 s \\
+clef-flash & 30.0\% & 64 & --- & 32.7\% & 0.27 s \\
+Decision-2.0-Lux-9B & 31.4\% & 44 & --- & 34.7\% & 0.30 s \\
+clef & 66.4\% & 109 & 53 & 78.6\% & 0.96 s \\
+jev & 69.0\% & 28 & 208 & 83.1\% & 0.12 s$^\ast$ \\
+qwen, fast & 76.1\% & 87 & 72 & --- & 4.9 s \\
+qwen, thinking & \TODO{QT-ACC} & \TODO{QT-WN} & --- & --- & \TODO{QT-LAT} s answered \\
 \midrule
-clef $\wedge$ qwen-thinking agree & 95.8\% of 166 & 5 & --- & --- \\
+clef $\wedge$ jev agree & 90.3\% of 268 & 13 & --- & --- & --- \\
+clef $\wedge$ qwen-thinking agree & \TODO{QT-AGREE} & \TODO{QT-AGREE-WN} & --- & --- & --- \\
 \bottomrule
 \end{tabular}}
-\caption{E2, 335 items. ``Unanswered'' means the reasoning budget ran out; 51 of the 65 items whose
-correct name was not in the candidate list fall here, so exhaustion behaves as a safe abstention
-that routes the item to the GM. Clef's confidence was weakly informative (its most confident half
-was 77.8\% correct); the fast generative model's stated confidence was not (79.6\%).}
+\caption{E2, 497 items. ``Said \textsc{other}'' counts every \textsc{other} answer, right or wrong;
+the Decision~2.0 models and clef-flash mostly answered \textsc{leave} or \textsc{other} instead of
+reading the candidates. ``Most-confident half'' is the accuracy of the half of items with the
+highest reported confidence; the fast generative model's stated confidence did not separate them.
+\TODO{QT-NOTE}}
 \label{tab:e2}
 \end{table}
 
-\textbf{Result (Table~\ref{tab:e2}).} Decision models lose clearly. Gating the generative model on
-clef's confidence added nothing. Note the test set's bias: every item is a proposal the upstream
-model made and the GM approved, so it measures how close local models come to approved work and
-cannot reveal the upstream model's own misses.
+\textbf{Result (Table~\ref{tab:e2}).} Decision models lose to the generative baseline, and the open
+models below 27B are not usable for this task. The two strongest decision models reach similar
+accuracy by different routes. Clef commits: 109 of its 167 errors are a wrong name, the error a
+reviewer approves. Jev abstains: 119 of its 154 errors are \textsc{other} on an item whose name was
+in the list, and it answered \textsc{other} correctly for 89 of the 100 items whose name was not.
+Its confidence is informative: the 79 items it answered with confidence $\geq 0.9$ were 92.4\%
+correct with 2 wrong names, a slice that could be pre-filled for the GM. Note the test set's bias:
+every item is a proposal the upstream model made and the GM approved, so it measures how close these
+models come to approved work and cannot reveal the upstream model's own misses.
 
 \subsection{E3: Triage of the unknown-token pile}
 \textbf{Task.} Before any expensive judgment, classify each capitalised unknown token as filler,
@@ -278,36 +314,38 @@ in the review page's ``left alone'' list.
 \begin{table}[t]
 \centering
 \small
-\resizebox{\textwidth}{!}{\begin{tabular}{lrrrr}
+\resizebox{\textwidth}{!}{\begin{tabular}{lrrrrrr}
 \toprule
-Model & Forwarded, 0 of 84 missed & Forwarded, $\leq$2 missed & Chatter recognised & Median \\
+Model & AUC & Fwd., 0 of 84 missed & Fwd., $\leq$2 missed & Held-out halves (misses) & Chatter recognised & Median \\
 \midrule
-clef & 37--56\% & --- & 136/152 & 400 ms \\
-clef-flash & 98\% & 66\% & 128/152 & 132 ms \\
-Decision-2.0-Lux-9B & 89\% & 54--71\% & 129/152 & 127 ms \\
-Decision-2.0-Nox-4B & 96\% & 36--72\% & 118/152 & 80 ms \\
-Decision-2.0-Kai-0.6B & 98\% & 78\% & 7/152 & 16 ms \\
-qwen, fast & --- & 24--38\% (5--6 missed) & 146/152 & 2.0 s \\
+clef & 0.933 & 34--42\% & 27--39\% & 43\% (0), 49\% (0) & 136/152 & 419 ms \\
+jev & 0.931 & 42--55\% & 37--50\% & 51\% (0), 47\% (0) & 143/152 & 116 ms$^\ast$ \\
+clef-flash & 0.904 & 92--95\% & 47--58\% & 90\% (1), 100\% (0) & 128/152 & 124 ms \\
+Decision-2.0-Lux-9B & 0.896 & 75--89\% & 33--49\% & 69\% (1), 96\% (0) & 129/152 & 127 ms \\
+Decision-2.0-Nox-4B & 0.900 & 82--89\% & 34--46\% & 96\% (0), 94\% (0) & 118/152 & 79 ms \\
+Decision-2.0-Kai-0.6B & 0.796 & 97--98\% & 49--55\% & 97\% (0), 100\% (0) & 7/152 & 17 ms \\
+qwen, fast & --- & --- & 24\% (6 missed) & --- & 145/152 & 2.0 s \\
 \bottomrule
 \end{tabular}}
-\caption{E3, 864 tokens, 84 of them real names. ``Forwarded'' is the share of tokens sent on to the
-expensive step at a threshold achieving the stated number of misses; ranges span the thresholds that
-achieve it. For clef, a threshold tuned on half the sessions (then halved for margin) forwarded 44\%
-and 51\% of the held-out halves with 0 misses.}
+\caption{E3, 864 tokens, 84 of them real names. ``Fwd.'' is the share of tokens sent on to the
+expensive step at the threshold achieving the stated number of misses; ranges span two readouts of
+the same answer ($P(\text{campaign})$ and $1 - P(\text{filler}) - P(\text{realworld})$). ``Held-out
+halves'': a threshold set at half the lowest name score on one half of the sessions, applied to the
+other half.}
 \label{tab:e3}
 \end{table}
 
-\textbf{Result (Table~\ref{tab:e3}).} This is the task where decision models earned a place: clef~27B
-roughly halves the expensive step's input without a single silent loss, and survives a held-out
-split. Smaller decision models trade that guarantee for speed; the names they drop recur across
+\textbf{Result (Table~\ref{tab:e3}).} This is the task where decision models earned a place. Clef~27B
+and Jev each roughly halve the expensive step's input without a single silent loss, and both survive a
+held-out split; Jev also recognised the most table chatter of any decision model. Smaller open models trade that guarantee for speed; the names they drop recur across
 models (e.g.\ \emph{Heel Strike}).
 
 \subsection{E4: Entity typing in ensemble extraction}
 \textbf{Per entity.} For each of the 92 usable merged groups, the classifier saw a sample of the
 entity's raw facts with the original type labels hidden. A free majority vote over the extraction
-passes' own types matched the GM's primary on 82/92; clef matched 82, clef-flash 80, the fast
-generative model 80. Voting with the model deciding only when no type holds 60\% of facts scored 87
-for \emph{all three} models. Most disagreements are filing conventions that the facts do not reveal:
+passes' own types matched the GM's primary on 82/92; the decision models matched 79--82 (clef and
+Nox 82, Jev 80) and the fast generative model 80. Voting with the model deciding only when no type
+holds 60\% of facts scored 85--87 for every model (Jev 86). Most disagreements are filing conventions that the facts do not reveal:
 the GM filed the demon lords Zuggtmoy, Juiblex and Demogorgon as \emph{monster} but Yeenoghu, also a
 demon lord, as \emph{npc}; the campaign's own entity registry types all four \emph{npc}. These are canon questions for the GM, not model errors.
 
@@ -315,34 +353,39 @@ demon lord, as \emph{npc}; the campaign's own entity registry types all four \em
 assign each fact's type. On the 1{,}691 facts of those entities, extraction had typed 266 with a
 different entity type, splitting 78 entities. Re-typing reduced splits (Table~\ref{tab:e4}), but this
 set was \emph{selected on extraction's mistakes}, so any second opinion looks good on it. On a control
-set of 55 entities that extraction had typed consistently (847 facts), every re-typer created new
+set of 54 entities that extraction had typed consistently (839 facts), every re-typer created new
 splits, and clef moved 21\% of facts into non-entity types (\emph{event}, \emph{thread}, \emph{date}),
 removing them from their dossiers.
 
 \begin{table}[t]
 \centering
 \small
-\resizebox{\textwidth}{!}{\begin{tabular}{lrrr}
+\resizebox{\textwidth}{!}{\begin{tabular}{lrrrr}
 \toprule
-Who types each fact & Split entities (of 92 merged) & New splits (of 55 consistent) & Facts moved to non-entity types \\
+Who types each fact & Per-fact accuracy & Split entities (of 92 merged) & New splits (of 54 consistent) & Facts moved to non-entity types \\
 \midrule
-extraction (as is) & 78 & 0 (by selection) & --- \\
-clef & 29 & 7 & 255 + 177 \\
-clef-flash & 46 & 13 & 120 + 68 \\
-qwen, fast & 38 & 13 & 28 + 19 \\
+extraction (as is) & 84.3\% & 78 & 0 (by selection) & --- \\
+clef & 76.8\% & 29 & 7 & 255 + 177 \\
+jev & 84.2\% & 35 & 9 & 87 + 80 \\
+clef-flash & 81.6\% & 46 & 13 & 120 + 68 \\
+Decision-2.0-Lux-9B & 86.3\% & 41 & 12 & 22 + 22 \\
+Decision-2.0-Nox-4B & 83.6\% & 44 & 12 & 42 + 28 \\
+Decision-2.0-Kai-0.6B & 63.6\% & 65 & 34 & 200 + 137 \\
+qwen, fast & 88.3\% & 38 & 12 & 28 + 17 \\
 \bottomrule
 \end{tabular}}
-\caption{E4, per-fact re-typing. ``Facts moved'' gives repair set + control set. Projected over the
-campaign's $\sim$470 consistent dossiers, re-typing creates roughly as many splits as it repairs
-(clef) or more (the others).}
+\caption{E4, per-fact re-typing. Accuracy is on the repair set against the GM's primary type.
+``Facts moved'' gives repair set + control set. Projected over the campaign's $\sim$470 consistent
+dossiers, re-typing creates roughly as many splits as it repairs (clef, Jev) or more (the others).}
 \label{tab:e4}
 \end{table}
 
 \textbf{As an extra signal.} Adding decision-model votes to the majority vote hurt (81/92 voting over
-clef's per-fact types; 82/92 pooled; 84/92 for extraction alone on this fact set). Used instead as a
-\emph{second opinion} that flags subjects where it disagrees with the vote, clef flagged 15/92 and
-caught 8 of the vote's 10 errors (7 false alarms); the fast generative model (17 flags, 8/10) and
-clef-flash (18, 8/10) did nearly as well.
+clef's per-fact types, 78/92 over Jev's; 82--84/92 pooled with extraction's; 84/92 for extraction
+alone on this fact set). Used instead as a \emph{second opinion} that flags subjects where it
+disagrees with the vote, clef flagged 15/92 and caught 8 of the vote's 10 errors (7 false alarms);
+Jev (15 flags, 7/10), the fast generative model (17, 8/10) and clef-flash (18, 8/10) did about as
+well.
 
 \textbf{Interpretation.} The failure is structural. Per-fact typing gives an entity with dozens of
 facts dozens of independent chances to draw one odd label, and one odd label is a split. A
@@ -404,19 +447,20 @@ role and stance.
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{lr}
+\resizebox{\textwidth}{!}{\begin{tabular}{lrr}
 \toprule
-Policy & Pairs moving the expected way ($\Delta > 0.02$) \\
+Policy & Pairs moving the expected way ($\Delta > 0.02$) & Goblin $P(\text{flee})$: unhurt $\rightarrow$ alone $\rightarrow$ cornered \\
 \midrule
-FlexAI d100 tables (role $\times$ stance) & 5 / 12 \\
-clef & 11 / 12 \\
-clef-flash & 11 / 12 \\
-Decision-2.0-Lux-9B & 11 / 12 \\
-Decision-2.0-Nox-4B & 11 / 12 \\
-Decision-2.0-Kai-0.6B & 5 / 12 \\
-qwen, fast (asked for a distribution) & 9 / 12 \\
+FlexAI d100 tables (role $\times$ stance) & 5 / 12 & 0.15 $\rightarrow$ 0.16 $\rightarrow$ 0.00 \\
+clef & 11 / 12 & 0.03 $\rightarrow$ 0.75 $\rightarrow$ 0.43 \\
+clef-flash & 11 / 12 & 0.03 $\rightarrow$ 0.48 $\rightarrow$ 0.09 \\
+Decision-2.0-Lux-9B & 11 / 12 & 0.01 $\rightarrow$ 0.59 $\rightarrow$ 0.17 \\
+Decision-2.0-Nox-4B & 11 / 12 & 0.01 $\rightarrow$ 0.49 $\rightarrow$ 0.10 \\
+Decision-2.0-Kai-0.6B & 5 / 12 & 0.05 $\rightarrow$ 0.16 $\rightarrow$ 0.20 \\
+jev & 11 / 12 & 0.00 $\rightarrow$ 0.89 $\rightarrow$ 0.09 \\
+qwen, fast (asked for a distribution) & 9 / 12 & 0.00 $\rightarrow$ 0.70 $\rightarrow$ 0.00 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{E5. Two pairs are imperfect: in one, clef's answer (an archer engaged in melee draws its
 sword, \emph{attack secondary} 0.64) is arguably better than the expected \emph{maneuver}; in
 another, the shared party description contradicted the scenario's premise, invalidating the pair for
@@ -425,8 +469,10 @@ all policies. The scenarios and expectations were written by the experimenter.}
 \end{table}
 
 \textbf{Result (Table~\ref{tab:e5}).} Situation-aware decision models clearly beat the dice tables,
-and their probabilities are graded (goblin \emph{flee} $0.03 \rightarrow 0.75$ when its allies die,
-$\rightarrow 0.43$ when cornered), which is what a sampler needs. The generative model's stated
+and their probabilities are graded, which is what a sampler needs. They differ in how far they move:
+clef keeps a cornered goblin at 0.43 \emph{flee}, Jev drops it to 0.09 after putting 0.89 on fleeing
+when the goblin is alone with an open tunnel. Which is right is a table-style question, not one the pairs can
+settle. The generative model's stated
 distributions were nearly degenerate (many 0.00 and 1.00 values, e.g.\ 1.00 on a single target), so
 sampling from them adds little variety. On this evidence we built a table-side prototype: the GM types
 one line describing the situation, a decision model returns stance probabilities over eight social
@@ -438,7 +484,8 @@ not yet adjudicated by the GM; we do not report it.
 \subsection{E6: Fine-tuning a decision model on the GM's rulings}
 \textbf{Question.} Can the failures above be trained away? We fine-tuned Decision-2.0-Nox-4B on
 the GM's rulings for two tasks: triage (E3) and per-fact entity typing (E4, where the labels encode
-the GM's filing conventions).
+the GM's filing conventions). Jev cannot be tried here: TypeSafe does not fine-tune it per
+customer and serves the same weights to every account~\cite{typesafe}.
 
 \textbf{Method.} The released Transformers wrapper refuses \texttt{train()}, but the runtime's
 native backbone and head are ordinary PyTorch modules. We loaded the model through the runtime
@@ -455,40 +502,42 @@ so no test entity or session is seen in training.
 \small
 \resizebox{\textwidth}{!}{\begin{tabular}{lrrrrrr}
 \toprule
-& \multicolumn{3}{c}{Triage (864 tokens)} & \multicolumn{3}{c}{Entity typing (2{,}538 facts, 147 entities)} \\
+& \multicolumn{3}{c}{Triage (864 tokens)} & \multicolumn{3}{c}{Entity typing (2{,}530 facts, 146 entities)} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
-Nox-4B & AUC & Fwd.\ @ 0 miss & Fwd.\ @ $\leq$2 & Per-fact acc. & Split (92 / 55) & Entity majority \\
+Nox-4B & AUC & Fwd.\ @ 0 miss & Fwd.\ @ $\leq$2 & Per-fact acc. & Split (92 / 54) & Entity majority \\
 \midrule
-released & 0.900 & 82\% & 34\% & 87.2\% & 45 / 12 & 137 / 147 \\
-head only & \textbf{0.963} & \textbf{67\%} & 34\% & \textbf{91.6\%} & 35 / 11 & --- \\
-LoRA r16 + head & 0.915 & 80\% & 53\% & 80.6\% & \textbf{18 / 9} & 120 / 147 \\
+released & 0.900 & 82\% & 34\% & 87.2\% & 44 / 12 & \TODO{ENT-REL} / 146 \\
+head only & \textbf{0.963} & \textbf{67\%} & 34\% & \textbf{91.3\%} & 34 / 9 & --- \\
+LoRA r16 + head & 0.935 & 83\% & 36\% & \TODO{LT-ACC} & \TODO{LT-SPLIT} & \TODO{ENT-LORA} / 146 \\
 \bottomrule
 \end{tabular}}
 \caption{E6, held-out results. ``Fwd.'' is the share of tokens forwarded at the best held-out
 threshold for the stated number of missed names. ``Split'' counts entities whose facts land in more
 than one entity type (repair set / control set). Head-only settings were chosen from four
-candidates on the same cross-validation, so its rows are mildly optimistic.}
+candidates on the same cross-validation, so its rows are mildly optimistic. LoRA training is not
+bit-reproducible; an earlier run on the unfrozen inputs gave triage AUC 0.915.}
 \label{tab:e7}
 \end{table}
 
 \textbf{Result (Table~\ref{tab:e7}).} Head-only tuning \emph{recalibrates} the readout. Triage
-AUC rose from 0.900 to 0.963, and per-fact typing accuracy from 87.2\% to 91.6\%, with almost no
-facts drifting into non-entity types. It did not learn the conventions. The demon lords the GM files
-as \emph{monster} moved \emph{toward} \emph{npc} (Juiblex: 7 of 14 facts \emph{monster} released,
-1 of 14 tuned), outvoted by a label distribution that is 64\% \emph{npc} and by the GM's own
-contrary ruling on Yeenoghu. Weak regularisation overfit badly: a threshold chosen on the training
-sessions missed 19 held-out names. The LoRA stage cut entity splits sharply (45 to 18) by
-\emph{collapsing to the majority class}: all 63 facts the GM filed as \emph{monster} became
-\emph{npc}, and entity-level accuracy fell from 137 to 120 of 147. Three triage names
+AUC rose from 0.900 to 0.963, and per-fact typing accuracy from 87.2\% to 91.3\%, with almost no
+facts drifting into non-entity types (42 + 28 to 0 + 1). It did not learn the conventions. The demon lords the GM files
+as \emph{monster} moved \emph{toward} \emph{npc} (Demogorgon: 12 of 12 facts \emph{monster} released, 1 of 12
+tuned; Juiblex: 7 of 14 to 0), outvoted by a label distribution that is 64\% \emph{npc} and by the GM's own
+contrary ruling on Yeenoghu. In the earlier, unfrozen run, weak regularisation overfit badly: a threshold chosen on the training
+sessions missed 19 held-out names. \TODO{LORA-RESULT} Three triage names
 (\emph{Heel Strike}, \emph{Zoom}, \emph{Pick / Shine}) were missed by every model and every
 tuning, which suggests a limit of the label given this input rather than of model capacity.
 
 \subsection{E7: Serving on the GB10}
 \textbf{Latency.} Table~\ref{tab:models} summarises it. Decision~2.0's runtime ships custom kernels only for
 AMD's gfx942; on CUDA it uses pure-PyTorch reference kernels, and its CUDA path is marked unvalidated
-upstream. Measured medians on the GB10 were 3--7$\times$ the model-card figures (Kai 16 vs.\ 4.9~ms; Lux 127 vs.\ 18.4~ms). For Clef, the GB10 was
+upstream. Measured medians on the GB10 were 3--7$\times$ the model-card figures (Kai 17 vs.\ 4.9~ms; Lux 127 vs.\ 18.4~ms). For Clef, the GB10 was
 3.5$\times$ slower than Cloudflare's published H200 medians for the 9B model but only 1.9$\times$ for the
-27B, consistent with fixed per-request overhead dominating small models.
+27B, consistent with fixed per-request overhead dominating small models. Hosted Jev answered in
+119~ms at the median and 232~ms at the 99th percentile, internet round trip included; a few
+requests stalled for tens of seconds in rate-limit back-off. The whole Jev run (6{,}292 requests,
+4.2M input tokens) cost about \$0.18 at the listed price.
 
 \textbf{Correctness.} With no upstream golden check on CUDA, we compared Kai-0.6B's CUDA and CPU
 outputs on identical requests: probabilities agreed within 0.005.
@@ -498,20 +547,30 @@ GB10's unified memory excludes reclaimable page cache; the box reported 9--18~Gi
 available, and reading the weights to verify checksums refilled the cache just before the check. We
 patched the check to use the kernel's \texttt{MemAvailable} on integrated devices. Separately, Lux-9B
 occupied about 50~GB (33~GB resident in the process) for 16~GB of BF16 weights; co-hosted with Clef the
-system fell to 1~GB available and the runtime crashed once.
+system fell to 1~GB available and the runtime crashed once. For the frozen-dataset rerun each family
+was therefore served alone, one after another.
 
 \section{Discussion}
 
 \paragraph{What kind of label is it?} Across the five tasks a single distinction predicted success.
 Decision models succeeded when the label is a \emph{coarse property readable from meaning}: is this
-token chatter or a campaign name; would a cornered creature flee. They failed when the label is
+token chatter or a campaign name; would a cornered creature flee. They fell short when the label is
 (a) a \emph{string-level} judgment (which spelling, exactly which words), (b) a \emph{convention}
 the text does not reveal (how this GM files demon lords), or (c) a \emph{consistency property across
 items} (one type per entity across many facts). Most judgment steps in this pipeline are of the second
 kind, which is why the decision models' role ended up narrow. Fine-tuning (E6) did not move this
 boundary: training on a few thousand of the GM's own rulings sharpened the readout on clear cases,
-but a sparse, partly contradictory convention was outvoted rather than learned, and backbone
-adaptation traded accuracy for a false consistency.
+but a sparse, partly contradictory convention was outvoted rather than learned. Jev, a closed
+model trained by its vendor for calibrated decisions, sits on the same side of every
+boundary as the open models; it differs in how it fails.
+
+\paragraph{Abstaining is the property to ask for.} On spelling, clef and Jev were equally accurate,
+but clef's errors were mostly wrong names and Jev's were mostly abstentions, and Jev's
+confidence separated right from wrong more sharply (its answers at confidence $\geq 0.9$: 79 items,
+92.4\% correct; clef's: 20 items, 70\%). For a pipeline with a human
+checkpoint that difference is decisive: an abstention costs the GM a lookup, a confident wrong name
+costs a silent error in the record. Accuracy tables hide it; we recommend counting the two kinds of
+error separately for any decision model placed in front of a reviewer.
 
 \paragraph{Filters and flags, not deciders.} Every useful configuration kept the human checkpoint
 intact: triage that orders work without deleting it, a second opinion that adds subjects to a review
@@ -528,20 +587,30 @@ The better model was not the missing piece; the missing piece was reading the ru
 zero-loss filter threshold (E3) and to sample plausible behaviour (E5). The generative baseline's
 self-reported probabilities served neither purpose.
 
+\paragraph{Local versus hosted.} On the two tasks where decision models earned a place, the hosted
+Jev matched the best local model (clef~27B) on triage and every 4B-and-larger local model on NPC
+behaviour, at a fraction of the latency of clef~27B. The local path's value here was not quality: it
+was the ability to fine-tune (E6), to inspect the head, and to find the GB10-specific failures (E7).
+
 \paragraph{Two ways a convincing result was wrong.} E1's AUC came from the classifier reading the
 upstream model's prose, and E4's per-fact improvement came from a test set selected on errors. Both
 looked strong until a baseline or a control was added. We recommend both checks for any evaluation
-built from a pipeline's own review records.
+built from a pipeline's own review records, and freezing the inputs before comparing models: our
+own label sets grew by half between the first runs and this paper.
 
 \section{Limitations}
 This is a single-practitioner study: one campaign, one GM, one hardware platform. Several label sets
-are small (84 real names in E3; 10 non-approved proposals in E1; 12 scenario pairs in E5). Some labels
+are small (84 real names in E3; 16 non-approved proposals in E1; 12 scenario pairs in E5). Some labels
 are weak (``left alone'' in E3), and some test material was written by the experimenter (E5). The E2
 set was built from approved proposals and cannot reveal the upstream model's misses. Prompts and
 option descriptions were written once and not tuned, which is fair to a drop-in classifier but
-unfavourable to it. We did not verify that the locally served Clef matches Cloudflare's hosted
+unfavourable to it; TypeSafe's own guidance favours structured instructions and criteria, which we
+did not use, so Jev in particular may be under-served. Jev is a hosted model of undisclosed size
+and training data, called at one pinned version; its results describe that version, and its
+latency includes our internet path. Running it sent the frozen inputs, which include transcript
+excerpts, to a third-party service. We did not verify that the locally served Clef matches Cloudflare's hosted
 service. Decision~2.0 ran on a runtime path its authors mark as unvalidated on CUDA; our own CPU/GPU
-parity check covers only the smallest model. Latencies are single-stream; the runtime's batching
+parity check covers only the smallest model. Local latencies are single-stream; the runtime's batching
 profiles were not tested. Fine-tuning explored one LoRA configuration (rank 16, one or two epochs) and
 selected head-only settings on the same cross-validation folds. The entity-level typing replay
 covers only subjects with a \emph{monster}-typed fact in one of two extraction corpora, and 41 of the
@@ -551,17 +620,18 @@ covers only subjects with a \emph{monster}-typed fact in one of two extraction c
 Decision models are a useful addition to a local LLM toolkit, in a narrow role: fast, calibrated
 classification of coarse properties, placed where it orders or flags work rather than deciding it.
 In this pipeline that meant triaging transcript tokens without silent losses and generating
-situation-aware NPC behaviour at the table. They did not replace a generative model with reasoning for
-spelling decisions, could not infer house conventions, and cannot impose consistency across items
+situation-aware NPC behaviour at the table. They did not replace a generative model for spelling
+decisions, could not infer house conventions, and cannot impose consistency across items
 that are judged one at a time; that consistency came instead from typing once per entity and feeding
-the GM's own rulings back into the pipeline. On the GB10, the smaller Decision~2.0 models give most of the
-behavioural quality at a fraction of the memory, but published latency claims should be re-measured
-on the target hardware.
+the GM's own rulings back into the pipeline. Where they fall short, the useful question is whether a
+model abstains or guesses: the hosted Jev mostly abstained and the open models mostly guessed. On
+the GB10, the smaller Decision~2.0 models give most of the behavioural quality at a fraction of the
+memory, but published latency claims should be re-measured on the target hardware.
 
 \section*{Data and code availability}
-Serving configurations, the GB10 patch, and all evaluation scripts are available in the public
-repository~\cite{dgxfun}. The campaign data is not released because it quotes play sessions verbatim
-and names real people.
+Serving configurations, the GB10 patch, all evaluation scripts, and the frozen dataset's manifest
+(file hashes, counts and source commits) are available in the public repository~\cite{dgxfun}. The
+campaign data itself is not released because it quotes play sessions verbatim and names real people.
 
 \section*{Use of AI assistance}
 The experiments, analysis and a first draft of this paper were carried out by an AI coding agent
@@ -569,7 +639,12 @@ The experiments, analysis and a first draft of this paper were carried out by an
 making the decisions recorded in the paper. The author takes full responsibility for the content.
 
 \bibliographystyle{plainnat}
-\begin{thebibliography}{9}
+\begin{thebibliography}{10}
+
+\bibitem[TypeSafe(2026)]{typesafe}
+TypeSafe.
+\newblock Jev and the System One API.
+\newblock Documentation, \url{https://docs.typesafe.ai}, model \texttt{jev-1.13.0}, accessed October 2026.
 
 \bibitem[Cloudflare(2026)]{clef}
 Cloudflare.

@@ -1,0 +1,69 @@
+{
+ "version": "v1",
+ "frozen_at": "2026-10-06T05:01:52+00:00",
+ "campaign_commit": "5b15125429cb872d471acc4d91c19051d84a054a",
+ "dgx_fun_commit": "7e07d46a8ea26bae9b6b0df758bf5a99a86e4a48",
+ "campaigngenerator_commit": "9fcc3aee1283d6d72c1580c4ad64c3462ea3c653",
+ "files": {
+  "e1_cards_prose": {
+   "n": 766,
+   "sha256": "1aa66d2c15922b0d905e62185ddfe9dc344482fa1a372fba7cbfeef029eb8d17",
+   "note": "review cards as the upstream model wrote them"
+  },
+  "e1_cards_rawB": {
+   "n": 766,
+   "sha256": "4678d8a94efa43b40f456d04f405ef788e8d0eb31d2d2bc4561e655ff1b714bd",
+   "note": "cards rebuilt from raw sources only (paper: \"raw sources\")"
+  },
+  "e1_cards_rawC": {
+   "n": 766,
+   "sha256": "6398d2ecd4207ab0b78cdeb8d567e731d103ee0fd36adc0c75616441c8347536",
+   "note": "arm B + wider tape window, near-spelling canon, previous session"
+  },
+  "e2_pick": {
+   "n": 497,
+   "sha256": "c4812a2898c5ed2bf4f4974c31ed6a9618a55248773ae86bd3dd36b079715397",
+   "note": "token + tape + candidate names; gold = GM-approved canonical or LEAVE"
+  },
+  "e3_triage": {
+   "n": 864,
+   "sha256": "983ca264e2b9d2d337caf6488b062822aa3567890d34b1bf573f603455d39a91",
+   "note": "label: name (84) / chatter / leave"
+  },
+  "e4_ent": {
+   "n": 103,
+   "sha256": "1becb20541ebf1e3a7fa2bed863f0692c88d3036812d3b6efa645dd603ace217",
+   "note": "per-entity typing; merged groups + kept-separate members"
+  },
+  "e4_facts": {
+   "n": 1691,
+   "sha256": "1b8b845f1d17475936b366b391b14d9114e0c924b695755866fbdcf50f131fad",
+   "note": "per-fact typing, repair set (facts of GM-merged entities)"
+  },
+  "e4_ctrl": {
+   "n": 839,
+   "sha256": "b492bc983102fbcf39a96a67318a46bd0dff96abc3915a5e0b4aec0940e423bc",
+   "note": "per-fact typing, control set (consistently typed entities)"
+  },
+  "e4_replay": {
+   "n": 5,
+   "sha256": "d05e5a84af856da020e3985ddce5330a21815a0c8cfe2e63f3bd859a3b8648d2",
+   "note": "model-free entity-level typing replay (CampaignGenerator#489), monster slice"
+  },
+  "e5_npc": {
+   "n": 12,
+   "sha256": "88737a255d4d54f009ca41f94d716067e6656978c3dbfd0e38c1cd9db77fe073",
+   "note": "paired scenarios (experimenter-written) + FlexAI d100 distributions"
+  },
+  "e6_triage_items": {
+   "n": 864,
+   "sha256": "d01bf5741954c529bf8c0b68b7f24ecb98956be37ab6c27a020291a724dd8c22",
+   "note": "E3 rows + valid option set (valid-k loss)"
+  },
+  "e6_typing_items": {
+   "n": 2530,
+   "sha256": "f757b30cf83d3fe70bd8bad29a7c32381d86deb4d3a8b840862633260a783d50",
+   "note": "E4 repair + control facts, gold = GM primary type"
+  }
+ }
+}
