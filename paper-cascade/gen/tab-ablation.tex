@@ -1,0 +1,19 @@
+\begin{tabular}{llrrrrrrrrr}
+\toprule
+ & & \multicolumn{4}{c}{qwen alone} & \multicolumn{2}{c}{$\Delta$ vs qwen (pt)} & \multicolumn{2}{c}{Speed-up $c=1$} & Gain \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
+qwen config & Task & ms & repro & $c1{=}c8$ & $c1{=}c1$ & pred. & meas. & pred. & meas. & $c=8$ \\
+\midrule
+\multirow{3}{*}{\shortstack[l]{MTP-2,\\prefix cache on (deployed)}} & E3 & 528 & 99.0 & 99.1 & 100.0 & +0.0 & +0.1 & 2.01 & 2.19 & 2.41 \\
+ & E4 facts & 502 & 96.9 & 97.0 & -- & -0.1 & +0.0 & 1.71 & 1.80 & 2.16 \\
+ & E2 & 1077 & 93.2 & 93.4 & -- & -1.2 & -1.2 & 0.81 & 0.88 & 0.99 \\
+\midrule
+\multirow{3}{*}{\shortstack[l]{MTP off,\\prefix cache on}} & E3 & 605 & 99.0 & 99.5 & 99.8 & +0.0 & +0.0 & 2.09 & 1.58 & 2.71 \\
+ & E4 facts & 570 & 96.6 & 97.5 & -- & -0.1 & +0.0 & 1.78 & 1.60 & 2.48 \\
+ & E2 & 1736 & 94.4 & 94.4 & -- & -1.2 & -2.0 & 0.87 & 0.93 & 1.01 \\
+\midrule
+\multirow{3}{*}{\shortstack[l]{MTP off,\\prefix cache off}} & E3 & 611 & 98.8 & 99.0 & 100.0 & +0.0 & +0.1 & 2.09 & 2.26 & 2.50 \\
+ & E4 facts & 574 & 97.6 & 97.0 & -- & -0.1 & -0.1 & 1.78 & 1.86 & 2.06 \\
+ & E2 & 1392 & 93.4 & 94.6 & -- & -1.2 & -1.2 & 0.85 & 0.92 & 1.02 \\
+\bottomrule
+\end{tabular}
