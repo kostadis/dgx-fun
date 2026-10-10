@@ -49,6 +49,9 @@ class ModelConfig:
     read_timeout: float = 300.0
     idle_timeout: float = 300.0
     max_tokens: int | None = 16384
+    # Optional served-model capacity.  Consumers must retain a fallback when an
+    # older registry has no declaration.
+    max_concurrency: int | None = None
 
 
 def _registry_path(registry_path: str | None) -> Path:
@@ -137,9 +140,15 @@ def resolve_model_config(
     # so an unset model keeps its old budget but stops killing slow-but-working
     # generations. A model sets idle_timeout explicitly to fail dead slots faster.
     idle_timeout = float(s.get("idle_timeout", read_timeout))
+    declared_concurrency = s.get("max_concurrency")
+    if declared_concurrency is not None:
+        # bool is an int subclass but is never a useful capacity declaration.
+        if isinstance(declared_concurrency, bool) or not isinstance(declared_concurrency, int) or declared_concurrency <= 0:
+            raise ValueError(f"max_concurrency for {model_id!r} must be a positive integer")
     return ModelConfig(
         extra_body=extra_body,
         read_timeout=read_timeout,
         idle_timeout=idle_timeout,
         max_tokens=max_tokens if max_tokens is not None else s.get("max_tokens", 16384),
+        max_concurrency=declared_concurrency,
     )

@@ -60,6 +60,18 @@ def test_per_call_max_tokens_override():
     assert c.max_tokens == 2048
 
 
+def test_optional_max_concurrency_is_exposed():
+    c = dgxlib.resolve_model_config("qwen3.8-flash-next")
+    assert c.max_concurrency == 8
+
+
+@pytest.mark.parametrize("value", [0, -1, 1.5, True, "8"])
+def test_invalid_max_concurrency_refuses(value, tmp_path):
+    path = _write_registry(tmp_path, f"default: {{ max_concurrency: {value!r} }}")
+    with pytest.raises(ValueError, match="max_concurrency"):
+        dgxlib.resolve_model_config("anything", registry_path=path)
+
+
 # ── registry resolution order / overrides ────────────────────────────────────
 
 def test_exact_wins_over_prefix(tmp_path):

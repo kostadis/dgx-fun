@@ -95,6 +95,8 @@ models:
     idle_timeout: 420
 
   "qwen3.8-flash-next":
+    # Matches the served vLLM --max-num-seqs on each DGX endpoint.
+    max_concurrency: 8
     # Qwen3.8-Flash-Next on spark1 AND spark2 (2026-09-10), single-box on each,
     # NVFP4 routed experts + blockwise-fp8 side layers ("hybrid"), 262K native
     # ctx, MTP-2, APC on. Served via the blazux recipe (~/qwen3.8-Flash-DGX on

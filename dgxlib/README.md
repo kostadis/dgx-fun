@@ -1,7 +1,8 @@
 # dgxlib
 
 A small library that **owns DGX Spark per-model behavior** — the request knobs
-each served model wants (thinking on/off, read timeout, max_tokens), plus
+each served model wants (thinking on/off, read timeout, max_tokens, optional
+per-endpoint max_concurrency), plus
 served-model-id discovery.
 
 The point: swapping the model on the Spark should be a **one-line edit to
@@ -61,6 +62,7 @@ cfg = dgxlib.resolve_model_config(
     "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8", thinking=True)
 # cfg.extra_body  -> {"chat_template_kwargs": {"enable_thinking": True}}
 # cfg.read_timeout (legacy total budget), cfg.idle_timeout (streaming inter-token budget), cfg.max_tokens
+# cfg.max_concurrency is optional; consumers retain their own compatible fallback when absent.
 
 served = dgxlib.discover_model("http://192.168.1.147:8001/v1")  # read id from /v1/models
 ```
