@@ -1,0 +1,12 @@
+\begin{tabular}{lrrrrrrrrrrr}
+\toprule
+ & \multicolumn{4}{c}{Accuracy (\%), $c=1$} & Esc. & \multicolumn{3}{c}{Mean latency, $c=1$} & \multicolumn{3}{c}{Throughput, $c=8$ (items/s)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){7-9}\cmidrule(lr){10-12}
+Task & Nox & qwen & cascade & $\Delta$ [95\% CI] & (\%) & qwen & cascade & speed-up & qwen & cascade & gain \\
+\midrule
+E3 triage & 79.2 & 84.4 & 84.5 & +0.1 [+0.0, +0.3] & 33 & 528 & 241 & 2.19$\times$ & 4.08 & 9.84 & 2.41$\times$ \\
+E4 fact typing & 83.6 & 87.8 & 87.8 & +0.0 [-0.6, +0.6] & 40 & 502 & 278 & 1.80$\times$ & 4.07 & 8.79 & 2.16$\times$ \\
+E4 entity typing & 89.1 & 88.0 & 89.1 & +1.1 [-2.2, +5.4] & 0 & 616 & 139 & 4.43$\times$ & 2.65 & 7.97 & 3.00$\times$ \\
+E2 spelling & 19.7 & 75.9 & 74.6 & -1.2 [-2.4, -0.4] & 98 & 1077 & 1227 & 0.88$\times$ & 1.74 & 1.72 & 0.99$\times$ \\
+\bottomrule
+\end{tabular}

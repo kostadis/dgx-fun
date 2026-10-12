@@ -1,0 +1,633 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{microtype}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\input{gen/numbers.tex}
+\newcommand{\N}[1]{\csname num:#1\endcsname}
+\newcommand{\TODO}[1]{\textbf{[#1]}}
+
+\title{Simulate Before You Serve:\\
+Predicting a Decision-Model Cascade from Frozen Outputs,\\
+and Checking the Prediction on Real Hardware}
+
+\author{Kostadis Roussos\\
+Independent researcher\\
+\texttt{kostadis@gmail.com}}
+
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A cascade answers with a cheap model and escalates uncertain items to an expensive one. Choosing the
+cheap model, the gate and the threshold usually means deploying and measuring each candidate. We show
+that when every candidate has already been run on a frozen evaluation set, the cascade can instead be
+\emph{replayed} from the saved per-item answers, confidences and request times, and we check that
+replay against the real system. The setting is a working pipeline for tabletop role-playing campaign
+records. Five non-generative decision models are candidate first stages in front of a generative model
+(\texttt{qwen3.8-flash-next}) on four judgment tasks labelled by a game master, served on two NVIDIA
+DGX Spark (GB10) systems, with the goal of the generative model's accuracy at lower latency. The
+replay evaluated the whole design space in \N{sim:seconds}~s of CPU time. It chose Decision-2.0-Nox-4B
+as the first stage for two tasks, Nox alone for a third, and no cascade for the fourth. We then ran that
+cascade live with thresholds frozen in advance. It held the generative model's accuracy (the
+cascade-minus-qwen difference was predicted within 0.1 points on the three tasks with escalation)
+while answering
+\N{chk:mtp2:e3:speedup_meas}$\times$ and \N{chk:mtp2:e4facts:speedup_meas}$\times$ faster
+single-stream and with \N{chk:mtp2:e3:tput_gain}$\times$ and \N{chk:mtp2:e4facts:tput_gain}$\times$
+the throughput under 8-way load. Escalation decisions were predicted exactly, because the decision
+model is bit-for-bit deterministic; the generative model at temperature~0 was not, changing 1--7\% of
+its answers with load and serving configuration. Latency predictions were 3--4$\times$ wrong when the
+replay mixed load regimes and within 5--9\% when it did not. A two-station queueing model predicted
+throughput within 3\% when one stage dominated and 14--25\% high when the stages were balanced. A
+serving ablation found that, with speculative decoding off, prefix-cache hits on this model's serving
+image were 38\% slower and changed answers, a hidden variable for any replay.
+\end{abstract}
+
+\section{Introduction}
+
+A practitioner who wants to put a cheap model in front of an expensive one faces a design space
+before any deployment question: which cheap model, which gate, which threshold, for which task.
+Each point in that space can be measured by deploying it, at the cost of GPU time, a serving
+change and a benchmark run per point. Many such points, however, are already determined by
+experiments that have been run. If every candidate model has been run on every item of a frozen
+evaluation set, and inference is deterministic, then the answer, the confidence and the request time
+of any cascade on any item are already recorded. The cascade can be \emph{replayed} rather than run.
+
+This paper tests that idea on a working pipeline. A companion study~\cite{companion} ran six
+non-generative decision models and a generative model, \texttt{qwen3.8-flash-next}, on a frozen
+dataset of one game master's rulings over tabletop role-playing transcripts. Its practical verdict was
+that the generative model was the most accurate on most judgment steps and the decision models were
+an order of magnitude faster. vLLM Semantic Router's \emph{System One Auto}~\cite{sysoneauto}
+suggests combining the two, by answering with a small decision model and escalating uncertain items.
+Our goal is narrow: \emph{the generative model's accuracy at lower latency}. We study it twice:
+\begin{enumerate}
+  \item \textbf{Analytically}, by replaying the frozen outputs: five candidate first stages, four
+        tasks, a held-out threshold that targets parity with the generative model, and latency and
+        throughput composed from measured service times. The whole design space evaluates in seconds
+        of CPU time.
+  \item \textbf{Empirically}, by running the cascade the replay recommends, Decision-2.0-Nox-4B in
+        front of qwen, as a real two-box router on two NVIDIA DGX Spark (GB10) systems, with every
+        threshold frozen before the first live request, single-stream and under 8-way load. We then
+        repeat the qwen arms under three serving configurations, to find out what breaks the
+        replay's central assumption.
+\end{enumerate}
+
+\paragraph{Findings.} (i) The replay picked the right design. Nox-4B $\rightarrow$ qwen held qwen's
+accuracy on triage and fact typing while answering 1.8--2.2$\times$ faster single-stream and
+2.2--2.4$\times$ faster under load; Nox alone sufficed for entity typing; spelling should not be
+cascaded. The other four first stages were each too weak or too slow. (ii) Escalation decisions were
+predicted \emph{exactly}, because the decision model is bit-for-bit deterministic. (iii) The
+cascade-minus-qwen accuracy difference was predicted within 0.1 points, although the generative
+model at temperature~0 did not reproduce 1--7\% of its own answers. (iv) Latency predictions were
+3--4$\times$ wrong when the replay mixed load regimes and within 5--9\% when it did not. A
+two-station queueing model predicted 8-client throughput within 3\% when one stage dominates and
+overpredicted it by 14--25\% when the two stages are balanced. (v) Turning speculative decoding off
+did not make the generative model reproducible; its answers depend on load and serving configuration
+together. With speculative decoding off and prefix caching on, cache hits on this model's serving image
+became 38\% slower and changed answers, which made the replay underpredict cascade latency by a
+quarter.
+
+\paragraph{Why it matters.} The replay turned the design question into a table computed in under a
+minute; the live check took several GPU-hours across two machines and a serving restart for each
+configuration tested. Where a replay is trustworthy, and where it quietly is not, is the practical
+content of this paper.
+
+\section{Background}
+
+\subsection{The companion study and its frozen dataset}
+A companion paper~\cite{companion} evaluated six non-generative \emph{decision models} against a
+generative model on judgment steps of a pipeline that turns recorded tabletop role-playing sessions
+into campaign records. A decision model reads a \texttt{state} once and a small head returns a
+probability for every option of every typed question (\texttt{choice}, \texttt{noul},
+\texttt{score}) through the SystemOne interface~\cite{typesafe}; no text is generated. Labels are one
+game master's (GM's) own past rulings, rendered once into a read-only, versioned dataset with every
+model-facing \texttt{state} already built, so every model was run against the same bytes.
+That study treated the models as alternatives. Its conclusion for the choice tasks was mixed: the
+generative model, \texttt{qwen3.8-flash-next}, was usually the most accurate, while the decision
+models were 10--25$\times$ faster and sometimes as accurate. This paper asks whether the two can be
+\emph{combined}.
+
+We reuse four of its tasks, unchanged:
+\begin{description}
+  \item[E2 spelling] (497 items) choose the canonical spelling of a speech-recognition-mangled name
+        from a candidate list, or \texttt{LEAVE}/\texttt{OTHER}.
+  \item[E3 triage] (864 tokens) is an unknown capitalised token a campaign name (forward it to the
+        spelling step) or not (filler, rules term, real-world chatter)? 84 are real names. Here we
+        score it as binary accuracy and separately count \emph{missed names}, the error that
+        matters: a dropped name is a silent deletion nothing downstream can recover.
+  \item[E4 fact typing] (1{,}691 facts) file an extracted fact under one of eight types.
+  \item[E4 entity typing] (92 GM merge rulings) the entity type of a dossier subject, five types.
+\end{description}
+
+\subsection{Cascades and System One Auto}
+A cascade answers with a cheap model and re-asks an expensive one only when the cheap model is
+unsure~\cite{frugalgpt,routellm}. vLLM Semantic Router's \emph{System One Auto}~\cite{sysoneauto}
+applies the idea to decision models: Decision-2.0-Kai-0.6B answers first, and a gate on its top
+probability ($\max(p,1-p)$ for yes/no questions) escalates the request to Decision-2.0-Vega-27B.
+On 231 public benchmark items, with a threshold frozen on a separate calibration set, the cascade
+scored 82.3\% between Kai (65.8\%) and Vega (87.9\%) while escalating 46\% of requests. Two
+differences matter for us. Our large model is \emph{generative} and reached through a chat endpoint,
+so the two stages do not share an interface or a runtime; and our goal is narrower: \emph{the large
+model's accuracy at lower latency}, not a point between the two.
+
+\section{Method}
+
+\subsection{The cascade}
+For each item the small model $S$ (a decision model) returns an answer $s$ and a gate confidence
+$c$: the top option probability for \texttt{choice} questions, and $\max(p, 1-p)$ for the binary
+E3 reading, where $p = P(\texttt{campaign})$. If $c < t$ the same question goes to the large model
+$B$, prompted exactly as in the companion study (the option list rendered into a chat prompt,
+JSON answer parsed), and the cascade answers with $B$'s answer; otherwise it answers $s$. $B$ is
+\texttt{qwen3.8-flash-next} with reasoning disabled, on one DGX Spark (spark1); every $S$ runs on
+the second (spark2). The two boxes are on the same LAN as the client.
+
+\subsection{The replay model}
+\label{sec:replay}
+The companion study already ran every model on every item, at temperature~0 (generative) or with a
+deterministic head (decision models), and kept the per-item answers, confidences and request
+times. If inference is deterministic, the cascade's answer on item $i$ at threshold $t$ is a pure
+function of those saved records:
+\[
+  \hat a_i(t) = \begin{cases} b_i & c_i < t \\ s_i & \text{otherwise}\end{cases},\qquad
+  \hat T_i(t) = T^S_i + [c_i < t]\,T^B_i ,
+\]
+so accuracy, escalation rate and the full latency distribution of any (small model, threshold)
+pair can be computed without running a model. We call this the \emph{replay model}. It makes two
+assumptions that the live experiment tests: \textbf{(A1) determinism}, that a model asked again
+returns the saved answer (and, for $S$, the saved confidence, since the gate depends on it); and
+\textbf{(A2) composable service times}, that a cascade request costs one $S$ request plus, if
+escalated, one $B$ request, each as long as when measured alone in the same load regime.
+A2 is a statement about load: the saved $T^B$ came from an 8-way concurrent run and $T^S$ from
+single-stream runs, so a naive replay mixes regimes. We therefore report latency from the replay
+with $T^B$ re-measured single-stream (Section~\ref{sec:live}), and keep the naive figure only to
+show the size of that error.
+
+For concurrent load the composition is no longer additive. We model the $c$-client closed loop as
+two stations visited with probabilities $1$ ($S$) and $p$ ($B$, the escalation rate), each with a
+response time $R(n)$ that depends on the number $n$ of requests in it, linearly interpolated
+between its measured single-stream and 8-way means. Little's law~\cite{little1961} at each station,
+$n_S = X R_S(n_S)$ and $n_B = X p R_B(n_B)$ with $n_S + n_B = c$, is solved for the throughput $X$,
+in the spirit of mean-value analysis with load-dependent stations~\cite{reiser1980}. We compare it
+with two simpler predictions: no contention, $X = c / \mathbb{E}[\hat T]$, and the bottleneck bound
+$X \le \min(X_S^{\max}, X_B^{\max}/p)$.
+
+\subsection{Choosing the threshold}
+\label{sec:gate}
+Our objective is parity with $B$ at the lowest cost. On a training set the \emph{parity gate} is the
+lowest threshold whose cascade accuracy is at least $B$'s accuracy alone (and, on E3, that misses
+no more names than $B$); because escalating everything reproduces $B$ exactly, such a threshold
+always exists. Thresholds are fitted 2-fold by group: sessions (E2, E3), chapters (E4 facts) or
+subjects (E4 entities) are sorted and split alternately, the gate is fitted on one half and applied
+to the other, so no item's own label influences its threshold. Allowing a tolerance $\delta>0$
+below parity did not generalise in a pilot: a $\delta = 0.5$ point budget on the training half
+became a 1.3--1.6 point loss on the test half for E4 facts, so we use $\delta = 0$ throughout.
+
+\subsection{The live experiment}
+\label{sec:live}
+For the pair Nox-4B $\rightarrow$ qwen we froze the held-out parity gates for every item before any
+live run (file SHA-256 \texttt{aa21ed3f\ldots}), together with the replay's predicted escalation
+and answer per item. A small router (\texttt{cascade\_live.py}) then ran, against the real endpoints
+and using the same question definitions, prompts and parsers as the companion study:
+$S$ alone, $B$ alone and the cascade, each single-stream ($c = 1$) and with 8 concurrent clients
+($c = 8$), on all four tasks. Every request's wall time is measured at the client, so cascade
+latency includes the router and both network hops. Live and replay results are compared item by
+item.
+
+\section{Results from the replay model}
+\label{sec:sim}
+
+Table~\ref{tab:design} is the replay model's answer to the design question: for each of five
+decision models in front of qwen, and each task, the held-out parity gate's accuracy, escalation
+rate and mean latency. Accuracy comes from the frozen per-item answers; latency composes each
+decision model's single-stream request times from the companion study with qwen's request times
+re-measured single-stream on the same items (Section~\ref{sec:live}). Producing the whole table,
+plus the threshold sweeps behind Figure~\ref{fig:pareto}, took \N{sim:seconds}~s of CPU time and
+\N{sim:evals} cascade-item evaluations, and no GPU time at all.
+
+\begin{table}[t]
+\centering
+\small
+\input{gen/tab-design.tex}
+\caption{Replay-model predictions for every decision model in front of qwen (reasoning off), with the
+held-out parity gate. ``Esc.''\ is the share of items sent to qwen. Mean latency is per item,
+single-stream. For E3 the cascade column also gives missed real names (cascade/qwen) out of 84.
+CIs are paired bootstrap over items. The speed-up is qwen's mean single-stream latency on the same
+items divided by the cascade's.}
+\label{tab:design}
+\end{table}
+
+\paragraph{Nox-4B is the only small model that pays off broadly.} It holds parity on E3
+(\N{sim:e3:nox:acc}\% against qwen's \N{sim:e3:nox:big_acc}\%, the same 6 missed names) with
+\N{sim:e3:nox:esc}\% escalated, a predicted \N{sim:e3:nox:speedup}$\times$ speed-up; and on E4 fact
+typing (\N{sim:e4facts:nox:acc}\% against \N{sim:e4facts:nox:big_acc}\%, CI \N{sim:e4facts:nox:ci})
+with \N{sim:e4facts:nox:esc}\% escalated, \N{sim:e4facts:nox:speedup}$\times$. On E4 entity typing it
+needs no escalation at all: alone it is at least as accurate as qwen (\N{sim:e4ent:nox:acc}\% vs
+\N{sim:e4ent:nox:big_acc}\%), so the ``cascade'' is Nox alone at \N{sim:e4ent:nox:speedup}$\times$.
+
+\paragraph{The other small models fail for two different reasons.} Kai-0.6B is the fastest model
+(\N{sim:e4facts:kai:small_ms}~ms) but too weak on fact typing (\N{sim:e4facts:kai:small_acc}\%): the
+gate must send \N{sim:e4facts:kai:esc}\% of items to qwen, and the cascade is no faster than qwen.
+Clef-27B is the opposite: accurate enough to escalate rarely on E3 (\N{sim:e3:clef:esc}\%), but its
+own request (\N{sim:e3:clef:small_ms}~ms) costs most of a qwen call (\N{sim:e3:clef:big_ms}~ms), so it
+saves almost nothing; on fact typing the Clef cascade is \emph{slower} than qwen alone. A first
+stage only helps if it is both much cheaper than the second and confident on a large share of
+items; the replay makes that trade-off visible per task, before anything is deployed.
+
+\paragraph{Spelling (E2) should not be cascaded.} Every decision model is far below qwen on choosing
+a canonical spelling (15--66\% against \N{sim:e2:nox:big_acc}\%), so the parity gate escalates
+58--99\% of items and every cascade is slower than qwen alone. This reproduces the companion
+study's finding that string-level judgments are where decision models fail.
+
+\paragraph{No cascade beats qwen.} Picking the threshold on the test items themselves (an upper
+bound) raises cascade accuracy by at most a few tenths of a point over qwen on E3 and E4 facts.
+The ceiling is set by the items both models get wrong: 124 of 864 on E3 and 140 of 1{,}691 on E4
+facts. A cascade picks between
+two answers; it cannot produce a right answer neither model has. The binary E3 reading has one trap,
+noted here because the replay exposed it: a gate fitted for plain accuracy (rather than parity)
+finds a Kai threshold that ``beats'' qwen by keeping confident not-a-name answers while missing
+about half the real names. On this task that is the expensive error, which is why the parity gate
+also constrains missed names.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 1, horizontal sep=1.6cm},
+    width=0.5\textwidth, height=0.42\textwidth, xlabel={mean latency per item (ms)},
+    ylabel={accuracy (\%)}, grid=major, grid style={gray!20}, legend style={font=\scriptsize},
+    tick label style={font=\scriptsize}, label style={font=\small}, title style={font=\small}]
+\nextgroupplot[title={E3 triage}, xmin=0, xmax=900, ymin=76, ymax=88, legend to name=paretoleg, legend columns=6]
+\addplot[thick, blue] table[x=ms, y=acc] {gen/sweep-e3-nox.dat}; \addlegendentry{Nox-4B}
+\addplot[thick, orange] table[x=ms, y=acc] {gen/sweep-e3-kai.dat}; \addlegendentry{Kai-0.6B}
+\addplot[thick, teal] table[x=ms, y=acc] {gen/sweep-e3-clef-flash.dat}; \addlegendentry{clef-flash}
+\addplot[thick, red] table[x=ms, y=acc] {gen/sweep-e3-clef.dat}; \addlegendentry{Clef-27B}
+\addplot[thick, violet] table[x=ms, y=acc] {gen/sweep-e3-lux.dat}; \addlegendentry{Lux-9B}
+\addplot[only marks, mark=*, black] coordinates {(\N{sim:e3:nox:big_ms}, \N{sim:e3:nox:big_acc})}; \addlegendentry{qwen alone}
+\nextgroupplot[title={E4 fact typing}, xmin=0, xmax=900, ymin=60, ymax=90]
+\addplot[thick, blue] table[x=ms, y=acc] {gen/sweep-e4facts-nox.dat};
+\addplot[thick, orange] table[x=ms, y=acc] {gen/sweep-e4facts-kai.dat};
+\addplot[thick, teal] table[x=ms, y=acc] {gen/sweep-e4facts-clef-flash.dat};
+\addplot[thick, red] table[x=ms, y=acc] {gen/sweep-e4facts-clef.dat};
+\addplot[thick, violet] table[x=ms, y=acc] {gen/sweep-e4facts-lux.dat};
+\addplot[only marks, mark=*, black] coordinates {(\N{sim:e4facts:nox:big_ms}, \N{sim:e4facts:nox:big_acc})};
+\end{groupplot}
+\end{tikzpicture}
+\\[2pt]\pgfplotslegendfromname{paretoleg}
+\caption{Replay-model accuracy--latency curves, sweeping the gate threshold from 0 (small model
+alone, left end of each curve) to 1 (everything escalated, converging on the qwen point). All items,
+not held out; single-stream latency. A useful cascade is a curve that reaches qwen's accuracy well
+to the left of the qwen point. Kai's E3 peak above qwen is the plain-accuracy artifact discussed in
+the text: it keeps confident not-a-name answers and misses real names.}
+\label{fig:pareto}
+\end{figure}
+
+\section{Results from the live cascade}
+\label{sec:liveres}
+
+Table~\ref{tab:live} reports the Nox-4B $\rightarrow$ qwen cascade run for real with the
+pre-registered gates, against qwen alone run live on the same items in the same session, with qwen
+in its deployed configuration (MTP-2 speculative decoding, prefix caching on).
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-live.tex}}
+\caption{The live cascade (Nox-4B on spark2 $\rightarrow$ qwen on spark1) against qwen alone,
+measured in the same session. Accuracy and mean latency per item are single-stream ($c=1$). $\Delta$
+is cascade minus qwen with a paired bootstrap CI. Throughput uses 8 concurrent clients over the whole
+task. Latency is wall time at the client, including both network hops.}
+\label{tab:live}
+\end{table}
+
+\paragraph{Accuracy parity held.} On E3 the cascade matched qwen (\N{chk:mtp2:e3:live_acc}\% vs
+\N{chk:mtp2:e3:big_live_acc}\%) and missed the same number of real names
+(\N{chk:mtp2:e3:live_missed} vs \N{chk:mtp2:e3:big_live_missed}). On E4 fact typing it was
+exactly level (\N{chk:mtp2:e4facts:live_acc}\% vs \N{chk:mtp2:e4facts:big_live_acc}\%, CI
+\N{chk:mtp2:e4facts:live_ci}). On E4 entity typing Nox alone answered everything and was at least as
+accurate as qwen. On E2 the cascade trailed qwen ($\Delta = \N{chk:mtp2:e2:live_d_big}$~points), a
+loss the replay had predicted to the tenth of a point (next section).
+
+\paragraph{Latency and throughput improved where the replay said they would.} Single-stream, the
+cascade answered E3 \N{chk:mtp2:e3:speedup_meas}$\times$ and E4 facts
+\N{chk:mtp2:e4facts:speedup_meas}$\times$ faster than qwen on average
+(\N{chk:mtp2:e3:meas_mean} vs \N{chk:mtp2:e3:big_mean}~ms and \N{chk:mtp2:e4facts:meas_mean} vs
+\N{chk:mtp2:e4facts:big_mean}~ms), and E4 entities \N{chk:mtp2:e4ent:speedup_meas}$\times$. The
+distribution is bimodal: the median request is a Nox-only answer
+(\N{chk:mtp2:e3:meas_p50}~ms on E3), while the 95th percentile is an escalated one
+(\N{chk:mtp2:e3:meas_p95}~ms, against \N{chk:mtp2:e3:big_p95}~ms for qwen alone). An escalated
+request costs both stages, so the cascade's tail is slightly \emph{worse} than qwen's, as
+System One Auto also reported~\cite{sysoneauto}. Under 8-way load the gain is larger:
+\N{chk:mtp2:e3:tput_gain}$\times$ (E3), \N{chk:mtp2:e4facts:tput_gain}$\times$ (E4 facts) and
+\N{chk:mtp2:e4ent:tput_gain}$\times$ (E4 entities) the throughput of qwen alone, because escalating
+33--40\% of items removes most of qwen's queue. On E2, where 98\% of items escalate, the cascade
+was slower than qwen alone single-stream (\N{chk:mtp2:e2:speedup_meas}$\times$) and no faster under
+load (\N{chk:mtp2:e2:tput_gain}$\times$), as the replay predicted.
+
+\section{Prediction versus measurement}
+\label{sec:check}
+
+\subsection{Accuracy: exact where the models are deterministic}
+Table~\ref{tab:check} compares the replay's item-level predictions with the live run.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-check.tex}}
+\caption{Replay prediction against the live cascade ($c=1$, qwen deployed configuration).
+\emph{Escalation}: predicted share escalated, and the share of items where the live router made
+the predicted escalation decision. \emph{Answers}: share of items where the live cascade's answer
+equals the predicted one, and share where live qwen alone reproduces its own frozen answer.
+\emph{$\Delta$ acc.}: cascade minus qwen, predicted (frozen answers) and measured (live run, same
+session). \emph{Latency}: measured mean; the naive replay using the frozen request times (qwen's were
+8-way concurrent); the replay with single-stream service times measured live; and its relative error.}
+\label{tab:check}
+\end{table}
+
+\paragraph{Assumption A1 holds for the decision model, not for the generative one.} Nox
+reproduced every frozen answer and every frozen confidence bit for bit (maximum absolute difference exactly zero across all \N{chk:mtp2:e4facts:n}+\N{chk:mtp2:e3:n}+\N{chk:mtp2:e4ent:n}+\N{chk:mtp2:e2:n}
+items), so the live router escalated \emph{exactly} the predicted items on every task. qwen, at
+temperature~0 in its deployed configuration, did not: it reproduced its own frozen answer on
+\N{chk:mtp2:e3:big1_agree}\% of E3 items, \N{chk:mtp2:e4facts:big1_agree}\% of E4 facts and only
+\N{chk:mtp2:e2:big1_agree}\% of E2, where answers are longer. Every live-versus-predicted answer
+mismatch in the cascade, in every serving configuration we ran, is an escalated item on which qwen
+changed its answer; none comes from the gate. On E4 entity typing, where nothing escalates, the
+predicted and measured differences from qwen (+2.2 and +1.1 points) differ only because qwen alone
+changed one of its 92 answers. qwen's single-stream and 8-way answers
+from the same session also agree on only \N{chk:mtp2:e4facts:big1v8_agree}\% of E4 facts. Section~\ref{sec:ablation}
+examines where it comes from.
+
+\paragraph{The replay predicts the cascade's \emph{effect} better than its level.} qwen's drift moves the
+absolute accuracy of both qwen and the cascade together, so the replay's absolute figure for E4
+facts (\N{chk:mtp2:e4facts:sim_acc}\%) is half a point above the live one
+(\N{chk:mtp2:e4facts:live_acc}\%). But the quantity the design decision rests on, the difference
+from qwen alone, was predicted within 0.1 points on E3, E4 facts and E2, including E2's predicted
+\emph{loss}. Both arms inherit the same qwen, so its noise largely cancels in the comparison.
+
+\subsection{Latency: right only in the right load regime}
+The naive replay, which uses the request times recorded in the companion study, predicted mean
+cascade latencies 3--4$\times$ too high (\N{chk:mtp2:e3:naive_mean} against
+\N{chk:mtp2:e3:meas_mean}~ms on E3), because qwen's recorded times came from an 8-way concurrent run
+while the cascade was measured single-stream. With service times measured in the target regime the
+same replay is within 5--9\% on the three tasks with escalation, and predicts the speed-ups
+(\N{chk:mtp2:e3:speedup_pred}$\times$ and \N{chk:mtp2:e4facts:speedup_pred}$\times$ predicted,
+\N{chk:mtp2:e3:speedup_meas}$\times$ and \N{chk:mtp2:e4facts:speedup_meas}$\times$ measured).
+The residual error is not router overhead, which measured \N{chk:mtp2:e3:router_ms}~ms per request;
+it is drift in the models' own service times between runs. qwen answered the escalated E4-facts
+items in \N{chk:mtp2:e4facts:big_in_casc_mean}~ms inside the cascade against
+\N{chk:mtp2:e4facts:big_alone_esc_mean}~ms for the same items in the qwen-alone run an hour earlier;
+Section~\ref{sec:ablation} tests whether prefix caching explains it. The largest error, +42\% on E4
+entities, came from the session's very first run: Nox's standalone E4-entity pass averaged
+\N{chk:mtp2:e4ent:small_mean}~ms with a 95th percentile of \N{chk:mtp2:e4ent:small_p95}~ms, against
+\N{chk:mtp2:e4ent:small_in_casc_mean}~ms inside the later cascade run. A replay is only as good as
+its service-time sample.
+
+\subsection{Throughput: a two-station model is close, and the naive one is not}
+Table~\ref{tab:tput} compares the measured cascade throughput at $c=8$ with the three predictions of
+Section~\ref{sec:replay}. Ignoring contention overpredicts throughput 3--5$\times$. Both the bottleneck
+bound and the load-dependent two-station model are within 3\% when one station dominates (E4 entities,
+where no item escalates, and E2, where nearly all do), and overpredict by 14--25\% when the two are
+comparably loaded (E3, E4 facts). That is where such models are known to be loosest. The decision-model
+runtime is nearly serial (Nox alone gains only 8--43\% throughput from 8 clients, against about
+2$\times$ for qwen), so at 33--40\% escalation Nox and qwen saturate at similar rates. Clients
+then wait alternately on each stage, which a model built from per-station averages misses. The
+bottleneck bound still identifies the right design lever: on these tasks a faster or replicated
+first stage, not a faster qwen, is what would raise cascade throughput further.
+
+\begin{table}[t]
+\centering
+\small
+\input{gen/tab-tput.tex}
+\caption{Cascade throughput at 8 concurrent clients: three analytical predictions against the
+measurement. ``No contention'' is $c/\mathbb{E}[\hat T]$ with single-stream service times; ``bound'' is
+$\min(X_S^{\max}, X_B^{\max}/p)$ from the standalone 8-client runs; ``model'' is the load-dependent
+two-station closed network of Section~\ref{sec:replay}. Errors are relative to the measurement.}
+\label{tab:tput}
+\end{table}
+
+\subsection{Serving configuration and reproducibility}
+\label{sec:ablation}
+The deployed qwen uses two features that plausibly break assumptions A1 and A2: MTP speculative
+decoding, which verifies several drafted tokens in one forward pass and so changes the numerical
+path of a greedy decode; and automatic prefix caching (APC), which on this hybrid
+attention/linear-attention model restores recurrent state from cached blocks instead of recomputing
+it. We restarted qwen twice, with MTP off and then with MTP and APC both off, and repeated the qwen
+arm and the live cascade at both concurrency levels. The decision model and the gates were unchanged.
+Each configuration also got a second single-stream qwen pass over E3, identical to the first,
+except that with APC on every prompt is now a cache hit. Table~\ref{tab:ablation} summarises.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-ablation.tex}}
+\caption{The live check under three qwen serving configurations. \emph{qwen alone}: mean
+single-stream latency (ms); share of items on which it reproduces its frozen answer (``repro'');
+agreement of its own single-stream and 8-client answers in the same session ($c1{=}c8$), and of two
+identical single-stream passes ($c1{=}c1$, E3 only). $\Delta$: cascade minus qwen, predicted and
+measured. Speed-up: qwen-alone over cascade mean latency at $c=1$, predicted by the replay (with
+that configuration's service times) and measured. Gain: cascade over qwen-alone throughput at $c=8$.}
+\label{tab:ablation}
+\end{table}
+
+\paragraph{Answers: deterministic per configuration and load, not across them.} In the deployed
+configuration two identical single-stream passes agreed on all 864 E3 items
+(\N{chk:mtp2:e3:big1_rep_agree}\%), so qwen is repeatable when nothing changes. What changes its
+answers is the serving \emph{context}. Single-stream and 8-client answers in the same session differ
+on 0.5--3\% of E3 and E4-facts items and 5--7\% of E2 items in every configuration, consistent with
+batch composition changing the reduction order of the kernels. The configuration itself also matters: single-stream answers with MTP on and off
+agree on \N{xcfg:e3:mtp2:mtp0}\% of E3 and \N{xcfg:e4facts:mtp2:mtp0}\% of E4 facts, and on only
+\N{xcfg:e2:mtp2:mtp0}\% of E2. Turning MTP off did not make qwen reproduce its frozen answers any
+better (E4 facts \N{chk:mtp0:e4facts:big1_agree}\% vs \N{chk:mtp2:e4facts:big1_agree}\%), nor did
+turning APC off as well (\N{chk:mtp0apc0:e4facts:big1_agree}\%). The frozen answers were produced
+under one particular configuration and load (MTP-2, APC, 8-way), and no single-stream configuration
+recovers them. MTP is therefore not the cause of the drift; it is one of several things the answers
+depend on. In every configuration the replay's predicted cascade-minus-qwen difference stayed within
+0.1 points of the measurement on E3 and E4 facts.
+
+\paragraph{Latency: prefix-cache hits are a hidden variable.} With MTP off and APC on, the second,
+fully cached pass over E3 was \emph{slower} than the first: \N{chk:mtp0:e3:big1_rep_mean}~ms
+against \N{chk:mtp0:e3:big_mean}~ms (+\N{chk:mtp0:e3:rep_slowdown}\%), and it changed 2 of 864
+answers. In the deployed MTP-2 configuration the cached pass was instead slightly faster
+(\N{chk:mtp2:e3:big1_rep_mean} vs \N{chk:mtp2:e3:big_mean}~ms) with identical answers. The serving image carries a two-line fix for a prefix-cache
+bug on this model, in which a cache hit restored an all-zero recurrent state because the state slot was
+computed from the smallest KV-group block size (8 tokens at MTP-2) instead of the state block size.
+That fix was validated as bit-identical between cold and cached outputs \emph{at MTP-2}. Our MTP-off
+result, where cache hits changed answers and ran 38\% slower, is consistent with the fix not covering
+the block sizes that arise with MTP off. We did not investigate further. For a replay it means a
+serving flag nobody thinks of as affecting answers can change both answers and service times. It hit the cascade directly: every escalated prompt had just been
+sent by the qwen-alone run, so inside the MTP-off cascade qwen took
+\N{chk:mtp0:e3:big_in_casc_mean}~ms per escalated E3 item against
+\N{chk:mtp0:e3:big_alone_esc_mean}~ms for the same items alone. The replay, built from cold-cache
+service times, underpredicted cascade latency by a quarter (\N{chk:mtp0:e3:comp_mean} against
+\N{chk:mtp0:e3:meas_mean}~ms) and overpredicted its speed-up (\N{chk:mtp0:e3:speedup_pred}$\times$
+vs \N{chk:mtp0:e3:speedup_meas}$\times$). With APC off the effect disappears and the replay is again
+within 5--8\% (\N{chk:mtp0apc0:e3:comp_mean} vs \N{chk:mtp0apc0:e3:meas_mean}~ms on E3).
+
+The small residual in the other direction, qwen answering escalated items 3--7\% faster inside the
+cascade than in a back-to-back qwen-alone run, persists with APC off
+(\N{chk:mtp0apc0:e3:big_in_casc_mean} vs \N{chk:mtp0apc0:e3:big_alone_esc_mean}~ms), so it is not
+caching. It coincides with the cascade's spacing of qwen requests (each is preceded by a Nox call
+and often by several non-escalated items). We did not isolate it further.
+
+\paragraph{MTP is worth keeping for this workload.} Even though every answer here is a short JSON
+object, MTP-2 cut qwen's single-stream latency from \N{chk:mtp0apc0:e3:big_mean} to
+\N{chk:mtp2:e3:big_mean}~ms on E3 and from \N{chk:mtp0apc0:e2:big_mean} to
+\N{chk:mtp2:e2:big_mean}~ms on E2, whose answers are longer. The deployed configuration is the
+fastest and the best-behaved of the three for the cascade.
+
+\section{Discussion}
+
+\paragraph{What the replay is good for.} It answered the design question correctly and cheaply. Of
+twenty (first stage, task) pairs it singled out one pair to deploy on two tasks, one task needing no
+cascade and one task to leave alone, and every one of those calls survived the live test. It also
+explained \emph{why} the other first stages fail (too weak, so everything escalates; or too slow, so
+nothing is saved), which a single live run of one configuration would not have shown. Its
+accuracy-difference predictions were within 0.1 points. Exploring the space live would have meant
+running each candidate decision model on the GB10, re-serving it for each experiment, and measuring
+five cascades on four tasks under two load levels. In the replay that is a loop over saved records.
+
+\paragraph{What it silently assumes.} Three assumptions did the work, and each was violated
+somewhere:
+\begin{enumerate}
+  \item \emph{The gate's inputs are reproducible.} They were, exactly, because a decision model's head
+        is a deterministic function of the input. This is the property that makes the cascade's
+        routing predictable, and it is a reason to put a decision model, rather than a sampled
+        generative judge, at the gate.
+  \item \emph{The expensive model's answers are reproducible.} They were not, at the 1--7\% level, even
+        at temperature~0. The replay absorbed this because both arms of the comparison inherit the same
+        model, but a replay that reports absolute accuracy should carry the run-to-run spread of the
+        generative model as an error bar. The ablation shows this drift is not one feature's fault: no
+single-stream configuration we tried, with or without speculative decoding and prefix caching,
+reproduced the frozen answers better than another. The answers are a function of model, serving
+configuration \emph{and} load.
+  \item \emph{Service times are measured in the regime being predicted.} Mixing an 8-way concurrent
+        sample with single-stream ones produced a 3--4$\times$ error that looked plausible: it was
+        the latency we had first quoted when proposing the cascade. Throughput under load needs a
+        queueing model, and the simplest one that respects per-station saturation was within 25\%,
+        while ``no contention'' was off by 3--5$\times$.
+\end{enumerate}
+
+\paragraph{Practical recipe.} Freeze the evaluation inputs; run every candidate once on all of them,
+recording answer, confidence and request time, with each model's service time measured in the load
+regime it will serve in; replay the cascade over the records with held-out thresholds targeting the
+objective you actually have (here parity, with the expensive error class constrained separately);
+then validate the chosen point live, with the gates frozen beforehand, and compare item by item.
+The item-level comparison is what separates ``the prediction was right'' from ``the errors
+happened to cancel''.
+
+\paragraph{Local hardware.} Two observations are specific to running both stages on DGX Sparks.
+The decision-model runtime is nearly serial on the GB10, so under load the 4B first stage, not the
+generative model, sets the cascade's throughput ceiling; replicating it is cheap in memory
+($\sim$19~GB) and is the next lever. The cascade also turns two boxes into a pipeline: every item the
+decision model settles on spark2 in about 90~ms is a half-second generative request that spark1
+never queues.
+
+\section{Limitations}
+\begin{itemize}
+  \item \textbf{One live pair.} Only Nox-4B $\rightarrow$ qwen was run live; the other four first
+        stages are replay-only. Their accuracy predictions rest on the same determinism that held for
+        Nox (all are deterministic-head decision models from the companion study), but their latency
+        predictions use the companion study's service times and were not re-measured.
+  \item \textbf{Evaluated on the dataset the gates were fitted on.} Thresholds were fitted 2-fold by
+        session, so no item's label set its own threshold, but the live run used the same frozen items
+        as the replay. That is deliberate (it isolates prediction error from sampling error), but it
+        is not a test on new data. The two folds' thresholds differ (0.70 vs 0.72 on E4 facts, 0.83
+        vs 0.88 on E3), and a deployment would need its own calibration set, as System One Auto
+        notes~\cite{sysoneauto}.
+  \item \textbf{One hardware and software profile.} Two GB10 systems on one LAN, one vLLM build, one
+        decision-model runtime. The serial behaviour of that runtime under concurrency shapes the
+        throughput results and may not hold for other runtimes.
+  \item \textbf{Small label sets for some tasks.} E4 entity typing has 92 items; its CIs span
+        $\pm$5 points.
+  \item \textbf{The E3 metric is ours.} E3 is scored here as binary accuracy with a missed-name
+        constraint, not with the companion study's forwarded-share-at-$k$-misses metric.
+  \item \textbf{Non-reasoning qwen only.} The thinking variant, which is the only candidate that
+        could raise the accuracy ceiling, was not tested as a second stage.
+\end{itemize}
+
+\section{Conclusion}
+Replaying frozen model outputs is a cheap and, within its assumptions, accurate way to design a
+cascade. Here it chose a two-box decision-model/generative-model cascade that kept the generative
+model's accuracy at roughly twice its speed. It also predicted that accuracy difference within a tenth
+of a point and routed every item exactly as the live system did. The assumptions are what a
+practitioner has to check: a deterministic gate (decision models provide one), a second stage whose
+answer drift is measured rather than assumed away, and service times sampled in the load regime and
+cache state being predicted. Get the last one wrong and a replay that looks authoritative is off by a
+factor of three. Measure them properly and a few seconds of arithmetic stands in for an afternoon of
+GPU time.
+
+\section*{Data and code availability}
+The replay model (\texttt{clef/eval/cascade.py}), the live router (\texttt{cascade\_live.py}), the
+script that generates every number, table and figure in this paper from the result files
+(\texttt{cascade\_paper.py}) and the frozen dataset's manifest are in the public
+repository~\cite{dgxfun}. The campaign data itself is not released because it quotes play sessions
+verbatim and names real people.
+
+\section*{Use of AI assistance}
+The experiments, analysis and a first draft of this paper were carried out by an AI coding agent
+(Claude, Anthropic) working under the author's direction, with the author reviewing results and
+making the decisions recorded in the paper. The author takes full responsibility for the content.
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{10}
+
+\bibitem[Roussos(2026a)]{companion}
+K.~Roussos.
+\newblock Decision models at the game table: where non-generative classifiers help and fail in LLM
+  tooling for tabletop role-playing campaigns.
+\newblock Manuscript, October 2026. In~\cite{dgxfun}, \texttt{paper/main.tex}.
+
+\bibitem[TypeSafe(2026)]{typesafe}
+TypeSafe.
+\newblock Jev and the System One API.
+\newblock Documentation, \url{https://docs.typesafe.ai}, accessed October 2026.
+
+\bibitem[vLLM Semantic Router Team(2026)]{sysoneauto}
+vLLM Semantic Router Team.
+\newblock System One Auto.
+\newblock Blog post, \url{https://vllm-sr.ai/blog/system-one-auto/}, accessed October 2026.
+
+\bibitem[Chen et~al.(2023)]{frugalgpt}
+L.~Chen, M.~Zaharia, and J.~Zou.
+\newblock FrugalGPT: How to use large language models while reducing cost and improving performance.
+\newblock arXiv:2305.05176, 2023.
+
+\bibitem[Ong et~al.(2024)]{routellm}
+I.~Ong, A.~Almahairi, V.~Wu, W.-L. Chiang, T.~Wu, J.~E. Gonzalez, M.~W. Kadous, and I.~Stoica.
+\newblock RouteLLM: Learning to route LLMs with preference data.
+\newblock arXiv:2406.18665, 2024.
+
+\bibitem[Little(1961)]{little1961}
+J.~D.~C. Little.
+\newblock A proof for the queuing formula: $L = \lambda W$.
+\newblock \emph{Operations Research}, 9(3):383--387, 1961.
+
+\bibitem[Reiser and Lavenberg(1980)]{reiser1980}
+M.~Reiser and S.~S. Lavenberg.
+\newblock Mean-value analysis of closed multichain queuing networks.
+\newblock \emph{Journal of the ACM}, 27(2):313--322, 1980.
+
+\bibitem[Roussos(2026b)]{dgxfun}
+K.~Roussos.
+\newblock dgx-fun: experiments with local LLM serving on NVIDIA DGX Spark.
+\newblock \url{https://github.com/kostadis/dgx-fun}, 2026.
+
+\end{thebibliography}
+
+\end{document}

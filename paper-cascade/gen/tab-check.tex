@@ -1,0 +1,12 @@
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{Escalation} & \multicolumn{2}{c}{Answers} & \multicolumn{2}{c}{$\Delta$ acc.\ vs qwen (pt)} & \multicolumn{4}{c}{Mean latency, $c=1$ (ms)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-11}
+Task & pred. & agree & agree & qwen repro & pred. & meas. & meas. & naive & replay & error \\
+\midrule
+E3 triage & 33.1\% & 100\% & 99.3\% & 99.0\% & +0.0 & +0.1 & 241 & 746 & 263 & +9\% \\
+E4 fact typing & 39.9\% & 100\% & 97.6\% & 96.9\% & -0.1 & +0.0 & 278 & 902 & 293 & +5\% \\
+E4 entity typing & 0.0\% & 100\% & 100.0\% & 98.9\% & +2.2 & +1.1 & 139 & 145 & 198 & +42\% \\
+E2 spelling & 98.0\% & 100\% & 93.2\% & 93.2\% & -1.2 & -1.2 & 1227 & 5080 & 1336 & +9\% \\
+\bottomrule
+\end{tabular}

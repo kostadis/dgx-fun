@@ -4,14 +4,37 @@
 
 ```
 spark1 (192.168.1.147:8001):  qwen3.8-flash-next  (container `qwen38-flash`, SINGLE-BOX TP=1, Qwen3.8-Flash-Next NVFP4 experts + blockwise-fp8 side layers ("hybrid"), 262K ctx, util 0.80, seqs 8, MTP-2 spec decode, APC ON (block_size fix), deterministic QSA top-k, reduced draft vocab, bf16 KV, PLE n-gram table mmapped from NVMe, TOOL CALLING ON (qwen3_coder parser) + reasoning parser qwen3, vLLM 0.1.dev20073+g8e685d198)  ← LIVE 2026-09-10. NOTE the served id is LOWERCASE and unlike every previous id — every client must be repointed.
-spark2 (192.168.1.121:8001):  — NOT LISTENING since 2026-10-02. spark2's chat slot was given up for the Clef decision models (next line). Revert in the LIVE banner.
-spark2 (192.168.1.121:8002):  — STOPPED 2026-10-03 (container `clef` kept, `docker stop` only; restart: `ssh spark2 docker start clef`). Was clef, clef-flash (Jev/SystemOne API). Stopped on the user's go-ahead to make room for Decision 2.0 (next lines).
-spark2 (192.168.1.121:8003):  — REMOVED 2026-10-03 (was Decision-2.0-Lux-9B, container `decision2-lux-9b`; ~50 GB for 16 GB of weights; Nox-4B scored the same on our tests). Re-create: `MODEL=Lux-9B PORT=8003 ./spin-up-decision2.sh`
-spark2 (192.168.1.121:8004):  Decision-2.0-Kai-0.6B (container `decision2-kai-0-6b`, same runtime; tiny, ~0.2 GB RSS)  ← LIVE 2026-10-03
-spark2 (192.168.1.121:8005):  Decision-2.0-Nox-4B (container `decision2-nox-4b`, same runtime; ~19 GB RSS)  ← LIVE 2026-10-03
+spark2 (192.168.1.121:8001):  — STOPPED 2026-10-10 for the NPC prototype (container `qwen38-flash` kept, `docker stop` only; restart: `ssh spark2 'docker stop decision2-nox-4b; docker start qwen38-flash'`). Was qwen3.8-flash-next, identical to spark1.
+spark2 (192.168.1.121:8002):  — STOPPED again 2026-10-06 after the frozen-dataset rerun (container `clef` kept, `docker stop` only; restart: `ssh spark2 docker start clef`). Was clef, clef-flash (Jev/SystemOne API).
+spark2 (192.168.1.121:8003):  — REMOVED again 2026-10-06 (Decision-2.0-Lux-9B, container `decision2-lux-9b`, ran ~1 h for the frozen-dataset rerun). Re-create: `MODEL=Lux-9B PORT=8003 SR_SRC=x ./spin-up-decision2.sh`
+spark2 (192.168.1.121:8004):  — STOPPED 2026-10-08 to give spark2 back to qwen3.8-flash-next (container `decision2-kai-0-6b` kept; restart: `ssh spark2 docker start decision2-kai-0-6b`). Decision-2.0-Kai-0.6B, ~0.2 GB RSS.
+spark2 (192.168.1.121:8005):  Decision-2.0-Nox-4B (container `decision2-nox-4b`, ~19 GB RSS) — the NPC prototype's stance backend  ← LIVE again 2026-10-10 (`docker start`; /health ready, ~118 GB host available)
 spark1 (192.168.1.147:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — the live MemPalace embedding path; VERIFIED UNAFFECTED by the 2026-09-10 swap)
 spark2 (192.168.1.121:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — unloads after 5 min idle; was vllm-embed on port 8000 until 2026-06-30)
 ```
+> **▶ DONE (2026-10-10, 17:03–21:17 UTC): cascade-paper serving ablation on spark1 finished; `qwen38-flash` is back on the documented config.** Restored via `./spin-up-vllm-qwen38-flash-next.sh` (defaults) by `clef/eval/cascade_ablation.sh`. **Verified 21:20 UTC:** served id `qwen3.8-flash-next`, `max_model_len` 262144, `num_speculative_tokens: 2`, `enable_prefix_caching=True`, `--restart unless-stopped`, coherence PASS (Paris). **KV pool this boot: 586,565 tok** (2.24× @ 262K). The ablation ran `MTP=0` (APC on), then `MTP=0 PREFIX_CACHE=0`; results in `paper-cascade/` and `~/data/decision-eval/v1/cascade/`.
+> - **⚠ Do NOT run this image with `MTP=0` and `PREFIX_CACHE=1`.** In that config an exact warm-cache repeat of 864 short requests was **38% slower** than the cold pass and **changed 2 answers**. With MTP=2 (deployed) the same test was 2% faster with identical answers. The image's prefix-cache fix (Dockerfile patch 4, see the `PREFIX_CACHE` note in the spin-up script) was validated bit-identical only at MTP=2; the MTP=0 block sizes look uncovered. If you ever need MTP off, turn prefix caching off too.
+>
+> **▶ LIVE (2026-10-10): spark2 swapped `qwen38-flash` (:8001, stopped) → Decision-2.0-Nox-4B (:8005) to bring the NPC prototype back up. spark1 unchanged (`qwen3.8-flash-next` :8001). Kai :8004 stays stopped, Clef :8002 stays stopped.**
+> - NPC prototype = mytools branch `flexai-social-situational` (worktree `~/src/mytools-flexai-social-situational`), `flexai-social/app.py` on :5105. Stances from spark2:8005 (Nox, ~310 ms with a dossier), dialogue line from **spark1**:8001 qwen3.8-flash-next (~2.1 s). Smoke-tested end to end.
+> - Reason for the swap: Nox (~19 GB RSS) does not fit beside qwen38-flash (~11 GB host available).
+> - **Revert spark2 to qwen3.8-flash-next:** `ssh spark2 'docker stop decision2-nox-4b; docker start qwen38-flash'`.
+>
+> **(superseded 2026-10-10 for spark2) ▶ LIVE (2026-10-08): BOTH BOXES run `qwen3.8-flash-next` on :8001 again (container `qwen38-flash`, single-box TP=1, identical config). spark2's Decision 2.0 models (Kai :8004, Nox :8005) stopped, not removed; Clef :8002 still stopped.**
+> - spark1: `qwen38-flash` restarted (its experiment `vllm-chat` container killed). spark2: Kai + Nox `docker stop`, then `docker start qwen38-flash` (the container left stopped by the 2026-10-07 experiment).
+> - **Verified from the boot logs, both boxes:** vLLM `0.1.dev20073+g8e685d198`, `max_seq_len=262144`, MTP-2, `enable_prefix_caching=True` with **attention block size 1600** (the fix is present), `kv_cache_dtype=auto`, reasoning parser `qwen3`, `--restart unless-stopped`. **KV pool: spark1 602,496 tok → 2.30× @ 262K; spark2 590,910 tok → 2.25×.** Host available ~16 GB on each. Coherence check passed on both (Paris / 51).
+> - **Revert spark2 to Decision 2.0:** `ssh spark2 'docker stop qwen38-flash; docker start decision2-kai-0-6b decision2-nox-4b'`.
+>
+> **▶ DONE (2026-10-07): chunked state-docs experiment (CampaignGenerator `experiments/20261007-chunked-state-docs/`, PRs #507/#508, issue #505) borrowed BOTH boxes for the day; everything is back to the lines above — spark1 `qwen38-flash` :8001 (restarted via `spin-up-vllm-qwen38-flash-next.sh`, healthy, block size 1600, max_model_len 262144), spark2 Kai :8004 + Nox :8005 (`docker start`, both `/health` ready).**
+> Sequence (all two-box, spark2's decision models stopped for the duration):
+> 1. `qwen3.8-flash-next` on spark2:8001 too (container `qwen38-flash`, `HOST=spark2 ./spin-up-vllm-qwen38-flash-next.sh`; block size 1600, KV 574,978 tok).
+> 2. `deepseek-ai/DeepSeek-V4-Flash-0731` cross-box TP=2 pair (`spin-up-vllm-dspark-2box.sh`, container `vllm-dspark`, 6 seqs, KV 849,372 tok, coherence PASS, 0 "Skipping unknown").
+> 3. `Qwen/Qwen3-Next-80B-A3B-Instruct-FP8` one per box (`MAX_SEQS=8 SPEC_TOKENS=2 GPU_UTIL=0.80 ~/spin-up-vllm-qwen3-next-80b-mtp.sh`, container `vllm-chat`, image v0.22.0; **prefix caching OFF** — that image predates the Mamba block-size fix). Coherence PASS.
+> - **Measured on the chunked map step (60 chunks of ~60K chars, ch002-070):** Qwen3-Next MTP-2 ×2 boxes ≈ **112 useful tok/s** (30.5 min) — the fastest; DeepSeek-V4-Flash 2-box ≈ 60 (72 min); qwen3.8 ≈ 55 per box, ~90 on two. Details: that experiment's `RESULTS.md` rounds 5-7.
+> - **Stopped, NOT removed (restart with `docker start` after stopping the live containers):** `vllm-chat` (Qwen3-Next) on both boxes, `vllm-dspark` on both boxes, `qwen38-flash` on spark2. `dgxlib/models.yaml` already has entries for all three models — no sync needed.
+>
+> **▶ DONE (2026-10-06→07): paper rerun on a frozen dataset finished (PR #32); spark2 is back to the 2026-10-03 state below — Kai :8004 + Nox :8005 restarted 2026-10-07, Clef :8002 stays stopped, Lux :8003 stays removed.**
+>
 > **▶ LIVE (2026-10-03): spark2 Clef STOPPED → vLLM Semantic Router "Decision 2.0" decision models on :8005 (Nox-4B — the NPC prototype's backend) and :8004 (Kai-0.6B). Lux-9B (:8003) tested then removed. spark1 unchanged. ~84 GB available on spark2.**
 > Image `decision2-runtime`, built on spark2 from `decision2/Dockerfile` (base `clef-server` ONLY for its torch 2.11.0+cu130 / triton 3.6 on sm_121; runtime = semantic-router `src/model-runtime` @ 846e120, `pip install --no-deps`). Start one model per container: `MODEL=Lux-9B PORT=8003 SR_SRC=<semantic-router checkout> ./spin-up-decision2.sh` (`BUILD=1` rebuilds). Full log: `clef-observations.md` (2026-10-03 Decision 2.0 section).
 > - **GB10 patch in the image:** the runtime's placement check uses `torch.cuda.mem_get_info`, which on the GB10's unified memory excludes reclaimable page cache (17 GiB "free" with 34 GB available) — Lux refused to load. `decision2/gb10_unified_memory.patch.py` uses `/proc/meminfo` MemAvailable on integrated devices.
@@ -696,13 +719,14 @@ both pass on a stale IP config.)
 
 ## Ports in use
 
-> **⚠ 2026-10-02 — CURRENT STATE (supersedes both tables below; spark2 changed 2026-10-02):**
+> **⚠ 2026-10-10 — CURRENT STATE (supersedes both tables below). spark2 runs Decision-2.0-Nox-4B on 8005 (NPC prototype); its 8001 `qwen38-flash` is STOPPED; the 8002 `clef` row is STOPPED; Kai 8004 stopped.**
 >
 > | box | port | service | what |
 > |---|---:|---|---|
 > | spark1 | 8001 | **`qwen38-flash`** (docker) | **`qwen3.8-flash-next`** (Qwen3.8-Flash-Next; RadixArk NVFP4 routed experts + blockwise-fp8 side layers = `MODE=hybrid`), **single-box TP=1**, **262K** (`--max-model-len 262144`), util **0.80**, seqs 8, **bf16 KV** (`kv_cache_dtype=auto`), **MTP-2** (`{"method":"mtp","num_speculative_tokens":2}`), **APC on** (correct only because this image carries the Mamba block-size fix — see LIVE banner), deterministic QSA top-k (`VLLM_QSA_DET_TOPK=1`), reduced draft vocab (65,536), `MADV_RANDOM` on the mmapped table, chunked prefill 8192, PIECEWISE CUDA graphs, **`--enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3`**, image `qwen38-flash-dgx` (LOCAL build from `~/qwen3.8-Flash-DGX`, vLLM `0.1.dev20073+g8e685d198`). The 47.7 GiB PLE n-gram table is **mmapped from NVMe**, not resident. Weights on card **76.75 GiB**. KV pool **553,254 tok → 2.11× @ 262K**. Via `./spin-up-vllm-qwen38-flash-next.sh`. **`--restart unless-stopped` — DOES survive a reboot.** |
 > | spark2 | 8002 | **`clef`** (docker) | **Clef + Clef-flash decision models** (LIVE 2026-10-02) — Jev/SystemOne API `POST /v1/systemone`, `GET /v1/models`, `GET /health`; image `clef-server` (transformers 5.10.2, torch 2.11.0+cu130, fla Triton kernels), BF16, 68.9 GiB allocated, `--restart unless-stopped`. Via `STOP_CHAT=1 ./spin-up-clef.sh`. |
-> | spark2 | 8001 | — | **not listening since 2026-10-02** (was `qwen38-flash`/`qwen3.8-flash-next`, identical to spark1; revert in the top LIVE banner) |
+> | spark2 | 8001 | — | **STOPPED 2026-10-10** (`qwen38-flash`, identical to spark1; container kept). |
+> | spark2 | 8005 | **`decision2-nox-4b`** (docker) | **Decision-2.0-Nox-4B** (LIVE again 2026-10-10) — Jev/SystemOne API, ~19 GB RSS; image `decision2-runtime`. NPC prototype backend. |
 > | spark1 | 11434 | Ollama (systemd) | `qwen3-embedding:0.6b` — **verified untouched** by the 2026-09-10 swap (live 1024-dim smoke), still the MemPalace embedding path |
 > | spark2 | 11434 | Ollama (systemd) | `qwen3-embedding:0.6b`, lazy-load — untouched |
 > | both | 8000 | — | not running on either box (confirmed 2026-09-10) |
@@ -732,7 +756,9 @@ both pass on a stale IP config.)
 
 > **⚠ 2026-09-10 — CURRENT budget. The two boxes now differ, so read the right column.**
 >
-> **⚠ 2026-10-02: the spark2 column is HISTORICAL** — spark2 now runs Clef + Clef-flash: **68.9 GiB allocated by torch (no reservation cap), no off-card table, host available ~41-45 GB.** The spark1 column is current.
+> **✅ 2026-10-08: the spark2 column is CURRENT again** (qwen38-flash back on spark2; measured KV pools this boot: spark1 602,496, spark2 590,910; host available ~16 GB on each).
+>
+> **(superseded) ⚠ 2026-10-02: the spark2 column is HISTORICAL** — spark2 now runs Clef + Clef-flash: **68.9 GiB allocated by torch (no reservation cap), no off-card table, host available ~41-45 GB.** The spark1 column is current.
 >
 > | | spark1 — `qwen3.8-flash-next` | spark2 — `qwen3.8-flash-next` |
 > |---|---|---|
@@ -1175,7 +1201,9 @@ on GB10 (sm_121) is mature enough to realize that.
 
 ## 4. spark2 vllm-chat slot (Docker container, port 8001)
 
-> **⚠ 2026-10-02: this slot is EMPTY on spark2.** The box runs the Clef decision
+> **✅ 2026-10-08: this slot is LIVE again** — `qwen38-flash` restarted with `docker start`; the CURRENT block below applies. The Clef/Decision 2.0 note that follows is historical.
+
+> **(superseded) ⚠ 2026-10-02: this slot is EMPTY on spark2.** The box runs the Clef decision
 > models on **:8002** instead (container `clef`, `spin-up-clef.sh`, `clef/`). Rebuild:
 > `scp clef/Dockerfile clef/server.py spark2:~/clef/ && ssh spark2 'cd ~/clef && docker build -t clef-server .'`,
 > `hf download Cloudflare/clef-flash` + `Cloudflare/clef` into `~/.cache/huggingface` (74 GB),
