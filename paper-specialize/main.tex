@@ -1,0 +1,531 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\input{gen/numbers.tex}
+\newcommand{\N}[1]{\csname num:#1\endcsname}
+\newcommand{\TODO}[1]{\textbf{[#1]}}
+\emergencystretch=2em
+
+\title{Specialize the First Stage:\\
+Fine-Tuning a Cascade's Decision Model on One Game Master's Rulings,\\
+Predicted by Replay and Checked Live}
+
+\author{Kostadis Roussos\\
+Independent researcher\\
+\texttt{kostadis@gmail.com}}
+
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A cascade's savings are set by its first stage: every item the cheap model cannot settle is paid
+for twice. Two earlier studies on a tabletop role-playing campaign pipeline evaluated off-the-shelf
+non-generative decision models against a generative model~\cite{companion}, and designed a
+Decision-2.0-Nox-4B $\rightarrow$ \texttt{qwen3.8-flash-next} cascade by replaying their frozen
+outputs, then checked it live~\cite{cascade}. The first study also fine-tuned Nox on the game
+master's (GM's) rulings but never put the tuned model in the cascade. Here we do, asking whether a
+domain-specialized first stage removes more of the second. Because the frozen dataset caches Nox's
+backbone features, tuning its decision head and replaying the resulting cascade takes about a minute
+of CPU time per variant, cross-fitted so that no item's label reaches its own head or its own gate.
+On triage, the tuned head lowered escalation from \N{rep:e3:released:esc}\% to
+\N{rep:e3:lenient:esc}\% and raised the cascade's predicted single-stream speed-up from
+\N{rep:e3:released:speedup}$\times$ to \N{rep:e3:lenient:speedup}$\times$, while still missing no more
+real names than the generative model. On fact typing the replay first showed the second stage
+almost vanishing, then exposed why: every fact's label is its entity's label and entities recur, so
+a plain lookup of the GM's earlier rulings scores \N{e4:lookup_acc}\%, above every model. Held out
+by entity, the tuned Nox alone tied the generative model on entities it had never seen
+(\N{rep:e4facts:strict:small_acc}\% vs \N{rep:e4facts:strict:big_acc}\%). Holding out by token on
+triage broke the missed-name constraint. We then served the tuned heads on the real two-box
+system, with gates and predictions pre-registered by hash. Live, the triage cascade scored
+\N{live:e3:d_big} points above qwen (CI \N{live:e3:ci}; predicted \N{rep:e3:lenient:d_big}), escalated
+\N{live:e3:esc}\% of tokens, missed exactly as many names as qwen, and was
+\N{live:e3:speedup_meas}$\times$ faster single-stream (predicted \N{live:e3:speedup_pred}$\times$); the
+entity-disjoint fact-typing cascade escalated \N{live:e4facts:esc}\% and was
+\N{live:e4facts:speedup_meas}$\times$ faster (predicted \N{live:e4facts:speedup_pred}$\times$) at
+\N{live:e4facts:d_big} points (CI \N{live:e4facts:ci}). The replay routed
+\N{live:e3:esc_agree}\% and \N{live:e4facts:esc_agree}\% of items as the live system did. A
+specialized first stage removes most of the second on fact typing and a quarter of it on triage,
+where the second stage stays because the tuned model alone drops twice as many real names. Set
+beside Vela 2.0, a full fine-tune of the same Nox for safety and routing, the head-only gain on our
+tasks (+5.5 AUC points on triage) is of the same order as Vela's mid-range gains on its own, at a
+small fraction of the effort; Vela itself, tuned for another domain, is a worse first stage here
+than the Nox it came from.
+\end{abstract}
+
+\section{Introduction}
+
+A reader of the cascade study~\cite{cascade} asked the natural follow-up: if the small model's
+accuracy gap is what forces escalation, why accept its baseline accuracy? For a bounded
+classification task one can trade general-purpose performance for domain specialization by
+fine-tuning, and a specialized first stage might close enough of the gap to remove the second stage
+for more of the work. The question has a practical edge in this pipeline. The decision model answers
+in about 80--150~ms on a DGX Spark and the generative model in about half a second, so each
+percentage point of escalation removed is latency and queue capacity returned.
+
+Both ingredients already existed. The companion study's E6~\cite{companion} fine-tuned Nox's head
+(and a LoRA) on the GM's rulings and reported that head-only tuning \emph{recalibrates} the readout:
+triage AUC rose from 0.900 to 0.963. But it scored the tuned model as a standalone classifier. The
+cascade study's replay~\cite{cascade} showed that a cascade's accuracy, escalation and latency are a
+pure function of saved per-item outputs when the first stage is deterministic, and that the
+prediction held live. Here we combine them, with three aims:
+\begin{enumerate}
+  \item measure how much a tuned first stage shrinks the second, at the cascade's own objective
+        (the generative model's accuracy, with real names never dropped more often than it drops them);
+  \item find where the gain comes from, and in particular whether it is specialization or
+        memorization of rulings the GM has already made;
+  \item check the replay's prediction for a \emph{trained} first stage on the real system, as the
+        cascade study did for an off-the-shelf one.
+\end{enumerate}
+
+\paragraph{Findings.}
+\begin{itemize}
+  \item \textbf{Triage.} Tuning removes a quarter of the escalations (\N{rep:e3:released:esc}\% to
+        \N{live:e3:esc}\%) at the missed-name constraint, and the cascade ends up
+        \N{live:e3:d_big} points \emph{more} accurate than qwen alone, live. The second stage stays:
+        tuned Nox alone is more accurate still (\N{live:e3:small_live_acc}\%) but drops
+        \N{live:e3:small_live_missed} real names to qwen's \N{live:e3:big_live_missed}.
+  \item \textbf{Fact typing.} Most of the apparent gain is memorization: the label is an
+        entity-level ruling, and a lookup of earlier rulings scores \N{e4:lookup_acc}\%. Held out by
+        entity, the gain that remains is real but small. Tuned Nox alone ties qwen
+        (\N{live:e4facts:small_live_acc}\% vs \N{live:e4facts:big_live_acc}\% live), so the cascade
+        escalates only \N{live:e4facts:esc}\% and runs \N{live:e4facts:speedup_meas}$\times$ faster
+        than qwen.
+  \item \textbf{The replay held for a trained first stage.} Escalation, accuracy difference and
+        single-stream latency were all predicted before any live request, and all landed within
+        about 5\% (latency) or half a point (accuracy).
+  \item \textbf{Next to Vela 2.0.} Head-only tuning on one GM's rulings gained about as much on our
+        tasks as Vela's full fine-tune gained on its mid-range tasks (+5.5 AUC points on triage), but
+        on fact typing the gain is accuracy on the common types, not macro-F1. Served as a first
+        stage on our tasks, no Vela member improved on released Nox.
+  \item \textbf{One token-disjoint variant failed} the missed-name constraint on the replay and
+        never went live; the replay is where that should be found.
+\end{itemize}
+
+\section{Background}
+
+\paragraph{The pipeline and its frozen dataset.} The companion study~\cite{companion} evaluated
+decision models, which read a \texttt{state} once and return a probability for every option of a
+typed question through a small head without generating text, on judgment steps of a pipeline that
+turns recorded play sessions into campaign records. Its labels are one GM's past rulings, frozen
+into a versioned, read-only dataset with every model-facing input pre-rendered. We use two of its
+tasks, unchanged:
+\begin{description}
+  \item[E3 triage] (864 tokens, \N{e3:names} real names) is an unknown capitalised token a campaign
+        name, or filler, a rules term or real-world chatter? As in the cascade study we score it as
+        binary accuracy and separately count \emph{missed names}, because a dropped name is a silent
+        deletion nothing downstream recovers.
+  \item[E4 fact typing] (1{,}691 facts, \N{e4:n_entities} entities, \N{e4:n_chapters} chapters) file
+        an extracted fact under one of eight types.
+\end{description}
+The other two tasks of the cascade study are not candidates. On E4 entity typing Nox alone already
+matched the generative model, and on E2 spelling Nox trailed it by 56 points, a gap that looks
+structural rather than one of calibration.
+
+\paragraph{The cascade and its replay.} Nox answers first; if its gate confidence (top probability,
+or $\max(p, 1-p)$ for the binary triage question) is below a threshold, the item goes to
+\texttt{qwen3.8-flash-next} with reasoning off. The \emph{parity gate} is the lowest threshold whose
+cascade accuracy on a training set is at least qwen's, and on E3 misses no more names than qwen.
+Thresholds are fitted 2-fold by group (sessions for E3, chapters for E4) and each half is scored with
+the other half's threshold. The replay composes per-item answers, confidences and single-stream
+service times; the cascade study found it routed items exactly as the live system did and predicted
+the cascade-minus-qwen accuracy difference within 0.1 points~\cite{cascade}.
+
+\section{Method}
+
+\subsection{Tuning the head on cached features}
+The released Transformers wrapper refuses \texttt{train()}, but the runtime's backbone and head are
+ordinary PyTorch modules. As in E6, we ran Nox's frozen backbone once over every item through the
+runtime's own loader and renderer and cached the option and query hidden rows the head reads; the
+released head on those features reproduces the served probabilities (maximum absolute difference
+0.0097 on E3 and 0.0 on E4 in this run). Training is head-only, on CPU: valid-option cross-entropy
+($-\log\sum_{k\in\text{valid}}p_k$) at the server's temperature, an L2 pull toward the released head
+(L2-SP~\cite{l2sp}, weight 0.1), AdamW at $10^{-4}$, batch 32, 20 epochs, and weight 4 on real-name tokens in
+triage. These settings are E6's and were fixed before this study; E6 itself chose them from four
+candidates on a cross-validation over the same items (different folds), so they carry a little
+optimism. Training is seeded and deterministic: re-training reproduced every probability exactly.
+E4 training also uses the companion study's 839-fact control set, whose 54 entities do not occur in
+the 1{,}691 test facts.
+
+\subsection{Cross-fitting the head and the gate together}
+A tuned first stage adds a second place where labels can leak: the head as well as the threshold.
+We nest both inside the replay's existing 2-fold split. For each half $h$:
+\begin{itemize}
+  \item the \emph{test head} for $h$ is trained on the other half only, and gives the first-stage
+        answers and confidences for $h$;
+  \item the \emph{gate} for $h$ is the parity gate fitted on the other half, using that half's
+        \emph{inner out-of-fold} predictions (3-fold by group within it), so that, like the test
+        predictions, they come from heads that never saw the item's label.
+\end{itemize}
+No item's label therefore influences either its own answer or its own threshold.
+
+\subsection{Two hold-out regimes}
+Holding out by session or chapter is the deployment question (\emph{train on the GM's past
+sessions, run on the next}), but entities and tokens recur across sessions. We therefore also run a
+\emph{disjoint} variant that drops from each training set every item whose entity (E4) or token
+(E3, case-folded) occurs in the test half. It answers a different question: does the gain transfer
+to things the GM has never ruled on? On E4 it keeps \N{ntrain:e4facts:strict} training items per
+half (mostly the control set) against \N{ntrain:e4facts:lenient}; on E3,
+\N{ntrain:e3:strict} against \N{ntrain:e3:lenient}.
+
+\subsection{Serving a tuned head, and the live check}
+The runtime verifies its model package against a manifest of per-file hashes and a built-in model
+identity, and runs a golden-answer check before reporting ready, so a tuned head file cannot simply
+be dropped into the package. Our server wrapper lets the stock runtime load, verify and golden-check
+the \emph{released} package, then copies the tuned head's weights into the loaded head module in
+place and logs the file's hash. Backbone, renderer, scheduler and HTTP API are the stock runtime's.
+Each half needs its own head, so the live run serves four heads in turn on spark2, re-probing 20
+items per head against the replay's probabilities before measuring. The second stage is qwen on
+spark1 in its deployed configuration (MTP-2 speculative decoding, prefix caching on), as in the
+cascade study.
+
+We took one variant per task live, chosen on the replay before any live request: tuned on E3
+(the only tuned E3 variant that held the missed-name constraint) and disjoint on E4 (the variant
+whose gain is not memorization). Every gate, every head's hash and the replay's predictions were
+written to a pre-registration record (SHA-256 \texttt{\N{prereg:sha}\ldots}, \N{prereg:when}) before
+the first live request. As in the cascade study, we ran tuned Nox alone, the cascade, and qwen alone
+on every item in the same session, single-stream ($c=1$) and with 8 concurrent clients ($c=8$).
+
+\section{Replay results}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-replay.tex}}
+\caption{Replay of the Nox $\rightarrow$ qwen cascade with the released and the tuned head, held out
+as in the text (head and gate cross-fitted). qwen alone scores \N{rep:e3:released:big_acc}\% on E3
+and \N{rep:e4facts:released:big_acc}\% on E4. ``Missed'' is real names dropped by the cascade / by
+qwen alone. Speed-up is against qwen alone, single-stream, from service times measured live in the
+cascade study. ``Disjoint'' also removes from training every item sharing an entity (E4) or token
+(E3) with the test half. The lookup row files each fact under the type the GM gave its entity in the
+other half, falling back to released Nox when the entity is new.}
+\label{tab:replay}
+\end{table}
+
+\paragraph{Triage: a smaller second stage.} Tuned on the other half's sessions, Nox alone rose from
+\N{rep:e3:released:small_acc}\% to \N{rep:e3:lenient:small_acc}\% binary accuracy, above qwen's
+\N{rep:e3:released:big_acc}\% (Table~\ref{tab:replay}). That does not make it a replacement: alone it
+drops \N{rep:e3:lenient:small_missed} real names where qwen drops \N{rep:e3:lenient:big_missed}, and
+the binary score rewards confident ``not a name'' answers, of which there are many. The parity gate
+handles exactly this. The tuned cascade escalates \N{rep:e3:lenient:esc}\% of tokens instead of
+\N{rep:e3:released:esc}\%, misses \N{rep:e3:lenient:missed} names (qwen
+\N{rep:e3:lenient:big_missed}), scores \N{rep:e3:lenient:d_big} points above qwen (CI
+\N{rep:e3:lenient:ci}), and is predicted \N{rep:e3:lenient:speedup}$\times$ faster than qwen
+single-stream, against \N{rep:e3:released:speedup}$\times$ for the released head.
+
+This is not name memorization. Only \N{e3:names_recur} of the \N{e3:names} real names have a token
+that also occurs in the other half. What recurs is the table's chatter: filler words, rules terms
+and real-world references come back every session, and learning how this GM labels them is
+legitimate domain knowledge.
+
+\paragraph{Triage, token-disjoint: the constraint breaks.} Removing every training token that also
+occurs in the test half cuts the training set to \N{ntrain:e3:strict} items per half. The replay
+then escalates only \N{rep:e3:strict:esc}\% and scores higher still
+(\N{rep:e3:strict:d_big} points), but the cascade misses \N{rep:e3:strict:missed} names against
+qwen's \N{rep:e3:strict:big_missed}. Its gate was fitted to miss no more names than qwen on the
+other half and did not transfer. With \N{e3:names} names in all, three names is the difference, but
+it is the error this pipeline cannot afford, so this variant fails the objective.
+
+\paragraph{Fact typing: the second stage nearly vanishes, for the wrong reason.} Tuned on the other
+half's chapters, Nox alone reaches \N{rep:e4facts:lenient:small_acc}\%, the parity gate escalates
+\N{rep:e4facts:lenient:esc}\% of facts, and the cascade is predicted
+\N{rep:e4facts:lenient:speedup}$\times$ faster than qwen at \N{rep:e4facts:lenient:d_big} points
+above it. The frozen dataset shows why. In E4, \N{e4:consistent}\% of facts carry their entity's
+majority label: the label is an entity-level ruling copied onto each fact. The same entities recur
+across chapters, so a model trained on other chapters has seen most test entities ruled on already.
+A lookup that files each fact under the type the GM gave its entity in the other half covers
+\N{e4:lookup_cov}\% of facts and scores \N{e4:lookup_acc}\%, above qwen, tuned Nox and every model in
+either earlier study. Much of the tuned head's gain is that lookup learned the hard way, and done
+worse.
+
+\paragraph{Fact typing, entity-disjoint: specialization that transfers.} Trained only on entities
+absent from the test half (largely the control set), tuned Nox alone scores
+\N{rep:e4facts:strict:small_acc}\%, against \N{rep:e4facts:released:small_acc}\% for the released
+head and \N{rep:e4facts:strict:big_acc}\% for qwen. The gain here cannot come from remembering
+rulings; it is the readout recalibration E6 described, learned from other entities. The parity gate
+escalates \N{rep:e4facts:strict:esc}\%, and the predicted speed-up is
+\N{rep:e4facts:strict:speedup}$\times$. Its gate rests on few out-of-fold items (the disjoint
+regime leaves almost no repair-set training data inside each half), and one half's threshold is 0,
+so this point is best read as ``tuned Nox alone ties qwen on unseen entities'' rather than as a
+finely tuned cascade.
+
+\section{Live results}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-live.tex}}
+\caption{Live Nox $\rightarrow$ qwen cascade on the real system (\N{live:e3:n} triage tokens,
+\N{live:e4facts:n} facts, \N{live:e3:errors} errors). Tuned rows: this study, both halves pooled,
+each half served with its own head and gate. $^\dagger$Released rows: the cascade study's live run of
+the same system with the released head~\cite{cascade}. qwen accuracy and speed-ups are against qwen
+alone measured in the same session. Throughput gain is items per second with 8 concurrent clients,
+cascade over qwen alone.}
+\label{tab:live}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-check.tex}}
+\caption{Pre-registered replay predictions against the live run. ``Esc.\ agree'': items the live
+cascade routed as the frozen gate on replay probabilities did. $\max|\Delta p|$: largest difference
+between the served and the replay's first-stage probability over all items. ``Answers agree'': live
+cascade answers equal to the replay's. ``qwen self-agree'': qwen's live answers equal to its frozen
+ones, the floor on how well any prediction involving qwen can match. Latency error: composed
+single-stream mean against measured.}
+\label{tab:check}
+\end{table}
+
+\paragraph{Accuracy and routing.} Both cascades did what the replay said
+(Tables~\ref{tab:live} and~\ref{tab:check}). On triage the cascade scored \N{live:e3:live_acc}\%
+against qwen's \N{live:e3:big_live_acc}\%, \N{live:e3:d_big} points (CI \N{live:e3:ci}) against a
+predicted \N{rep:e3:lenient:d_big}, escalated \N{live:e3:esc}\% of tokens, and missed
+\N{live:e3:live_missed} real names to qwen's \N{live:e3:big_live_missed}. Tuned Nox alone scored
+\N{live:e3:small_live_acc}\% and missed \N{live:e3:small_live_missed}, as on the replay. On fact typing
+the cascade scored \N{live:e4facts:live_acc}\% against \N{live:e4facts:big_live_acc}\%
+(\N{live:e4facts:d_big} points, CI \N{live:e4facts:ci}, predicted \N{rep:e4facts:strict:d_big}), with
+Nox alone at \N{live:e4facts:small_live_acc}\%. The live system escalated exactly the items the frozen
+gates selected on E3, and all but one of 1{,}691 on E4. Served and replay probabilities differed by
+at most \N{live:e4facts:conf_maxdiff}, slightly above the per-head probe's 0.02 tolerance on a few
+items, and the one E4 item near its threshold flipped. The remaining answer disagreement is qwen's:
+it reproduced its own frozen answers on \N{live:e3:big_agree}\% and \N{live:e4facts:big_agree}\% of
+items.
+
+\paragraph{Latency and throughput.} Single-stream, the triage cascade averaged
+\N{live:e3:meas_mean}~ms per token against qwen's \N{live:e3:big_mean}~ms,
+\N{live:e3:speedup_meas}$\times$ faster (predicted \N{live:e3:speedup_pred}$\times$, mean
+\N{live:e3:lat_err}\% off); the released head's cascade had managed \N{rel:e3:speedup_meas}$\times$.
+Fact typing averaged \N{live:e4facts:meas_mean}~ms against \N{live:e4facts:big_mean}~ms,
+\N{live:e4facts:speedup_meas}$\times$ (predicted \N{live:e4facts:speedup_pred}$\times$,
+\N{live:e4facts:lat_err}\% off), against \N{rel:e4facts:speedup_meas}$\times$ for the released head.
+With 8 concurrent clients the cascades sustained \N{live:e3:tput_gain}$\times$ and
+\N{live:e4facts:tput_gain}$\times$ qwen's throughput. On fact typing that is all the first stage can
+give: the cascade's throughput (\N{live:e4facts:tput_cascade} items/s) equals tuned Nox alone's
+(\N{live:e4facts:tput_small}), so the remaining bottleneck is the decision model, not qwen.
+
+\paragraph{A contaminated first pass.} The pre-registered plan measured everything in one session.
+In the first pass, another client of the author's began sending long generation requests to spark1's
+qwen partway through: it overlapped the qwen-alone runs on both tasks and the second E4 half's
+cascade, inflating qwen's single-stream mean to 881 and 808~ms (against
+\N{rel:e3:big_mean} and \N{rel:e4facts:big_mean}~ms in the cascade study) and the triage latency
+error to +45\%. Accuracy and routing were essentially unchanged. We reran exactly those legs, with the
+same heads and gates, while sampling spark1's running-request count every 2~s; no leg ever had more
+requests in flight than its own concurrency, and qwen's means returned to \N{live:e3:big_mean} and
+\N{live:e4facts:big_mean}~ms. Tables~\ref{tab:live} and~\ref{tab:check} use the rerun; the
+contaminated outputs are kept with the results. The episode is the cascade study's caveat in
+miniature: the replay composes service times from a quiet box, and a shared second stage breaks that
+assumption without telling anyone.
+
+\section{The tuning outcome next to Vela 2.0's}
+\label{sec:vela}
+
+Vela 2.0~\cite{vela2} is a published example of the trade the question proposed: vLLM Semantic Router
+and KR Labs fine-tuned the same Decision-2.0-Nox-4B for safety, prompt-attack, PII, hallucination and
+request-routing decisions. Its tuning is a full fine-tune of 4{,}000 steps on a large public and
+synthetic mixture (plus two span-head stages); ours is the decision head alone, on a few hundred to a
+couple of thousand of one GM's rulings, in about a minute of CPU time. Table~\ref{tab:gains} sets the
+two outcomes side by side, each on its own domain and in the metrics Vela reports: AUC for yes/no
+decisions, macro-F1 for multi-class ones.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-gains.tex}}
+\caption{What tuning bought on the tuned-for domain. Tuned Nox: this study, Nox alone, from the
+cross-fitted held-out probabilities (no item scored by a head that saw its label); ``before'' is the
+released Nox. $^\ddagger$Vela 2.0 4B: as published in its evaluation card~\cite{vela2} (revision
+\texttt{d692394}), not re-measured; ``before'' is the per-task reference model the card compares
+against (an earlier specialist, a guard model or a span detector), not Nox, whose scores on these
+tasks are not published. $\Delta$ in points ($\times 100$ for AUC and F1); Vela's intervals are the
+card's paired 95\% CIs.}
+\label{tab:gains}
+\end{table}
+
+\paragraph{Same order of gain where the comparison is fair.} On triage, tuning raised Nox's AUC from
+\N{gain:e3:released:auc} to \N{gain:e3:lenient:auc} (+5.5 points) and its accuracy by 10.5 points.
+That sits with Vela's middle results: request harm (+1.3 and +3.5 AUC points), hate speech (+12.3),
+RAGTruth (+2.7). Vela's largest gains, +50 points of macro-F1 on fact-check-needed and feedback
+routing, are against references that scored near chance (0.50 and 0.43), and its +19.4 on prompt
+attacks is against a guard model on attack families it had not seen; there was much more room to
+gain than Nox had on our tasks, where the released model already scored 79--84\%. On span tasks Vela
+is mostly level with its references and loses 7.2 points on toxic spans, so not every target of a
+broad fine-tune improves.
+
+\paragraph{Accuracy is not the whole outcome.} On fact typing, the head tuned on other entities
+raised accuracy by 4.7 points but left macro-F1 unchanged (\N{gain:e4facts:released:f1} to
+\N{gain:e4facts:strict:f1}): the gain is on the common types, and the rare ones did not improve.
+Even with the familiar entities in the training data, macro-F1 rose only 1.1 points. For a
+cascade this is the useful kind of gain, because escalation is decided per item and common items
+are most of the traffic, but it is narrower than the accuracy figure suggests, and it is the
+metric Vela's card would have reported.
+
+\paragraph{What the two cost.} Vela's card measures its own cost: on the Jev Decision Index of 38
+general decision benchmarks it scores \N{vela:jev} against Nox's \N{vela:jev_nox}~\cite{vela2},
+a quarter of its base's general-decision score. We did not measure the tuned heads outside our
+tasks; they are not meant to serve any other question, and a tuned head changes every answer the
+model gives, so in this pipeline it would be served only for these two tasks. The difference in
+effort is the larger contrast: the head-only recipe needs cached features and labels the pipeline
+already records, while Vela's needs a training run over the whole backbone.
+
+\paragraph{Pre-tuned for another domain, Vela is a worse first stage here.} We also served the
+three Vela decoder members, pinned and checked against their own recorded card outputs
+(maximum difference below 0.001), on the frozen E3 and E4 items and replayed each as the cascade's
+first stage under the same parity gate (Table~\ref{tab:velafirst}). None improves on the released
+Nox it was tuned from. On triage every member must escalate more than half the tokens to keep real
+names at qwen's level (Nox 33\%), and the cascade gains nothing; on fact typing Vela 4B escalates
+less than Nox but its out-of-fold gate falls below qwen (\N{vf:e4facts:vela-4b:d_big} points, CI
+\N{vf:e4facts:vela-4b:ci}), and the other members escalate most facts. The larger member is not
+better: Vela 9B's confidence separates its right and wrong triage answers worst of all. Vela's
+reference server is also slower than Nox's runtime (\N{vf:e3:vela-4b:small_ms} against
+\N{vf:e3:nox:small_ms}~ms per triage item for the 4B), but replaying Vela's routing at Nox's
+per-item latency leaves the conclusion unchanged on triage (1.48$\times$ against 2.07$\times$), and
+on fact typing the accuracy shortfall remains whatever the speed. Removing Vela's built-in abstain
+option, or escalating on its abstain probability, changed nothing material. Its tuning bought gains
+on its own domain and cost it some of the general decision ability that our tasks draw on; tuning
+toward our own rulings was the specialization that paid here.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{\input{gen/tab-vela-first.tex}}
+\caption{Vela 2.0 members as the cascade's first stage on our tasks, replay only (same parity gate,
+2-fold by group, and qwen service times as Table~\ref{tab:replay}). ``Alone'': the first stage's own
+accuracy. ms/item: the first stage's measured single-stream service time (Vela via its reference
+server, Nox via its runtime). Tuned Nox rows repeated from Table~\ref{tab:replay} for comparison.
+Vela served as released (abstain option on); removing it moved no figure by more than 0.4 points.}
+\label{tab:velafirst}
+\end{table}
+
+\section{Discussion}
+
+\paragraph{Specialization does shrink the second stage.} On triage, a head tuned on a few hundred of
+the GM's rulings removes about a quarter of the escalations while holding the constraint that
+matters, and on fact typing it closes the gap to the generative model for entities it has never
+seen. For a bounded classification task that is the trade the question proposed, and it costs a
+minute of CPU time rather than a GPU job, because the backbone is frozen and its features are cached.
+
+\paragraph{But check what is being specialized to.} Fine-tuning on a pipeline's own review records
+can learn two different things: the GM's \emph{conventions}, which transfer, and the GM's
+\emph{rulings}, which are a table. E4 shows how much the second can masquerade as the first. A
+leaderboard-style result (``tuned Nox removes 99\% of escalations at 5$\times$'') would have been
+true on the replay and misleading as a claim about the model, and the fix is not a better model but
+the companion study's conclusion: a ruling should be made once and read back. In this pipeline the
+right fact-typing design is a lookup of the GM's past rulings first, tuned Nox for unseen entities,
+and qwen only for the uncertain remainder.
+
+\paragraph{The objective, not accuracy, decides.} Tuned Nox alone ``beats'' qwen on E3 by five points
+of binary accuracy and still cannot replace it, because it drops more real names. Measuring the
+first stage by escalation at the parity gate, with the expensive error constrained separately, is
+what separated the useful variant from the two that looked better.
+
+\paragraph{The replay extends to training.} The cascade study's replay chose among fixed first stages.
+With cached features, the same machinery evaluates trained ones, as long as head and gate are
+cross-fitted together. Seven variants were scored here in a few minutes of CPU time; only the two
+that survived went to the hardware, and both did there what the replay said they would: the same
+items escalated, the same accuracy difference within half a point, and the same speed-up within about
+5\%. The replay's one blind spot was the one the cascade study named, contention on the second
+stage, and it showed up as a failed measurement rather than a wrong prediction.
+
+\section{Limitations}
+\begin{itemize}
+  \item \textbf{Head only.} The backbone was frozen. E6's LoRA predictions exist but use a different
+        fold structure and were not cross-fitted with the gate; a LoRA first stage would also change
+        Nox's latency and determinism, and was not tested.
+  \item \textbf{Settings not tuned here, but not innocent.} Hyperparameters were fixed in advance from
+        E6, which chose them on the same items with different folds.
+  \item \textbf{Small label sets.} E3 has \N{e3:names} real names; the disjoint E3 failure is three
+        names. E4's disjoint gate is fitted on few out-of-fold items.
+  \item \textbf{Evaluated on the frozen items.} As in the cascade study, the live run uses the same
+        items as the replay, with every label held out from its own head and gate; it is a test of the
+        prediction, not of new sessions.
+  \item \textbf{One GM, one campaign.} The specialization is to one person's conventions, which is
+        the point for this pipeline and a limit for any wider claim.
+  \item \textbf{Serving path.} The tuned head is swapped into a stock runtime after the released
+        package verifies; the runtime's own integrity and golden checks therefore describe the released
+        head, not the tuned one. Our per-head probe against the replay stands in for them.
+\end{itemize}
+
+\section{Conclusion}
+Can a first stage tuned on the GM's rulings close the gap and remove the second stage? Partly, and
+the replay says where before the hardware does. On fact typing, held out by entity, tuned Nox ties
+the generative model, so the cascade sends it \N{live:e4facts:esc}\% of facts and runs
+\N{live:e4facts:speedup_meas}$\times$ faster, but the larger gain on the GM's familiar entities is a
+table, and is better kept as one. On triage the tuned model is more accurate than the generative
+model and still not a replacement, because it drops more real names; as a first stage it cuts a
+quarter of the escalations and makes the cascade both faster (\N{live:e3:speedup_meas}$\times$) and
+more accurate than qwen alone. Specialization buys a cheaper cascade, not a single model, and the
+measure that tells the two apart is the cascade's own objective, not the first stage's accuracy.
+A published full fine-tune of the same base for another domain, Vela 2.0, gained about as much on
+its mid-range targets as our head did on ours, and as a first stage for this pipeline it did worse
+than the base it came from: what to specialize toward mattered more than how hard.
+
+\section*{Data and code availability}
+Head training (\texttt{clef/finetune/cascade\_head.py}; the evaluation scripts are in \texttt{clef/eval/}), the tuned-head server
+(\texttt{serve\_tuned.py}), the cross-fitted replay and gate freezing
+(\texttt{cascade\_ft.py}), the live driver (\texttt{cascade\_ft\_live.sh}), the
+rerun of the contaminated legs (\texttt{cascade\_ft\_rerun.sh}), the Vela runs
+(\texttt{vela\_run.sh}, \texttt{vela\_replay.py}, \texttt{serve\_vela.py}) and the script that generates every
+number and table in this paper (\texttt{ft\_paper.py}) are in the public repository~\cite{dgxfun}. The campaign data is
+not released because it quotes play sessions verbatim and names real people.
+
+\section*{Use of AI assistance}
+The experiments, analysis and a first draft of this paper were carried out by an AI coding agent
+(Claude, Anthropic) working under the author's direction, with the author reviewing results and
+making the decisions recorded in the paper. The author takes full responsibility for the content.
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{10}
+
+\bibitem[Roussos(2026a)]{companion}
+K.~Roussos.
+\newblock Decision models at the game table: where non-generative classifiers help and fail in LLM
+  tooling for tabletop role-playing campaigns.
+\newblock Manuscript, October 2026. In~\cite{dgxfun}, \texttt{paper/main.tex}.
+
+\bibitem[Roussos(2026b)]{cascade}
+K.~Roussos.
+\newblock Simulate before you serve: predicting a decision-model cascade from frozen outputs, and
+  checking the prediction on real hardware.
+\newblock Manuscript, October 2026. In~\cite{dgxfun}, \texttt{paper-cascade/main.tex}.
+
+\bibitem[vLLM Semantic Router Team(2026)]{sysoneauto}
+vLLM Semantic Router Team.
+\newblock System One Auto.
+\newblock Blog post, \url{https://vllm-sr.ai/blog/system-one-auto/}, accessed October 2026.
+
+\bibitem[vLLM Semantic Router Team and KR Labs(2026)]{vela2}
+vLLM Semantic Router Team and KR Labs.
+\newblock Vela 2.0 (0.3B, 0.8B, 4B, 9B): model cards, evaluation and training notes.
+\newblock \url{https://huggingface.co/vllm-sr/Vela-2.0-4B}, revision \texttt{d692394}, accessed October 2026.
+
+\bibitem[Li et~al.(2018)]{l2sp}
+X.~Li, Y.~Grandvalet, and F.~Davoine.
+\newblock Explicit inductive bias for transfer learning with convolutional networks.
+\newblock In \emph{ICML}, 2018.
+
+\bibitem[Roussos(2026c)]{dgxfun}
+K.~Roussos.
+\newblock dgx-fun: experiments with local LLM serving on NVIDIA DGX Spark.
+\newblock \url{https://github.com/kostadis/dgx-fun}, 2026.
+
+\end{thebibliography}
+
+\end{document}

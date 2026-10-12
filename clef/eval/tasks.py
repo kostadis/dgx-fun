@@ -15,6 +15,12 @@ SYSTEMONE = {  # short name -> (url, served model id)
     'kai':        (f'http://{SPARK2}:8004/v1/systemone', 'Decision-2.0-Kai-0.6B'),
     'nox':        (f'http://{SPARK2}:8005/v1/systemone', 'Decision-2.0-Nox-4B'),
     'jev':        ('https://api.typesafe.ai/v1/systemone', 'jev-1.13.0'),   # hosted, TypeSafe
+    # Vela 2.0 (vllm-sr + KR Labs, fine-tuned Decision 2.0), one member at a time on spark2:8006 via
+    # clef/finetune/serve_vela.py; -noabs = same weights served with the [ABS] option removed from Choice
+    'vela-0.8b':      (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-0.8B'),
+    'vela-4b':        (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-4B'),
+    'vela-9b':        (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-9B'),
+    'vela-4b-noabs':  (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-4B'),
 }
 CHAT = {'qwen': False, 'qwen-think': True}   # qwen3.8-flash-next on spark1, reasoning off / on
 CHAT_URL, CHAT_MODEL = f'http://{SPARK1}:8001/v1/chat/completions', 'qwen3.8-flash-next'

@@ -1,0 +1,12 @@
+\begin{tabular}{llrrrrrrr}
+\toprule
+Task & First stage & Cascade & qwen & $\Delta$ (pt) & Esc. & Missed & Speed-up & Throughput \\
+ & & acc.\ (\%) & acc.\ (\%) & [95\% CI] & (\%) & (casc./qwen) & $c{=}1$ & gain $c{=}8$ \\
+\midrule
+E3 triage & released$^\dagger$ & 84.5 & 84.4 & & 33 & 5 / 5 & 2.2$\times$ & 2.4$\times$ \\
+ & tuned & 87.3 & 84.4 & +2.9 [+1.9, +4.2] & 25 & 5 / 5 & 2.51$\times$ & 2.51$\times$ \\
+\midrule
+E4 fact typing & released$^\dagger$ & 87.8 & 87.8 & & 40 & -- & 1.8$\times$ & 2.2$\times$ \\
+ & tuned & 88.9 & 87.8 & +1.1 [-0.1, +2.3] & 4 & -- & 4.49$\times$ & 2.96$\times$ \\
+\bottomrule
+\end{tabular}

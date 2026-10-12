@@ -29,6 +29,11 @@ def so(state, qs):
     return dict(answers=ans, served=mid, input_tokens=usage.get('input_tokens'), ms=ms)
 
 
+def so_kind(state, q):  # one 'kind' choice question -> p (+ abs: the [ABS] probability, Vela via serve_vela.py)
+    x = so(state, q); a = x.pop('answers')['kind']
+    return dict(p=a['probabilities'], **({'abs': a['abstain_probability']} if 'abstain_probability' in a else {}), **x)
+
+
 def run(part, rows, fn, keep, threads=None):
     out = DATA / 'results' / part / f'{model}.json'
     if out.exists():
@@ -78,8 +83,7 @@ for e in exps:
         if CHATTY:
             f = lambda r: chat_choice(r['state'], T.Q_TRIAGE)
         else:
-            def f(r):
-                x = so(r['state'], T.Q_TRIAGE); return dict(p=x.pop('answers')['kind']['probabilities'], **x)
+            f = lambda r: so_kind(r['state'], T.Q_TRIAGE)
         run('e3', load('e3_triage'), f, keep)
     elif e == 'e4':
         if model == 'qwen-think': continue
@@ -88,8 +92,7 @@ for e in exps:
             if CHATTY:
                 f = lambda r, q=q: chat_choice(r['state'], q)
             else:
-                def f(r, q=q):
-                    x = so(r['state'], q); return dict(p=x.pop('answers')['kind']['probabilities'], **x)
+                f = lambda r, q=q: so_kind(r['state'], q)
             run(part, rows, f, keep)
     elif e == 'e5':
         if model == 'qwen-think': continue

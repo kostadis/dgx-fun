@@ -1,0 +1,17 @@
+\begin{tabular}{llrrrrrr}
+\toprule
+Task & First stage & Alone (\%) & Cascade (\%) & $\Delta$ vs qwen (pt) [95\% CI] & Esc.\ (\%) & ms/item & Speed-up \\
+\midrule
+E3 triage & Nox 4B, released & 79.2 & 84.7 & +0.0 [-0.3, +0.3] & 33 & 83 & 2.07$\times$ \\
+ & Nox 4B, tuned & 89.7 & 87.5 & +2.8 [+1.7, +3.9] & 25 & 83 & 2.55$\times$ \\
+ & Vela 2.0 0.8B & 75.6 & 84.7 & +0.0 [-0.7, +0.6] & 55 & 48 & 1.59$\times$ \\
+ & Vela 2.0 4B & 76.7 & 84.6 & -0.1 [-0.3, +0.0] & 52 & 221 & 1.07$\times$ \\
+ & Vela 2.0 9B & 77.8 & 84.5 & -0.2 [-0.7, +0.2] & 53 & 405 & 0.77$\times$ \\
+\midrule
+E4 fact typing & Nox 4B, released & 83.6 & 88.2 & -0.1 [-0.7, +0.5] & 40 & 94 & 1.70$\times$ \\
+ & Nox 4B, tuned, disjoint & 88.4 & 88.9 & +0.6 [-0.6, +1.8] & 4 & 94 & 4.34$\times$ \\
+ & Vela 2.0 0.8B & 68.2 & 87.9 & -0.4 [-0.7, -0.1] & 92 & 52 & 0.98$\times$ \\
+ & Vela 2.0 4B & 83.6 & 87.4 & -0.9 [-1.7, -0.1] & 26 & 232 & 1.38$\times$ \\
+ & Vela 2.0 9B & 82.5 & 88.1 & -0.2 [-0.6, +0.2] & 72 & 424 & 0.64$\times$ \\
+\bottomrule
+\end{tabular}
