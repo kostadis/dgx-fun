@@ -1,0 +1,14 @@
+\begin{tabular}{llrrrrrr}
+\toprule
+Task & First stage & Nox alone & Cascade & $\Delta$ vs qwen (pt) [95\% CI] & Esc.\ (\%) & Missed & Speed-up \\
+\midrule
+E3 triage & released & 79.2 & 84.7 & +0.0 [-0.3, +0.3] & 33 & 6 / 6 & 2.07$\times$ \\
+ & tuned & 89.7 & 87.5 & +2.8 [+1.7, +3.9] & 25 & 6 / 6 & 2.55$\times$ \\
+ & tuned, disjoint & 89.0 & 88.5 & +3.8 [+2.5, +5.3] & 16 & 9 / 6 & 3.22$\times$ \\
+\midrule
+E4 fact typing & released & 83.6 & 88.2 & -0.1 [-0.7, +0.5] & 40 & -- & 1.70$\times$ \\
+ & tuned & 89.4 & 89.7 & +1.4 [+0.2, +2.7] & 1 & -- & 4.98$\times$ \\
+ & tuned, disjoint & 88.4 & 88.9 & +0.6 [-0.6, +1.8] & 4 & -- & 4.34$\times$ \\
+E4 fact typing & entity lookup & \multicolumn{2}{r}{99.0 (coverage 94\%)} & & & & \\
+\bottomrule
+\end{tabular}
