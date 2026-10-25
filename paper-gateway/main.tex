@@ -62,13 +62,24 @@ scale without further work:
 
 The fixes cluster into the same few categories across all three tools: capacity, liveness,
 per-model behavior, request limits, where compute and state live, scope, and configuration
-authority. We argue three things:
+authority.
+
+One operator made those changes, working with AI coding agents: 70 of the 76 MemPalace fork commits
+and 59 of the 69 commits in the repository that holds our local control plane carry a coding-agent
+co-author, and all 11 zvec-grep fork commits were written with an agent. A cost that once argued for
+waiting on upstream, or for staying on the hosted API, became work one person could carry; the
+zvec-grep adaptation took two days.
+
+We argue four things:
 \begin{enumerate}
   \item Cloud-built tools inherit a control plane they never see. Going on-prem removes it.
   \item An API-compatible gateway restores the wire protocol but not that control plane, so it is
     necessary but insufficient. It also hides the gap, which is why the cost arrives late.
   \item The real cost of on-premises AI is operational: tuning the model, your code, and your
     tools, and paying that again on every model swap and every upstream release.
+  \item AI coding agents change the economics of that cost. They make adapting someone else's tool,
+    and carrying the fork, cheap enough for one person to do. They do not remove the cost; they
+    move it from writing code to deciding what to change and checking that it worked.
 \end{enumerate}
 \end{abstract}
 
@@ -93,7 +104,7 @@ sits a control plane the client never sees:
 Tools built against that API never needed to model any of this, so they don't.
 
 This paper reports what happened when we moved three such tools, Cognee~\cite{cognee},
-MemPalace~\cite{mempalace} and zvec-grep~\cite{zvecgrep}, onto two DGX Spark boxes. We make three
+MemPalace~\cite{mempalace} and zvec-grep~\cite{zvecgrep}, onto two DGX Spark boxes. We make four
 claims:
 \begin{enumerate}
   \item \textbf{Going on-prem means tuning three layers.} The model and its serving, your own code,
@@ -106,6 +117,10 @@ claims:
   \item \textbf{The cost is operational and recurring.} Each model swap re-opens layer~1. Each
     upstream release of a forked tool re-opens layer~3. The local control plane we built
     (layer~2) is what keeps that cost bounded.
+  \item \textbf{Coding agents change who can pay it.} Every fix in this paper was written by one
+    person working with AI coding agents. Adapting a tool to local infrastructure, and keeping the
+    fork current, was something one person could do alongside everything else. That changes the
+    build-versus-wait-versus-stay-hosted decision, not the existence of the cost.
 \end{enumerate}
 The evidence is one operator, three tools and one cluster. Section~\ref{sec:limitations} discusses
 what that does and does not support.
@@ -537,6 +552,76 @@ tool meant to run anywhere other than a hosted API should:
   \item \textbf{Fail loudly on silent fallbacks.}
 \end{enumerate}
 
+\section{Coding agents change the economics}
+\label{sec:agents}
+
+The cost in Section~\ref{sec:cost} is real, but it is not the cost it would have been a few years
+ago. Every change in this paper was made by one operator working with AI coding agents.
+
+\subsection{The evidence}
+
+Table~\ref{tab:agents} counts the operator's commits in each repository and how many were written
+with a coding agent.
+
+\begin{table}[t]
+\centering
+\caption{Operator commits written with a coding agent, by repository.}
+\label{tab:agents}
+\small
+\begin{tabularx}{\textwidth}{L r >{\raggedright\arraybackslash}p{0.2\textwidth}
+                             >{\raggedright\arraybackslash}p{0.17\textwidth}}
+\toprule
+Repository & Operator commits & With a coding agent & Span \\
+\midrule
+MemPalace fork (\code{kostadis-dev}) & 76 & 70 (Claude Code) & 2026-04-15 to 10-25 \\
+\code{dgx-fun} (holds \code{dgxlib}, the notes, the spin-up scripts) & 69 & 59 (Claude Code) &
+  through 2026-10-25 \\
+zvec-grep fork & 11 & 11 (Codex) & 2026-09-08 to 09-09 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The MemPalace and \code{dgx-fun} counts come from co-author trailers naming Claude models used
+through Claude Code. The zvec-grep commits were written with OpenAI's Codex and carry no trailer; we
+count them from the operator's account. Two different agents, on a Python and a TypeScript codebase,
+produced the same kind of result. On Cognee we changed no library code at all; the agent work there
+was diagnosis, configuration, and the upstream write-up of the failure modes~\cite{cognee3870}.
+
+The zvec-grep fork is the clearest single case: a provider abstraction, a model catalog entry,
+authentication changes, timeouts, concurrency and batch budgets, with tests and documentation, in
+eleven commits over two days, against a TypeScript codebase written by another team.
+
+\subsection{What changes}
+
+\paragraph{Forking becomes a reasonable choice.} Without agents, the realistic options for a tool
+that assumes the cloud are to wait for upstream, to work around it from outside, or to stay on the
+hosted API. A fork means owning someone else's code, and a fork has to be carried across upstream
+releases. With agents, one person carried MemPalace across upstream releases v3.3.6 to v3.10.0 while
+adding about a dozen changes of their own.
+
+\paragraph{Layer 2 becomes cheap to build.} \code{dgxlib}, the configuration authority, and the
+spin-up scripts are small, specific pieces of infrastructure that a hosted API would have made
+unnecessary. They are also exactly the kind of code an agent writes well: bounded, testable, and
+specified by a failure the operator has already seen.
+
+\paragraph{The cost moves rather than disappears.} What remained expensive was deciding what to
+change and checking that it worked. The five GPU-hours of the September Cognee retest went into
+tuning symptoms before the cause was found. The agents shortened the path from a diagnosis to a
+working fix, and helped with diagnosis too, but they could reason only from the signals the tools
+exposed. Without liveness, capacity and identity signals, diagnosis falls back on inference, as the
+corrected attribution in \S\ref{sec:liveness} shows. The verification stayed with the operator.
+
+\subsection{What it means for the decision}
+
+The operational cost in Section~\ref{sec:cost} recurs. What agents change is its price per occurrence
+and who can pay it. In our case one person did it: two days for zvec-grep, and a fork carried
+alongside other work for five months for MemPalace. That makes on-premises AI viable for operators
+who could not previously have absorbed the third layer. It does not make it free, and the operator
+still needs to know what the control plane must hold.
+
+There is an irony worth stating. The agents that made this adaptation cheap, Claude Code and Codex,
+were themselves hosted models. The local stack was adapted with the help of the cloud.
+
 \section{Related work}
 \label{sec:related}
 
@@ -563,6 +648,9 @@ claim about how common these patterns are. That survey is future work.
     change alone.
   \item \textbf{Unmeasured effort.} Engineering hours were not recorded. Commit and change counts are
     a proxy, and a weak one.
+  \item \textbf{No counterfactual for the agents.} We did not adapt any tool without a coding agent,
+    so we cannot say how much cheaper agents made it. Co-author trailers show that an agent took
+    part in a commit, not how much of the work it did.
   \item \textbf{Hardware specificity.} The slot counts and decode rates are specific to GB10-class
     devices with about 273\,GB/s of memory bandwidth. A larger local cluster would hide some of these
     gaps the way the cloud does.
@@ -587,6 +675,10 @@ three layers, the model, your code and your tools, and paying it again with ever
 every upstream release. A local control plane that states capacity, per-model behavior and
 configuration authority explicitly keeps that cost bounded, but only for tools written to consult
 it.
+
+AI coding agents change the price of that work. One operator, working with agents, adapted three
+cloud-built tools and built the control plane they consult. The cost of going on-prem is still real
+and still recurring, but it is no longer a reason only large teams can afford to pay.
 
 \begin{thebibliography}{6}
 

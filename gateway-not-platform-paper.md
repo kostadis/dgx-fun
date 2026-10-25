@@ -18,11 +18,16 @@ All three reached local models through an OpenAI-compatible endpoint within minu
 - MemPalace needed about a dozen changes on a fork over five months, while upstream releases were merged in on top.
 - zvec-grep needed eleven commits on a fork (about 1,800 lines) to add a local embedding provider with a 30-minute timeout, one request in flight, and per-request batch limits.
 
-The fixes cluster into the same few categories across all three tools: capacity, liveness, per-model behavior, request limits, where compute and state live, scope, and configuration authority. We argue three things:
+The fixes cluster into the same few categories across all three tools: capacity, liveness, per-model behavior, request limits, where compute and state live, scope, and configuration authority.
+
+One operator made those changes, working with AI coding agents: 70 of the 76 MemPalace fork commits and 59 of the 69 commits in the repository that holds our local control plane carry a coding-agent co-author, and all 11 zvec-grep fork commits were written with an agent. A cost that once argued for waiting on upstream, or for staying on the hosted API, became work one person could carry; the zvec-grep adaptation took two days.
+
+We argue four things:
 
 1. Cloud-built tools inherit a control plane they never see. Going on-prem removes it.
 2. An API-compatible gateway restores the wire protocol but not that control plane, so it is necessary but insufficient. It also hides the gap, which is why the cost arrives late.
 3. The real cost of on-premises AI is operational: tuning the model, your code, and your tools, and paying that again on every model swap and every upstream release.
+4. AI coding agents change the economics of that cost. They make adapting someone else's tool, and carrying the fork, cheap enough for one person to do. They do not remove the cost; they move it from writing code to deciding what to change and checking that it worked.
 
 ## 1 Introduction
 
@@ -39,13 +44,14 @@ They connect. They do not necessarily work. A hosted model API is more than an e
 
 Tools built against that API never needed to model any of this, so they don't.
 
-This paper reports what happened when we moved three such tools, Cognee [1], MemPalace [4] and zvec-grep [6], onto two DGX Spark boxes. We make three claims:
+This paper reports what happened when we moved three such tools, Cognee [1], MemPalace [4] and zvec-grep [6], onto two DGX Spark boxes. We make four claims:
 
 1. **Going on-prem means tuning three layers.** The model and its serving, your own code, and the tools you depend on. The model was the layer that worked best.
 2. **A gateway is necessary but insufficient.** An OpenAI-compatible endpoint, and a router such as LiteLLM in front of it, restores the wire protocol. It does not restore admission, liveness, request limits or per-model behavior. Worse, it makes a local server look like the cloud, so the gap shows up only under load, after the decision to go on-prem has been made.
 3. **The cost is operational and recurring.** Each model swap re-opens layer 1. Each upstream release of a forked tool re-opens layer 3. The local control plane we built (layer 2) is what keeps that cost bounded.
+4. **Coding agents change who can pay it.** Every fix in this paper was written by one person working with AI coding agents. Adapting a tool to local infrastructure, and keeping the fork current, was something one person could do alongside everything else. That changes the build-versus-wait-versus-stay-hosted decision, not the existence of the cost.
 
-The evidence is one operator, three tools and one cluster. Section 9 discusses what that does and does not support.
+The evidence is one operator, three tools and one cluster. Section 10 discusses what that does and does not support.
 
 ## 2 Background
 
@@ -257,28 +263,61 @@ Layer 2 is the part that bounds the rest. The registry turned a model swap from 
 7. **Scope every read and write** to an explicit tenant.
 8. **Fail loudly on silent fallbacks.**
 
-## 8 Related work
+## 8 Coding agents change the economics
+
+The cost in §7 is real, but it is not the cost it would have been a few years ago. Every change in this paper was made by one operator working with AI coding agents.
+
+### 8.1 The evidence
+
+| Repository | Operator commits | With a coding-agent co-author | Span |
+| --- | --- | --- | --- |
+| MemPalace fork (`kostadis-dev`) | 76 | 70 | 2026-04-15 to 10-25 |
+| `dgx-fun` (holds `dgxlib`, the notes, the spin-up scripts) | 69 | 59 | through 2026-10-25 |
+| zvec-grep fork | 11 | 11 (Codex; the commits carry no trailer) | 2026-09-08 to 09-09 |
+
+The MemPalace and `dgx-fun` trailers name Claude models used through Claude Code. The zvec-grep commits were written with OpenAI's Codex and carry no trailer; we count them from the operator's account. Two different agents, on a Python and a TypeScript codebase, produced the same kind of result. On Cognee we changed no library code at all; the agent work there was diagnosis, configuration, and the upstream write-up of the failure modes [2].
+
+The zvec-grep fork is the clearest single case: a provider abstraction, a model catalog entry, authentication changes, timeouts, concurrency and batch budgets, with tests and documentation, in eleven commits over two days, against a TypeScript codebase written by another team.
+
+### 8.2 What changes
+
+**Forking becomes a reasonable choice.** Without agents, the realistic options for a tool that assumes the cloud are to wait for upstream, to work around it from outside, or to stay on the hosted API. A fork means owning someone else's code, and a fork has to be carried across upstream releases. With agents, one person carried MemPalace across upstream releases v3.3.6 to v3.10.0 while adding about a dozen changes of their own.
+
+**Layer 2 becomes cheap to build.** `dgxlib`, the configuration authority, and the spin-up scripts are small, specific pieces of infrastructure that a hosted API would have made unnecessary. They are also exactly the kind of code an agent writes well: bounded, testable, and specified by a failure the operator has already seen.
+
+**The cost moves rather than disappears.** What remained expensive was deciding what to change and checking that it worked. The five GPU-hours of the September Cognee retest went into tuning symptoms before the cause was found. The agents shortened the path from a diagnosis to a working fix, and helped with diagnosis too, but they could reason only from the signals the tools exposed. Without liveness, capacity and identity signals, diagnosis falls back on inference, as the corrected attribution in §6.3 shows. The verification stayed with the operator.
+
+### 8.3 What it means for the decision
+
+The operational cost in §7 recurs. What agents change is its price per occurrence and who can pay it. In our case one person did it: two days for zvec-grep, and a fork carried alongside other work for five months for MemPalace. That makes on-premises AI viable for operators who could not previously have absorbed the third layer. It does not make it free, and the operator still needs to know what the control plane must hold.
+
+There is an irony worth stating. The agents that made this adaptation cheap, Claude Code and Codex, were themselves hosted models. The local stack was adapted with the help of the cloud.
+
+## 9 Related work
 
 The failure modes in §6 are old distributed-systems problems in new clothes. Timeouts that include queueing, layered retries that amplify load, and the need for per-unit durability are standard lessons of large-service operation. Retry budgets, deadline propagation and backpressure are their usual remedies. What is new is where they surface. LLM tooling grew up behind provider APIs that absorbed these problems, so its tools never adopted the remedies.
 
 We have not run a systematic survey of other memory, RAG, search or agent frameworks, and we make no claim about how common these patterns are. That survey is future work.
 
-## 9 Limitations
+## 10 Limitations
 
 - **One operator, three tools, one cluster.** The evidence is a case study, not a benchmark. The tools differ in workload (chat-heavy and embedding-heavy) and origin, which is some protection against a single tool's quirks, but they were all adapted by the same person.
 - **No cloud baseline.** We measured the on-prem cost in absolute terms. We did not run the same workloads against hosted APIs, so we cannot state the cost as a difference.
 - **Confounded comparisons.** The Cognee run that succeeded used a newer Cognee and a different chat model than the runs that failed. We cannot attribute the success to either change alone.
 - **Unmeasured effort.** Engineering hours were not recorded. Commit and change counts are a proxy, and a weak one.
+- **No counterfactual for the agents.** We did not adapt any tool without a coding agent, so we cannot say how much cheaper agents made it. Co-author trailers show that an agent took part in a commit, not how much of the work it did.
 - **Hardware specificity.** The slot counts and decode rates are specific to GB10-class devices with about 273 GB/s of memory bandwidth. A larger local cluster would hide some of these gaps the way the cloud does.
 - **A corrected attribution.** Our first diagnosis of the Cognee persist hang cited the wrong upstream issue (§6.3). We report the correction because the episode is itself evidence: without liveness signals, diagnosis falls back on inference.
 
-## 10 Conclusion
+## 11 Conclusion
 
 Taking AI on-premises is mostly not about the model. The model was the part that worked: an 80B mixture-of-experts model decoding structured JSON at 138 tok/s across 8 speculative streams.
 
 What failed, in three independent tools, was everything they had assumed about who manages capacity, liveness, retries, request size, model behavior, scope and configuration. The cloud provides those through a control plane its clients never see. An API-compatible gateway brings back the protocol, which is necessary for anything to connect. It cannot bring back the control plane, and by imitating the cloud it hides the difference until the workload is real.
 
 So the cost of going on-prem is not the hardware or the model. It is the operational work of tuning three layers, the model, your code and your tools, and paying it again with every model swap and every upstream release. A local control plane that states capacity, per-model behavior and configuration authority explicitly keeps that cost bounded, but only for tools written to consult it.
+
+AI coding agents change the price of that work. One operator, working with agents, adapted three cloud-built tools and built the control plane they consult. The cost of going on-prem is still real and still recurring, but it is no longer a reason only large teams can afford to pay.
 
 ## References
 
