@@ -16,9 +16,10 @@
 \emergencystretch=2em
 \setlist{itemsep=2pt,topsep=4pt}
 \newcommand{\code}[1]{\texttt{#1}}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
 
 \title{The Gateway Is Not the Platform:\\
-Porting a Cloud-Native Memory System On-Premises}
+The Operational Cost of Taking AI On-Premises}
 
 \author{Kostadis Roussos\\
 Independent researcher\\
@@ -30,33 +31,44 @@ Independent researcher\\
 \maketitle
 
 \begin{abstract}
-We ported Cognee, an open-source knowledge-graph memory library built against hosted model APIs, to
-a two-node NVIDIA DGX Spark cluster serving open-weight models through vLLM and Ollama. The workload
-was a real 106-file tabletop-campaign corpus of about 55,000 words.
+Taking an AI workload on-premises is usually framed as a model decision: which open-weight model
+fits, how fast it decodes, how close it comes to a frontier API. We argue it is an operations
+decision. Swapping a hosted API for a local model means tuning three layers, not one: the model and
+its serving, your own code, and every tool you depend on. Each layer is a recurring operational
+cost, and an API-compatible gateway hides all three, because everything connects on the first try.
 
-Pointing Cognee at an OpenAI-compatible endpoint took minutes, and a one-document smoke test passed.
-The full ingest then failed on roughly six attempts across one day, each in a different way:
+We report three tools moved onto a two-node NVIDIA DGX Spark cluster serving open-weight models
+through vLLM and Ollama:
 \begin{itemize}
-  \item unbounded fan-out against a fixed number of serving slots;
-  \item client timeouts that counted queue wait, causing retry storms;
-  \item retry layers that multiplied a 600\,s timeout into 1,801\,s;
-  \item all-or-nothing durability that discarded 50 minutes of work;
-  \item no liveness signal on any of three dependencies.
+  \item \textbf{Cognee} (knowledge-graph memory, 1.2.2 and later \code{main}) on a 106-file,
+    55,000-word tabletop-campaign corpus;
+  \item \textbf{MemPalace} (semantic memory store, a fork of v3.10.0) on several campaign palaces;
+  \item \textbf{zvec-grep} (hybrid workspace search, a fork of v0.2.1) indexing code and documents.
 \end{itemize}
 
-A later version completed the same corpus in 27 minutes. A third run on a reasoning model failed
-again: the model spent its whole output budget thinking and wrote nothing, and the downstream
-timeouts and rate limiting were symptoms. A second system, the MemPalace semantic memory store,
-needed about a dozen changes before it ran against a local embedder.
+All three reached local models through an OpenAI-compatible endpoint within minutes. None worked at
+scale without further work:
+\begin{itemize}
+  \item Cognee failed on about six attempts in one day, each in a different way: unbounded fan-out
+    against fixed serving slots, timeouts that counted queue wait, retry layers that turned a
+    600\,s timeout into 1,801\,s, all-or-nothing durability that discarded 50 minutes of work, and
+    no liveness signal. A later version completed in 27 minutes; a reasoning model then broke it
+    again by spending its whole output budget thinking.
+  \item MemPalace needed about a dozen changes on a fork over five months, while upstream releases
+    were merged in on top.
+  \item zvec-grep needed eleven commits on a fork (about 1,800 lines) to add a local embedding
+    provider with a 30-minute timeout, one request in flight, and per-request batch limits.
+\end{itemize}
 
-We argue three things:
+The fixes cluster into the same few categories across all three tools: capacity, liveness,
+per-model behavior, request limits, where compute and state live, scope, and configuration
+authority. We argue three things:
 \begin{enumerate}
-  \item Cloud-built tools inherit a control plane they never see: elastic capacity, admission,
-    liveness, and per-model behavior.
-  \item An API-compatible gateway restores the wire protocol but not those semantics, so it is
-    necessary but insufficient.
-  \item On-premises AI is mostly the work of building, and adapting tools to, a local control plane
-    that states capacity, model behavior, and configuration authority explicitly.
+  \item Cloud-built tools inherit a control plane they never see. Going on-prem removes it.
+  \item An API-compatible gateway restores the wire protocol but not that control plane, so it is
+    necessary but insufficient. It also hides the gap, which is why the cost arrives late.
+  \item The real cost of on-premises AI is operational: tuning the model, your code, and your
+    tools, and paying that again on every model swap and every upstream release.
 \end{enumerate}
 \end{abstract}
 
@@ -65,8 +77,8 @@ We argue three things:
 
 The usual story of on-premises AI is about models: which open-weight model fits in memory, how fast
 it decodes, and how close its quality comes to a frontier API. That story assumes the rest of the
-stack carries over. Once a local server speaks the OpenAI chat-completions protocol, the libraries
-built on that protocol should work.
+stack carries over. Once a local server speaks the OpenAI chat-completions and embeddings protocols,
+the tools built on those protocols should work.
 
 They connect. They do not necessarily work. A hosted model API is more than an endpoint. Behind it
 sits a control plane the client never sees:
@@ -74,27 +86,29 @@ sits a control plane the client never sees:
   \item it admits requests elastically, so fan-out width is someone else's problem;
   \item it answers in seconds, so a timeout measures failure, not queue depth;
   \item it is always up, so the only health check needed is ``did the call return'';
-  \item its models behave as documented, so an output budget means output.
+  \item it accepts any reasonable request size;
+  \item its models behave as documented, so an output budget means output;
+  \item it runs somewhere else, so where compute and state live is not the tool's concern.
 \end{itemize}
-Libraries built against that API never needed to model any of this, so they don't.
+Tools built against that API never needed to model any of this, so they don't.
 
-This paper reports what happened when we moved one such library, Cognee~\cite{cognee}, onto two DGX
-Spark boxes. We also draw on a second system, MemPalace~\cite{mempalace}, ported in parallel. We make
-three claims:
+This paper reports what happened when we moved three such tools, Cognee~\cite{cognee},
+MemPalace~\cite{mempalace} and zvec-grep~\cite{zvecgrep}, onto two DGX Spark boxes. We make three
+claims:
 \begin{enumerate}
-  \item \textbf{Cloud assumptions are diffuse.} They are not in one adapter. They are spread across
-    timeouts, retries, concurrency, durability, health checks, configuration loading, and the
-    embedded databases. Fixing one exposed the next.
+  \item \textbf{Going on-prem means tuning three layers.} The model and its serving, your own code,
+    and the tools you depend on. The model was the layer that worked best.
   \item \textbf{A gateway is necessary but insufficient.} An OpenAI-compatible endpoint, and a
     router such as LiteLLM in front of it, restores the wire protocol. It does not restore
-    admission, liveness, or per-model behavior. Worse, it makes the local server look like the
-    cloud to code that branches on provider type.
-  \item \textbf{On-premises AI is control-plane work.} What made the systems run was not a better
-    model. It was a local control plane that states what the cloud left implicit: serving
-    capacity, per-model behavior, and a single authority for configuration.
+    admission, liveness, request limits or per-model behavior. Worse, it makes a local server look
+    like the cloud, so the gap shows up only under load, after the decision to go on-prem has been
+    made.
+  \item \textbf{The cost is operational and recurring.} Each model swap re-opens layer~1. Each
+    upstream release of a forked tool re-opens layer~3. The local control plane we built
+    (layer~2) is what keeps that cost bounded.
 \end{enumerate}
-The evidence is one operator, one corpus, and two systems. Section~\ref{sec:related} discusses what
-that does and does not support.
+The evidence is one operator, three tools and one cluster. Section~\ref{sec:limitations} discusses
+what that does and does not support.
 
 \section{Background}
 \label{sec:background}
@@ -113,37 +127,70 @@ The chat models varied across the study. The first runs (2026-07-04) used
 Qwen3-Next-80B-A3B-Instruct-FP8. The August retest used DeepSeek-V4-Flash-DSpark across both boxes.
 The September retest used the reasoning model \code{qwen3.8-flash-next}.
 
-\subsection{Cognee}
+\subsection{The three tools}
 
-Cognee builds a knowledge graph from documents and answers questions over it. \code{remember()}
-runs \code{add()} (store raw text), then \code{cognify()} (all the LLM work), then an optional
-self-improvement loop, which we disabled.
-
-For each document, \code{cognify()} classifies the document, chunks it, and runs
-\code{extract\_graph\_\allowbreak and\_summarize}: two structured-output chat calls per chunk, one for the graph
-and one for the summary. It then embeds the results and writes them to three embedded stores:
-\begin{itemize}
-  \item \textbf{Graph:} Kuzu, wrapped as ``Ladybug'' and run as a subprocess.
-  \item \textbf{Vectors:} LanceDB.
-  \item \textbf{Metadata:} SQLite.
-\end{itemize}
+\textbf{Cognee} builds a knowledge graph from documents and answers questions over it.
+\code{remember()} runs \code{add()} (store raw text), then \code{cognify()} (all the LLM work), then
+an optional self-improvement loop, which we disabled. For each document, \code{cognify()} classifies
+it, chunks it, and runs \code{extract\_graph\_\allowbreak and\_summarize}: two structured-output chat
+calls per chunk. It then embeds the results and writes them to three embedded stores: Kuzu for the
+graph (wrapped as ``Ladybug'' and run as a subprocess), LanceDB for vectors and SQLite for metadata.
 Cognee reaches the model through LiteLLM and enforces output structure through Instructor.
 
-\subsection{Workload}
+\textbf{MemPalace} is a semantic memory store. It mines files into ``drawers'', embeds them, and
+serves semantic search over one or more ``palaces''. Upstream embeds on the machine that runs it,
+with a bundled ONNX model, and stores vectors in ChromaDB.
 
-The corpus is the grounding documents of a running tabletop campaign: three or four dense state
-documents of 2,000 to 4,800 words each, plus 103 or 104 NPC dossiers of about 230 words each. That is
-106 to 108 files and about 50,000 to 55,000 words. A single dense document produces
+\textbf{zvec-grep} (\code{zg}) is a hybrid code-and-document search tool for coding agents, exposed
+as a CLI and an MCP server. Upstream embeds in-process with a local model or calls a hosted
+embedding provider.
+
+\subsection{Versions}
+
+Table~\ref{tab:versions} lists the exact versions used.
+
+\begin{table}[t]
+\centering
+\caption{Tool versions used in this study.}
+\label{tab:versions}
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.12\textwidth} L
+                             >{\raggedright\arraybackslash}p{0.26\textwidth}}
+\toprule
+Tool & Version & Notes \\
+\midrule
+Cognee & 1.2.2 (PyPI, released 2026-06-26) & Runs of 2026-07-03 to 07-04 \\
+Cognee & \code{main} at \code{e61bbb79c} (2026-08-01) & Successful retest, editable install \\
+Cognee & \code{main} at \code{e8dd3d93d} (pulled 2026-09-02) & Reasoning-model retest of 2026-09-10 \\
+MemPalace & fork \code{kostadis/mempalace}, branch \code{kostadis-dev}, at \code{d23d6a7}
+  (2026-10-24) & Based on upstream v3.10.0 \\
+zvec-grep & fork \code{kostadis/zvec-grep} of \code{zvec-ai/zvec-grep}, at \code{73f6991}
+  (2026-09-09) & Based on upstream v0.2.1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Workloads}
+
+The Cognee corpus is the grounding documents of a running tabletop campaign: three or four dense
+state documents of 2,000 to 4,800 words each, plus 103 or 104 NPC dossiers of about 230 words each.
+That is 106 to 108 files and about 50,000 to 55,000 words. A single dense document produces
 graph-extraction outputs of thousands of tokens per chunk.
 
-\section{Deployment}
-\label{sec:deployment}
+MemPalace mines campaign checkouts on a Linux VM into several per-campaign palaces plus a chat
+palace, embedding on Ollama on the machine that hosts the VM. zvec-grep indexes local workspaces of
+code and documents against the Spark's Ollama embedding endpoint.
 
-\subsection{Wiring}
-\label{sec:wiring}
+Cognee is chat-heavy: its cost is long structured decodes. MemPalace and zvec-grep are
+embedding-heavy: their cost is many large embedding requests. That difference matters, because the
+same gaps appeared in both.
 
-Connecting Cognee to the local stack was easy, and that ease is what misleads. Five settings in
-\code{.env} did it:
+\section{Why it looks cheap}
+\label{sec:cheap}
+
+Connecting each tool to the local stack was easy, and that ease is what misleads.
+
+\textbf{Cognee} needed five settings in \code{.env}:
 \begin{itemize}
   \item \code{LLM\_PROVIDER="custom"}, which routes through LiteLLM;
   \item an \code{openai/}-prefixed model id, which LiteLLM needs to route to \code{LLM\_ENDPOINT} and
@@ -152,29 +199,42 @@ Connecting Cognee to the local stack was easy, and that ease is what misleads. F
   \item \code{EMBEDDING\_PROVIDER="openai\_compatible"}, pointed at Ollama's \code{/v1};
   \item \code{EMBEDDING\_DIMENSIONS="1024"}.
 \end{itemize}
-
 A one-document smoke test then passed: \code{party.md}, about 1,400 words, 4 LLM calls, 0 retries,
 202\,s, 61 nodes and 140 edges, and a correct recall answer.
 
-Three configuration traps had already appeared, each a silent failure:
-\begin{enumerate}
-  \item \code{import cognee} calls \code{load\_dotenv(override=True)}, so environment variables set in
-    Python before the import are overwritten. One run meant for spark2 ran on spark1, and its
-    measurements were mislabeled.
-  \item \code{.env} is resolved relative to the working directory. From another directory, Cognee
-    falls back to OpenAI defaults and fails with an authentication error that names the wrong
-    cause.
-  \item The \code{ollama} embedding provider requires \code{transformers} and a Hugging Face
-    tokenizer download. \code{openai\_compatible} falls back to TikToken.
-\end{enumerate}
-None of these is a bug in isolation. Each assumes that configuration has one obvious home, and on a
-multi-box local network it doesn't.
+\textbf{MemPalace}, once it had remote embedding providers, switched embedding model with one line of
+configuration.
 
-\subsection{Calibration}
+\textbf{zvec-grep} documents its local setup as one \code{curl} check and three commands: register an
+unauthenticated provider, set the model and endpoint, and index.
 
-On a single document the workload is decode-bound: the two graph-extraction calls took 97.5\,s and
-94.5\,s of the 202\,s. At batch scale we measured aggregate decode on the real extraction load under
-three vLLM configurations (Qwen3-Next-80B, spark2), shown in Table~\ref{tab:calibration}.
+By \emph{gateway} we mean this compatibility layer: vLLM's and Ollama's OpenAI-compatible endpoints,
+plus LiteLLM routing for Cognee. The same reasoning applies to a proxy or router placed in front of
+them. Without the gateway, nothing connects. With it, everything connects, and nothing yet says what
+it will cost to run.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.85\textwidth]{gateway-not-platform-diagram.png}
+\caption{Gateway versus local control plane.}
+\label{fig:gateway}
+\end{figure}
+
+Figure~\ref{fig:gateway} shows the split. The tool reaches the model through the gateway. Everything
+in the right-hand box, the cloud supplied implicitly, and on-premises nothing does unless someone
+builds it. Sections~\ref{sec:layer1} to~\ref{sec:layer3} are about who built it.
+
+\section{Layer 1: tuning the model}
+\label{sec:layer1}
+
+The first layer is the one the usual story covers, and it went well.
+
+\subsection{Serving calibration}
+
+On a single Cognee document the workload is decode-bound: the two graph-extraction calls took
+97.5\,s and 94.5\,s of the 202\,s. At batch scale we measured aggregate decode on the real
+extraction load under three vLLM configurations (Qwen3-Next-80B, spark2), shown in
+Table~\ref{tab:calibration}.
 
 \begin{table}[t]
 \centering
@@ -197,13 +257,56 @@ sixteen bandwidth-contended ones. Prefix caching was immaterial: we measured a h
 and the cacheable prefix was under 3\% of a decode-bound call.
 
 This was the study's cleanest result, and it is a result about the server.
-Section~\ref{sec:broke} is about the client.
 
-\section{Where cloud assumptions broke}
-\label{sec:broke}
+\subsection{Model behavior is a per-model fact}
 
-\subsection{Six attempts, six failures (Cognee 1.2.2, 2026-07-03 to 07-04)}
+Three chat models served the study. Each swap changed facts that clients depend on. The clearest case
+was the reasoning model of September (\S\ref{sec:cognee-chrono}): with thinking on, it spent a
+16,384-token output budget thinking and wrote nothing. Whether a model thinks, whether that is on by
+default, and how long it takes to answer are properties of the model, not of the protocol.
 
+\subsection{Each swap is an operations event}
+
+On this cluster a model swap is not a config change. It means re-running a spin-up script,
+re-measuring memory headroom, and updating two records in the same change: \code{current-setup.md},
+the inventory of what is served, and \code{dgxlib/models.yaml}, the registry of how to call it
+(\S\ref{sec:layer2}). A hosted API absorbs all of this. On-prem, it recurs with every swap.
+
+\section{Layer 2: tuning your own code}
+\label{sec:layer2}
+
+What made our tools run was not a better model or a better gateway. It was a set of small, explicit
+authorities that state what the cloud keeps implicit. We wrote them only because we went on-prem.
+\begin{itemize}
+  \item \textbf{Per-model behavior: a model registry.} \code{dgxlib} (in the \code{dgx-fun}
+    repo~\cite{dgxfun}, 11 commits since 2026-06-19) keeps a registry keyed by served model id:
+    whether the model can think, whether thinking is on by default, its read timeout, and its
+    concurrency. A call site states its intent (``no thinking for this extraction''), and the
+    registry decides whether the model can honor it. Before it existed, each consumer hand-coded
+    these per model. Now swapping a model is a one-line registry edit.
+  \item \textbf{Capacity.} The registry exposes per-model serving concurrency, so a client can size
+    its fan-out to the slots that exist instead of discovering them through timeouts.
+  \item \textbf{Liveness.} \code{dgxlib}'s client streams with an idle-token timeout, so it can tell
+    a queued request from a hung one.
+  \item \textbf{Configuration authority.} On the mining host, one hand-edited file
+    (\code{hypostasis.yaml}) declares the vector backend, embedding provider, model and endpoint.
+    Every component's config is rendered from it, so no tool picks its own embedder or endpoint.
+\end{itemize}
+None of this is model work, and none of it would exist against a hosted API.
+
+\section{Layer 3: tuning your tools}
+\label{sec:layer3}
+
+The third layer is the largest and the least visible. Each tool encoded cloud assumptions in
+different places, and each fix exposed the next. We group the fixes by the assumption each one
+broke.
+
+\subsection{Cognee: a chronology}
+\label{sec:cognee-chrono}
+
+Before grouping, the Cognee chronology shows how the cost arrives: one failure at a time.
+
+\paragraph{Six attempts, six failures (Cognee 1.2.2, 2026-07-03 to 07-04).}
 Table~\ref{tab:attempts} lists the attempts in order.
 
 \begin{table}[t]
@@ -211,9 +314,7 @@ Table~\ref{tab:attempts} lists the attempts in order.
 \caption{Six attempts to ingest the full corpus with Cognee 1.2.2, 2026-07-03 to 07-04.}
 \label{tab:attempts}
 \small
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.27\textwidth}
-                             >{\raggedright\arraybackslash}X
-                             >{\raggedright\arraybackslash}X}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.27\textwidth} L L}
 \toprule
 Attempt & Outcome & Cause \\
 \midrule
@@ -232,229 +333,267 @@ Same, with a 1,800\,s timeout & Extraction finished in about 10\,min, then wedge
 \end{tabularx}
 \end{table}
 
-Every fix exposed the next failure. That pattern is our main evidence that the cloud assumptions are
-diffuse.
+\paragraph{The retest that succeeded (2026-08-01).} On Cognee \code{main}, the same corpus completed:
+\code{status='completed', items=106, elapsed=1636.3s}, about 27 minutes, with zero errors and zero
+retries. All five evaluation questions came back correct and grounded in the source. The backend had
+also changed, to DeepSeek-V4-Flash-DSpark, so this is not a single-variable comparison. Upstream had
+meanwhile added a backend-aware overload policy and hardened its database workers.
 
-\subsection{The failure modes}
-\label{sec:failure-modes}
+\paragraph{The retest that failed again (2026-09-10).} Against a reasoning model the same recipe
+broke in a new way. Cognee allowed 16,384 output tokens per call, and the model spent all of them
+thinking. On a 4,000-character input, thinking on took 251\,s and produced 0 characters; thinking off
+took 172\,s and produced 25,397. The empty answers produced 493 timeouts, Cognee's automatic rate
+limiter slowed the run further, and the retries added load. About five GPU-hours went into tuning
+those symptoms before the cause was found. Disabling thinking through \code{LLM\_ARGS} fixed it: zero
+timeouts, 104 items, 26.8 minutes. The August recipe had needed three new settings within six weeks.
 
-\begin{enumerate}
-  \item \textbf{Unbounded fan-out.} Documents are gated by a semaphore of 20, but the per-chunk calls
-    inside a document run under a bare \code{asyncio.gather} with no cap. That gave about 40 to 48
-    concurrent requests, so vLLM's \code{max\_num\_seqs} was the only throttle in the system: 3 to 15
-    times overcommitted~\cite{cognee3870}.
-  \item \textbf{Timeouts that count queue wait.} The client timer starts at send. A request that is
+\subsection{Capacity and admission}
+
+\begin{itemize}
+  \item \textbf{Cognee: unbounded fan-out.} Documents are gated by a semaphore of 20, but the
+    per-chunk calls inside a document run under a bare \code{asyncio.gather} with no cap. That gave
+    about 40 to 48 concurrent requests, so vLLM's \code{max\_num\_seqs} was the only throttle: 3 to
+    15 times overcommitted~\cite{cognee3870}.
+  \item \textbf{Cognee: admission paced the wrong thing.} We tested a requests-per-minute limiter,
+    and later Cognee's automatic one. Both made runs worse. They pace how often requests start,
+    while the constraint is how many are in flight, and they reacted to timeouts that were symptoms
+    of something else.
+  \item \textbf{Cognee: the gateway disguises locality.} Cognee decides whether a provider is local
+    by its name. Ollama and llama.cpp get a local rate-limit default of 10 requests per minute.
+    vLLM is deliberately excluded, and the code comment says it ``absorbs concurrency like a cloud
+    endpoint''. That is true of a large vLLM deployment and false of one box with 8 slots. The more
+    faithfully the gateway imitates the cloud, the more surely downstream code treats the server as
+    cloud.
+  \item \textbf{zvec-grep: one request in flight.} The fork defaults local indexing to one in-flight
+    embedding request, ``to avoid building a server queue and retrying work that may still be
+    running'', with an explicit \code{--embedding-concurrency} knob and back-off to one after
+    transient failures.
+\end{itemize}
+Nothing in a chat-completions or embeddings response says ``you are request 41 for 8 slots''.
+Capacity is not in the protocol, so every tool had to be told.
+
+\subsection{Timeouts, retries and liveness}
+\label{sec:liveness}
+
+\begin{itemize}
+  \item \textbf{Cognee: timeouts that count queue wait.} The client timer starts at send. A request
     alive but waiting in a deep queue times out, is retried, and the retry joins the same queue. On
     a cloud API queue wait is near zero, so this coupling is invisible.
-  \item \textbf{Multiplied retry layers.} LiteLLM retries internally, and Instructor retries on top.
-    A 600\,s timeout surfaced after 1,801\,s, and 1,800\,s after 5,401\,s. A smaller timeout does
-    not fail faster.
-  \item \textbf{All-or-nothing durability.} One straggler's \code{InstructorRetryException}
-    propagated through the gather and aborted \code{remember()}. Fifty minutes of extraction
-    produced an empty graph. There was no checkpoint.
-  \item \textbf{No liveness signal.} The only health check is a one-shot 30\,s preflight at startup.
-    Non-streaming structured output gives the client no way to tell ``slow'' from ``hung''.
-  \item \textbf{The assumption spans every dependency.} Stalls appeared on the chat path, the
-    embedding path, and the graph-persist path. In the final wedge the main process sat in
-    \code{epoll\_wait} while the Kuzu subprocess workers sat in \code{pipe\_read}, with no progress.
-\end{enumerate}
-
-We first attributed the persist hang to a known orphaned-lock issue~\cite{cognee3708}. A later
-investigation showed that attribution was wrong: the issue concerned a different race, and its
-crash reproducer did not reproduce here. Kuzu operations are serialized by design. So persist time
-across concurrently admitted documents adds up rather than overlaps, which can look like a hang
-without being one.
-
-\subsection{The retest that succeeded (2026-08-01)}
-
-On current Cognee \code{main}, the same corpus completed:
-\code{status='completed', items=106, elapsed=1636.3s}, about 27 minutes, with zero errors and zero
-retries. All five evaluation questions came back correct and grounded in the source.
-
-The backend had also changed, to DeepSeek-V4-Flash-DSpark, so this is not a single-variable
-comparison. Upstream had meanwhile added a backend-aware overload policy and hardened its database
-workers.
-
-\subsection{The retest that failed again (2026-09-10)}
-\label{sec:retest-failed}
-
-Against a reasoning model the same recipe broke in a new way. Cognee allowed 16,384 output tokens
-per call. The model spent all of them thinking and wrote nothing.
-
-On a 4,000-character input, thinking on took 251\,s and produced 0 characters; thinking off took
-172\,s and produced 25,397. The empty answers then produced 493 timeouts. Cognee's automatic rate
-limiter reacted to those timeouts by slowing the run further, and the retries added load.
-
-About five GPU-hours went into tuning those four symptoms before the cause was found. Disabling
-thinking through \code{LLM\_ARGS} fixed it: zero timeouts, 104 items, 26.8 minutes.
-
-The same retest found that a file path outside \code{COGNEE\_ALLOWED\_LOCAL\_FILE\_ROOTS} is ingested
-as literal text, and \code{remember()} still reports \code{completed}. A small smoke-test file hid
-both problems.
-
-\section{The gateway: necessary but insufficient}
-\label{sec:gateway}
-
-By \emph{gateway} we mean the compatibility layer that makes a local server answer like a hosted
-one. Here that was vLLM's and Ollama's OpenAI-compatible endpoints plus LiteLLM routing. The same
-reasoning applies to a proxy or router placed in front of them.
-
-\begin{figure}[!htb]
-\centering
-\includegraphics[width=0.85\textwidth]{gateway-not-platform-diagram.png}
-\caption{Gateway versus local control plane.}
-\label{fig:gateway}
-\end{figure}
-
-Figure~\ref{fig:gateway} shows the split. The tool reaches the model through the gateway. Everything
-in the right-hand box, the cloud supplied implicitly, and on-premises nothing does unless someone
-builds it.
-
-\subsection{Why it is necessary}
-
-Without the gateway, nothing connects. With it, Cognee and MemPalace both reached local models
-through configuration alone, with no code changes. Every later step depended on that.
-
-\subsection{Why it is insufficient}
-
-A gateway carries the protocol. It does not carry the properties the client built on that protocol
-depends on. We saw five kinds of gap.
-
-\paragraph{Capacity is not in the protocol.} Nothing in a chat-completions response says ``you are
-request 41 for 8 slots''. The client cannot see queue depth, so it cannot tell a slow request from a
-dead one, and its timeouts and retries react to the wrong signal.
-
-\paragraph{The gateway disguises locality.} Cognee decides whether a provider is local by its name.
-Ollama and llama.cpp get a local rate-limit default of 10 requests per minute. vLLM is deliberately
-excluded, and the code comment says it ``absorbs concurrency like a cloud endpoint''. That is true
-of a large vLLM deployment and false of one box with 8 slots. The more faithfully the gateway
-imitates the cloud, the more surely downstream code treats the server as cloud.
-
-\paragraph{Admission control at the gateway paced the wrong thing.} We tested a requests-per-minute
-limiter, and later Cognee's automatic one. Both made the run worse. They pace how often requests
-start, while the constraint is how many are in flight, and they reacted to timeouts that were
-symptoms of something else (\S\ref{sec:retest-failed}). Admission belongs to whoever knows
-capacity, and the gateway does not.
-
-\paragraph{Model behavior and request limits pass through unchanged.} Whether a model thinks before
-answering, and how much of an output budget that consumes, is a per-model fact. Whether a server
-survives a 1,000-input embedding request is a per-server fact. MemPalace sent such batches to
-Ollama's compatible \code{/api/embed}, and Ollama's model runner crashed on large files (MemPalace
-\#57~\cite{mempalace}). The fix was client-side sub-batching to 64.
-
-\paragraph{Some dependencies sit behind no gateway at all.} Cognee's graph store is an embedded Kuzu
-subprocess, and its configuration is a \code{.env} file loaded relative to the working directory with
-override semantics. No proxy in front of the model touches either.
-
-\section{Discussion: building a local control plane}
-\label{sec:discussion}
-
-What made our tools run on the Spark was not a better model or a better gateway. It was a set of
-small, explicit authorities that state what the cloud keeps implicit. We built three of them while
-working on these systems.
-
-\subsection{What the local control plane holds}
-
-\begin{itemize}
-  \item \textbf{Per-model behavior: a model registry.} \code{dgxlib} (in the \code{dgx-fun}
-    repo~\cite{dgxfun}) keeps a registry keyed by model id: whether the model can think, whether
-    thinking is on by default, its read timeout, and its concurrency. A call site states its intent
-    (``no thinking for this extraction''), and the registry decides whether the model can honor it.
-    Swapping a model becomes a one-line registry edit. The failure in \S\ref{sec:retest-failed} is
-    exactly the fact this registry exists to hold.
-  \item \textbf{Capacity.} The registry exposes per-model serving concurrency, so a client can size
-    its fan-out to the slots that exist instead of discovering them through timeouts.
-  \item \textbf{Configuration authority.} On the mining host, one hand-edited file
-    (\code{hypostasis.yaml}) declares the vector backend, embedding provider, model and endpoint.
-    Every component's config is rendered from it. That rules out the class of bug in
-    \S\ref{sec:wiring}, where two loaders disagree about which endpoint is real.
+  \item \textbf{Cognee: multiplied retry layers.} LiteLLM retries internally and Instructor retries
+    on top. A 600\,s timeout surfaced after 1,801\,s, and 1,800\,s after 5,401\,s.
+  \item \textbf{Cognee: no liveness signal.} The only health check is a one-shot 30\,s preflight at
+    startup. Non-streaming structured output gives no way to tell ``slow'' from ``hung''. Stalls
+    appeared on the chat path, the embedding path and the graph-persist path; in the final wedge the
+    main process sat in \code{epoll\_wait} while the Kuzu workers sat in \code{pipe\_read}.
+  \item \textbf{zvec-grep: a timeout sized for the cloud.} Upstream gives hosted providers a
+    60-second request timeout. The fork allows local embedding requests 30 minutes, ``including
+    server queue time and reading the response''.
 \end{itemize}
 
-\subsection{What tools must do with it}
+We first attributed the Cognee persist hang to a known orphaned-lock issue~\cite{cognee3708}. A later
+investigation showed that attribution was wrong: the issue concerned a different race, and its crash
+reproducer did not reproduce here. Kuzu operations are serialized by design, so persist time across
+concurrently admitted documents adds up rather than overlaps, which can look like a hang without
+being one. Without liveness signals, diagnosis falls back on inference.
 
-The control plane only helps tools that consult it. From our failures, a tool that is meant to run
-anywhere other than a hosted API should:
-\begin{enumerate}
-  \item \textbf{Bound fan-out from declared capacity}, not from a semaphore on documents.
-  \item \textbf{Time from progress, not from send.} Streaming with an idle-token timeout, as
-    \code{dgxlib}'s client does, distinguishes queued from hung.
-  \item \textbf{Keep one retry layer} and own it.
-  \item \textbf{Commit per unit of work}, so one straggler costs one document, not the run.
-  \item \textbf{Treat model behavior as data} (thinking, output budget, structured-output support),
-    looked up rather than assumed.
-  \item \textbf{Fail loudly on silent fallbacks.} Ingesting a path as text, falling back to OpenAI
-    defaults, and assuming a vector store's embedder identity should all be errors, not completions
-    or warnings.
-\end{enumerate}
+\subsection{Request limits}
 
-\subsection{The same lesson in a second system}
-
-MemPalace, a semantic memory store, needed about a dozen changes on our fork~\cite{mempalace} before
-it ran against a local embedder:
 \begin{itemize}
-  \item remote embedding providers;
-  \item a vector backend that does not import ChromaDB;
-  \item per-palace scoping of every read and write;
-  \item client-side sub-batching for Ollama.
+  \item \textbf{MemPalace: a request that crashed the server.} The miner sent up to 1,000 inputs in
+    one request to Ollama's \code{/api/embed}, and Ollama's model runner crashed on large files
+    (\#57). The fix was client-side sub-batching to 64.
+  \item \textbf{zvec-grep: explicit batch budgets.} The fork caps each local embedding request at 32
+    fragments and 64,000 characters, across files and within a single large file.
+\end{itemize}
+Whether a server survives a large embedding request is a per-server fact. Two tools, written
+independently, needed the same fix.
+
+\subsection{Per-model behavior and identity}
+
+\begin{itemize}
+  \item \textbf{Cognee: thinking.} The September failure (\S\ref{sec:cognee-chrono}) is a per-model
+    fact passed through a gateway unchanged.
+  \item \textbf{MemPalace: embedder identity.} Queries and stored drawers must be embedded by the
+    same model. Each provider now reports its own name, so changing model or provider raises an
+    error instead of silently mixing vectors in one palace.
+  \item \textbf{zvec-grep: served model ids.} The fork registers a catalog entry for the Spark's
+    \code{qwen3-embedding:0.6b} (1,024 dimensions, 32,768-token inputs) and resolves served model ids
+    through that catalog, so an index records which model built it.
 \end{itemize}
 
-Switching the embedding model itself was one line of configuration. Its logging still assumes the
-cloud's single-machine shape: a warning about precomputed vectors fires on every mined file, and so
-does an embedder-identity warning. The vector store does record an identity, but it records the
-embedder function's name (\code{embed}) rather than the model, and the adapter never reads it. A
-tool that cannot tell its normal path from an anomaly is another symptom of the missing control
+\subsection{Where compute and state live}
+
+\begin{itemize}
+  \item \textbf{MemPalace: embedding on the wrong machine.} Upstream embeds on the mining machine's
+    CPU with a bundled ONNX model. We wanted the Spark's GPU without installing CUDA wheels on the
+    mining host, which needed remote embedding providers (\#6).
+  \item \textbf{MemPalace: a hard storage dependency.} ChromaDB was a hard import; a turbovec-only
+    install still pulled it in and broke without it (\#20). We added a turbovec backend, later a thin
+    adapter over turbovecdb.
+  \item \textbf{Cognee: dependencies behind no gateway.} The graph store is an embedded Kuzu
+    subprocess. No proxy in front of the model touches it.
+  \item \textbf{zvec-grep: an extracted backend.} The fork extracted a generic OpenAI-compatible
+    embedding backend so a non-hosted endpoint could be one.
+\end{itemize}
+
+\subsection{Scope}
+
+\textbf{MemPalace: one palace per process.} Several code paths quietly fell back to a single default
+palace. Campaign palaces leaked into each other and into the chat palace. The fix touched
+cross-palace reads, the default palace, a \code{palace=} argument on every read tool, per-palace
+tunnels and entity registries, and routing of hook writes (\#41, \#43, \#44, \#45, \#48, \#51). A
+hosted API has no opinion on this; neither does a gateway.
+
+\subsection{Configuration authority and trust}
+
+\begin{itemize}
+  \item \textbf{Cognee: three silent configuration traps.} \code{import cognee} calls
+    \code{load\_dotenv(\allowbreak override=True)}, so environment variables set in Python before the import are
+    overwritten; one run meant for spark2 ran on spark1 and its measurements were mislabeled.
+    \code{.env} is resolved relative to the working directory; from another directory Cognee falls
+    back to OpenAI defaults and fails with an authentication error that names the wrong cause. The
+    \code{ollama} embedding provider requires \code{transformers} and a Hugging Face tokenizer
+    download, while \code{openai\_compatible} falls back to TikToken.
+  \item \textbf{zvec-grep: authentication assumed.} Upstream assumed every remote provider has an API
+    key. The fork added unauthenticated providers for a trusted local network, and kept
+    authorization to send workspace content as a separate, explicit grant.
+\end{itemize}
+Each of these assumes configuration has one obvious home, and on a multi-box local network it
+doesn't.
+
+\subsection{Telling normal from anomalous}
+
+\begin{itemize}
+  \item \textbf{Cognee: silent fallbacks.} A file path outside
+    \code{COGNEE\_ALLOWED\_\allowbreak LOCAL\_FILE\_ROOTS} is ingested as literal text, and \code{remember()}
+    still reports \code{completed}.
+  \item \textbf{Cognee: all-or-nothing durability.} One straggler's \code{InstructorRetryException}
+    propagated through the gather and aborted \code{remember()}. Fifty minutes of extraction produced
+    an empty graph.
+  \item \textbf{MemPalace: log noise.} Every mined file logs a warning that precomputed vectors
+    bypass the configured embedder, though they come from the same model (\#59). The vector store
+    records an embedder identity, but it records the function's name (\code{embed}) rather than the
+    model, and the adapter never reads it, so every open of a populated palace warns (\#33).
+\end{itemize}
+A tool that cannot tell its normal path from an anomaly is another symptom of the missing control
 plane.
 
-\section{Related work and limitations}
+\section{The operational cost}
+\label{sec:cost}
+
+Table~\ref{tab:cost} collects what each layer cost, using only quantities the working notes
+recorded. Where nothing was recorded, we say so rather than estimate.
+
+\begin{table}[t]
+\centering
+\caption{Recorded cost of each layer. ``Not measured'' marks costs the notes did not record.}
+\label{tab:cost}
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.09\textwidth}
+                             >{\raggedright\arraybackslash}p{0.27\textwidth} L}
+\toprule
+Layer & Item & Recorded cost \\
+\midrule
+1 Model & Serving calibration & 3 vLLM configurations measured on the real load \\
+1 Model & Model swaps & 3 chat models over the study; each swap updates \code{current-setup.md}
+  and \code{models.yaml} \\
+2 Code & \code{dgxlib} registry and client & 11 commits since 2026-06-19 \\
+2 Code & \code{hypostasis.yaml} configuration authority & Not measured \\
+3 Tools & Cognee 1.2.2 & About 6 failed attempts in one day; one run lost 3\,h 12\,min, another
+  50\,min of extraction \\
+3 Tools & Cognee reasoning-model retest & About 5 GPU-hours on symptoms; 3 new settings six weeks
+  after a working recipe \\
+3 Tools & MemPalace & About a dozen changes on a fork, 2026-05-10 to 10-25, merged under upstream
+  v3.3.6 to v3.10.0 \\
+3 Tools & zvec-grep & 11 commits on a fork over 2 days, about 1,800 lines added \\
+All & Engineering hours & Not measured \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Two features of this cost matter more than its size.
+
+\paragraph{It recurs.} A model swap re-opens layer~1 and can re-open layer~3, as the September
+Cognee retest showed. A forked tool re-opens layer~3 on every upstream release: MemPalace's fork has
+absorbed upstream releases v3.3.6 through v3.10.0. Carrying a fork is a recurring cost, not a fix.
+
+\paragraph{It is paid late.} Every tool passed its smoke test. The gaps appeared under real load:
+dense documents, large files, many palaces, a different model. By then the decision to go on-prem
+had been made on the evidence of the smoke test.
+
+Layer~2 is the part that bounds the rest. The registry turned a model swap from an edit in every
+consumer into one edit. One configuration authority turned ``which endpoint is real'' from a
+debugging session into a lookup. But layer~2 only helps tools that consult it. From our failures, a
+tool meant to run anywhere other than a hosted API should:
+\begin{enumerate}
+  \item \textbf{Bound fan-out from declared capacity}, not from a semaphore on documents.
+  \item \textbf{Time from progress, not from send}, so it can distinguish queued from hung.
+  \item \textbf{Keep one retry layer} and own it.
+  \item \textbf{Respect declared request limits}, such as the largest batch a server takes.
+  \item \textbf{Commit per unit of work}, so one straggler costs one document, not the run.
+  \item \textbf{Treat model behavior as data} (thinking, output budget, identity), looked up rather
+    than assumed.
+  \item \textbf{Scope every read and write} to an explicit tenant.
+  \item \textbf{Fail loudly on silent fallbacks.}
+\end{enumerate}
+
+\section{Related work}
 \label{sec:related}
 
-\subsection{Related work}
-
-The failure modes in Section~\ref{sec:broke} are old distributed-systems problems in new clothes.
+The failure modes in Section~\ref{sec:layer3} are old distributed-systems problems in new clothes.
 Timeouts that include queueing, layered retries that amplify load, and the need for per-unit
 durability are standard lessons of large-service operation. Retry budgets, deadline propagation and
 backpressure are their usual remedies. What is new is where they surface. LLM tooling grew up behind
-provider APIs that absorbed these problems, so its libraries never adopted the remedies.
+provider APIs that absorbed these problems, so its tools never adopted the remedies.
 
-We have not run a systematic survey of other memory, RAG or agent frameworks, and we make no claim
-about how common these patterns are. That survey is future work.
+We have not run a systematic survey of other memory, RAG, search or agent frameworks, and we make no
+claim about how common these patterns are. That survey is future work.
 
-\subsection{Limitations}
+\section{Limitations}
+\label{sec:limitations}
 
 \begin{itemize}
-  \item \textbf{One operator, one corpus, two systems.} The evidence is a case study, not a
-    benchmark.
-  \item \textbf{Confounded comparisons.} The run that succeeded used a newer Cognee and a different
-    chat model than the runs that failed. We cannot attribute the success to either change alone.
+  \item \textbf{One operator, three tools, one cluster.} The evidence is a case study, not a
+    benchmark. The tools differ in workload (chat-heavy and embedding-heavy) and origin, which is
+    some protection against a single tool's quirks, but they were all adapted by the same person.
+  \item \textbf{No cloud baseline.} We measured the on-prem cost in absolute terms. We did not run
+    the same workloads against hosted APIs, so we cannot state the cost as a difference.
+  \item \textbf{Confounded comparisons.} The Cognee run that succeeded used a newer Cognee and a
+    different chat model than the runs that failed. We cannot attribute the success to either
+    change alone.
+  \item \textbf{Unmeasured effort.} Engineering hours were not recorded. Commit and change counts are
+    a proxy, and a weak one.
   \item \textbf{Hardware specificity.} The slot counts and decode rates are specific to GB10-class
-    devices with about 273\,GB/s of memory bandwidth. A larger local cluster would hide some of
-    these gaps the way the cloud does.
-  \item \textbf{A corrected attribution.} Our first diagnosis of the persist hang cited the wrong
-    upstream issue (\S\ref{sec:failure-modes}). We report the correction because the episode is
+    devices with about 273\,GB/s of memory bandwidth. A larger local cluster would hide some of these
+    gaps the way the cloud does.
+  \item \textbf{A corrected attribution.} Our first diagnosis of the Cognee persist hang cited the
+    wrong upstream issue (\S\ref{sec:liveness}). We report the correction because the episode is
     itself evidence: without liveness signals, diagnosis falls back on inference.
 \end{itemize}
 
 \section{Conclusion}
 
-Moving a cloud-built AI library on-premises is mostly not about the model. The model was the part
-that worked: an 80B mixture-of-experts model decoding structured JSON at 138 tok/s across 8
-speculative streams.
+Taking AI on-premises is mostly not about the model. The model was the part that worked: an 80B
+mixture-of-experts model decoding structured JSON at 138 tok/s across 8 speculative streams.
 
-What failed was everything the library had assumed about who manages capacity, liveness, retries,
-durability, model behavior and configuration. The cloud provides those through a control plane its
-clients never see. An API-compatible gateway brings back the protocol, which is necessary for
-anything to connect. It cannot bring back the control plane, and by imitating the cloud it can hide
-the difference from the code that most needs to see it.
+What failed, in three independent tools, was everything they had assumed about who manages capacity,
+liveness, retries, request size, model behavior, scope and configuration. The cloud provides those
+through a control plane its clients never see. An API-compatible gateway brings back the protocol,
+which is necessary for anything to connect. It cannot bring back the control plane, and by imitating
+the cloud it hides the difference until the workload is real.
 
-On-premises AI therefore needs two things the cloud never asked for. The first is a local control
-plane that states capacity, per-model behavior and configuration authority explicitly. The second is
-tools written to consult it.
+So the cost of going on-prem is not the hardware or the model. It is the operational work of tuning
+three layers, the model, your code and your tools, and paying it again with every model swap and
+every upstream release. A local control plane that states capacity, per-model behavior and
+configuration authority explicitly keeps that cost bounded, but only for tools written to consult
+it.
 
-\begin{thebibliography}{5}
+\begin{thebibliography}{6}
 
 \bibitem{cognee}
 Cognee: open-source AI memory library.
-\newblock \url{https://github.com/topoteretes/cognee}.
+\newblock \url{https://github.com/topoteretes/cognee}. Versions: 1.2.2; \code{main} at
+\code{e61bbb79c} and \code{e8dd3d93d}.
 
 \bibitem{cognee3870}
 Cognee issue \#3870: chat-layer robustness on local backends (fan-out, retry stacking, durability).
@@ -465,13 +604,18 @@ Cognee issue \#3708: orphaned Kuzu lock after a worker crash; open fixes PR \#40
 \newblock \url{https://github.com/topoteretes/cognee/issues/3708}.
 
 \bibitem{mempalace}
-MemPalace fork, branch \texttt{kostadis-dev}; issues \#33, \#57 and \#59.
+MemPalace fork, branch \texttt{kostadis-dev} at \code{d23d6a7} (upstream v3.10.0); issues and PRs
+\#6, \#20, \#33, \#41, \#43, \#44, \#45, \#48, \#51, \#57 and \#59.
 \newblock \url{https://github.com/kostadis/mempalace}.
 
 \bibitem{dgxfun}
 dgx-fun working notes: \texttt{cognee-local-control-plane-2026-07-04.md},
 \texttt{cognee-local-control-plane-RETEST-2026-08-01.md}, \texttt{cognee-dgx-setup-guide.md},
-\texttt{dgxlib/ARCHITECTURE.md}.
+\texttt{mempalace-local-embedder.md}, \texttt{dgxlib/ARCHITECTURE.md}.
+
+\bibitem{zvecgrep}
+zvec-grep fork at \code{73f6991} (upstream \code{zvec-ai/zvec-grep} v0.2.1).
+\newblock \url{https://github.com/kostadis/zvec-grep}.
 
 \end{thebibliography}
 
