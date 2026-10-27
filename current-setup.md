@@ -1,5 +1,35 @@
 # Current DGX Spark Setup
 
+> **▶ LIVE (2026-10-27 00:14 UTC): DeepSeek is STOPPED on both boxes. BOTH
+> Sparks serve `qwen3.8-flash-next` on :8001, one independent server per box
+> (`192.168.1.147:8001` and `192.168.1.121:8001`), as on 2026-10-12.**
+> `docker stop` of `dsv41-exl3-head` (spark1) and `dsv41-exl3-worker` (spark2)
+> at 2026-10-24 05:14 UTC; both containers are retained.
+> - **spark1:** `docker start qwen38-flash` (2026-10-24 ~18:15 UTC), the
+>   retained container with the documented config (see the historical
+>   `qwen38-flash` block below; `unless-stopped`). 262,144 ctx, KV pool 595,255
+>   tokens (2.27×). Host available ~10 GB.
+> - **spark2:** `docker start qwen38-flash` (2026-10-27 00:02 UTC), ready in
+>   ~12 min. `/v1/models` → `qwen3.8-flash-next`, 262,144 ctx. KV pool
+>   589,461 tokens (2.25×). Thinking-off smoke returned `323`. Host available
+>   ~13 GB.
+> - Clients pointed at `DeepSeek-v4.1-Flash-EXL3` fail until they are repointed
+>   or DeepSeek is restored.
+> - **Gemma 4 26B-A4B trial (2026-10-24) is OFF, artifacts retained on spark2.**
+>   The vLLM NVFP4 container `gemma4-nvfp4` is `docker stop`ped
+>   (`spin-up-vllm-gemma4-26b-nvfp4.sh`). The llama.cpp QAT Q4_0 server was
+>   killed; rerun it with `bash ~/spin-up-llamacpp-gemma4-26b-qat.sh` (build at
+>   `~/llama.cpp-gemma4`, GGUF in the HF cache). Stop spark2's `qwen38-flash`
+>   first: there is not enough memory for both. Results are in
+>   `gemma4-26b-moe-observations.md` (2026-10-24 sections).
+> - spark1's stale `vllm-chat` (Qwen3-Next, crash-looping on an HF client error
+>   since 2026-10-07 and fighting for port 8001) was `docker stop`ped
+>   2026-10-24 18:15 UTC. It is retained and stays stopped.
+> - **Revert to DeepSeek:** `ssh spark 'docker stop qwen38-flash'`;
+>   `ssh spark2 'docker stop qwen38-flash && docker start dsv41-exl3-worker'`;
+>   then `ssh spark 'docker start dsv41-exl3-head'`. Then check `/health` and
+>   `/v1/models` on `192.168.1.147:8001`.
+
 **Live snapshot: 2026-10-21 03:45 UTC.** Both Sparks now serve
 **DeepSeek-V4.1-Flash-1017**, using
 [`Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw`](https://huggingface.co/Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw)

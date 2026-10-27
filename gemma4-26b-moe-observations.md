@@ -202,3 +202,120 @@ Plus spec decode actively *hurts* on diverse prose (33-43% acceptance per prior 
 - **What does a diverse-prompt concurrency probe look like?** The identical-prompt result told us batching scales sub-linearly; mixed prompts might show whether MoE can win at concurrency where dense can't.
 - **Can spec decode be layered on Gemma 4 MoE?** vLLM has matured here; a small Gemma-family draft model (Gemma 2B or Gemma 3 instruct variant) + this 26B MoE target might compound. Risk: MoE × spec decode is two bleeding-edge interactions stacked.
 
+
+## 2026-10-24 — NVFP4 rerun (XRPL Commons recipe), spark2
+
+Source: XRPL Commons, "Gemma 4 on the DGX Spark: native tool calling and reasoning
+mode at 271 tok/s" (2026-05-04), which reported 51 tok/s single stream and 271 tok/s
+aggregate at 8 concurrent requests.
+
+**Setup.** Checkpoint `bg-digitalservices/Gemma-4-26B-A4B-it-NVFP4` (15.87 GiB loaded),
+run on spark2 alone while DeepSeek was stopped. The script is
+`spin-up-vllm-gemma4-26b-nvfp4.sh`. Flags match the article (`--quantization modelopt
+--moe-backend marlin --kv-cache-dtype fp8`, APC, 131K, seqs 16, `gemma4` tool and
+reasoning parsers) except util **0.80** instead of 0.85. The image is **stock
+`vllm/vllm-openai:v0.22.0-aarch64` with no patched `gemma4.py`**. Benchmark:
+`experiments/gemma4-nvfp4/bench.py`, run on the box, temperature 0, thinking off.
+Raw results: `experiments/gemma4-nvfp4/results-20261024.json`.
+
+**Findings**
+
+1. **The patch is no longer needed.** The article mounted a ~50 KB patched
+   `gemma4.py` because NVFP4 scale keys did not map to FusedMoE. vLLM 0.22.0 maps
+   them upstream, and the checkpoint loaded cleanly. Ready in ~5 min (109 s weight
+   load). The patch also ships inside the HF repo, so the article's "not published"
+   gap was never real.
+2. **On GB10 it runs as weight-only FP4.** vLLM picks the MARLIN MoE and linear
+   kernels and logs "Your GPU does not have native support for FP4 computation …
+   Weight-only FP4 compression will be used". The W4A4 checkpoint therefore runs
+   as W4A16: the 4-bit weights save bandwidth, but the FP4 tensor cores sit idle.
+   The FLASHINFER_TRTLLM and CUTEDSL backends are listed but not selected on sm_121.
+3. **Decode doubled, as the bandwidth math predicts.** 53.5 tok/s single stream
+   (1000-token generation) vs **23.3 BF16** in May = 2.3×. Both runs use 3.8B
+   active params; ~4× fewer bytes per weight gives ~2.3×, so overhead outside the
+   weights (attention, router, Marlin dequant) is now a larger share of each token.
+4. **Concurrency beats the article.** Aggregate 53.9 / 174.4 / **298.5 tok/s** at
+   1 / 4 / 8 streams (37.3 tok/s per stream at 8). The article reported 271 at 8.
+   The streams used identical prompts.
+5. **Cold prefill degrades with length. This is the weak axis.**
+
+   | prompt tokens | cold TTFT | cold prefill tok/s | warm (APC) TTFT |
+   |---:|---:|---:|---:|
+   | 9,099 | 1.83 s | 4,971 | 0.08 s |
+   | 36,302 | 14.52 s | 2,500 | 0.14 s |
+   | 113,378 | 109.95 s | 1,031 | 0.38 s |
+
+   Throughput halves from 9K to 36K and halves again by 113K. This is consistent
+   with quadratic attention cost on the global layers under forced TRITON_ATTN
+   (heterogeneous 256/512 head dims), but no profile was run. The article reported
+   78 s at 100K; ours is 110 s at 113K, about the same. APC is very effective:
+   289× faster on a resent 113K prompt.
+6. **Tool calling works.** `get_weather({"city": "Lisbon"})`,
+   `finish_reason: tool_calls`, 0.36 s.
+7. **Reasoning goes to the `reasoning` field, not `reasoning_content`.** It is the
+   same shape opencode and openclaw drop (`todo_nano_v3_reasoning_leak`).
+   `chat_template_kwargs: {"enable_thinking": false}` works: 6 tokens / 0.16 s vs
+   302 tokens / 5.63 s with thinking on, and both gave the correct "$0.05".
+8. **The KV pool is huge.** 6,194,430 tokens = 47× at 131K. Sliding-window local
+   layers plus fp8 KV mean context length is not the constraint on this model.
+   The checkpoint's advertised 256K would fit easily.
+
+**Calibration takeaway.** Compared with the current DeepSeek-V4.1-Flash two-box
+deployment, this is one box, 2× faster single-stream decode, and ~2.4× faster cold
+prefill at 113K. DeepSeek measured ~810 tok/s at 600K, a different length, so
+compare loosely. The costs are a much smaller model (3.8B active) and degrading
+long-context prefill. No quality evaluation was run in this session.
+
+## 2026-10-24 (later) — Google QAT Q4_0 GGUF on llama.cpp, spark2
+
+Same model, Google's own quantization-aware-trained 4-bit weights
+(`google/gemma-4-26B-A4B-it-qat-q4_0-gguf`, 14.4 GB). The `-qat-q4_0-unquantized`
+checkpoint was rejected first: its model card and config show BF16 weights
+(51.6 GB, no quantization config), which vLLM would serve at the May BF16 speed.
+Server: llama.cpp master `f3269ef`, built on the box with CUDA arch 121,
+`-ngl 999 -fa on -c 131072 -np 8 --kv-unified --jinja`, text only. Script:
+`spin-up-llamacpp-gemma4-26b-qat.sh`. The same `bench.py` was used (it now falls
+back to counting chunks when no usage is sent). Raw:
+`experiments/gemma4-nvfp4/results-llamacpp-qat-20261024.json`.
+
+| | vLLM 0.22 NVFP4 (community) | llama.cpp QAT Q4_0 (Google) |
+|---|---:|---:|
+| decode, 1 stream (1000 tok) | 53.5 tok/s | **74.1 tok/s** |
+| aggregate @ 4 | 174.4 | 173.8 |
+| aggregate @ 8 | **298.5** | 234.5 |
+| cold TTFT 9.1K | **1.83 s** | 4.63 s |
+| cold TTFT 36K | 14.52 s | 14.12 s |
+| cold TTFT 113K | 109.95 s | **61.25 s** |
+| warm TTFT 113K | 0.38 s | 0.44 s |
+| tool call | ok, 0.36 s | ok, 0.57 s |
+| reasoning field | `reasoning` | `reasoning_content` |
+| host RAM available | ~19 GB | ~93 GB |
+| time to ready | ~5 min | seconds after load |
+
+Findings:
+
+1. **llama.cpp is 39% faster on single-stream decode.** Q4_0 is a simple int4
+   group-32 layout with mature GGML CUDA kernels, while vLLM's Marlin path
+   dequantizes FP4. Both are weight-only on GB10.
+2. **vLLM wins on batching.** The two tie at 4 streams, and vLLM leads by 27% at
+   8 (llama.cpp per-stream falls to 29 tok/s). This is the usual split: vLLM's
+   scheduler and batched kernels scale, llama.cpp's slots do so less.
+3. **llama.cpp has no long-context prefill cliff.** Cold prefill holds roughly
+   1,850–2,570 tok/s out to 113K, while vLLM falls from 4,971 to 1,031 tok/s.
+   At 113K llama.cpp is 1.8× faster. This fits the earlier suspicion that
+   vLLM's forced TRITON_ATTN on Gemma's mixed head dims is the long-context
+   bottleneck; llama.cpp runs its own flash attention. Still not profiled.
+4. **The 9K llama.cpp number is the outlier** (1,966 tok/s, slower than at
+   36K). It was the first long prompt after boot, so warm-up (kernel or graph
+   compile) is likely included. A rerun would settle it; treat that cell as
+   unverified.
+5. **Memory footprint is a real difference on unified memory.** llama.cpp
+   allocates only weights plus the used KV, leaving ~93 GB for the host. vLLM
+   reserves 80% up front. llama.cpp could co-host a second model on this box;
+   vLLM cannot.
+6. **Reasoning lands in `reasoning_content`.** That is the field opencode and
+   openclaw read, so on llama.cpp this model avoids the
+   `todo_nano_v3_reasoning_leak` problem it has under vLLM.
+
+No quality comparison between the community NVFP4 and Google's QAT weights was
+run. That is the open question behind choosing QAT.
