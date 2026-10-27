@@ -1,6 +1,68 @@
 # Current DGX Spark Setup
 
-**Current `vllm-chat` model ids** (copy-paste for client configs):
+**Live snapshot: 2026-10-21 03:45 UTC.** Both Sparks now serve
+**DeepSeek-V4.1-Flash-1017**, using
+[`Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw`](https://huggingface.co/Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw)
+and the matching native 1017 Engram tables. The existing vLLM image is unchanged.
+The API remains `http://192.168.1.147:8001/v1`, with compatibility model ID
+`DeepSeek-v4.1-Flash-EXL3`, **600,000-token context**, TP=2, and DSpark k=3.
+`dsv41-exl3-head` and `dsv41-exl3-worker` both have `unless-stopped` restart policies.
+
+Verified after cutover: arithmetic, thinking, tool invocation and tool-result
+round trip, a 12,634-token retrieval prompt, prefix-cache reuse (12,544 cached
+tokens), vision, and spark1's 1024-dimensional Ollama embedding endpoint.
+The retrieval took 11.25 s cold and 0.63 s repeated. A near-600K stress test
+subsequently passed: **599,488 input tokens + 512 reserved output**, all five
+scattered facts retrieved exactly, zero cached tokens, first token in **663.15 s**
+and completion in **664.53 s**. Minimum available memory was **4.84 / 6.80 GiB**
+(head / worker); CPU embeddings were unloaded during this run. After the earlier
+embedding validation, available memory was ~3.9 GiB on spark1 (including the
+~2 GB CPU embedding model at 8K context) and ~7.0 GiB on spark2. The old weights and Engram tables are retained;
+rollback configuration is `upgrade-1017/env.before` in the recipe checkout.
+See the current §3 block for pinned revisions, paths, evidence, and rollback.
+
+**2026-10-21 Unsloth 1-bit trial:** downloaded and SHA256-verified all five
+`UD-IQ1_S` GGUF shards (233 GB) and built the required llama.cpp branch. The
+single-Spark, full-GPU-offload load at 8K context did **not** reach readiness:
+the head became unreachable and returned after a reboot. The cause is unconfirmed;
+the final intact memory sample showed 10.08 GiB available and falling rapidly,
+and the kernel journal did not preserve a fatal event. No 1-bit inference or
+performance result was obtained. Both original vLLM containers were restored
+at **03:45 UTC**, `/health` returned 200, the API still advertises 600,000 tokens,
+and arithmetic returned 323 in 0.31 s. The trial is stopped and has no automatic
+startup service. Its weights/build are retained at `~/unsloth-flash1017-trial/`.
+Do not repeat the same full-offload single-Spark configuration unchanged.
+[Trial evidence](experiments/flash1017-iq1s/README.md).
+
+The dated snapshots and deployment records below are historical unless explicitly
+marked current for 2026-10-20 or 2026-10-21.
+
+**Previous snapshot: 2026-10-17 16:50 UTC.** Context raised 262,144 → **600,000**
+(the recipe's validated default) at ~16:45 UTC; details in §3. The two Sparks now run one
+cross-box DeepSeek V4.1 Flash EXL3 server. The API is on
+`http://192.168.1.147:8001/v1`; the exact served ID is
+`DeepSeek-v4.1-Flash-EXL3`. spark2 (`192.168.1.121`) is the headless TP worker,
+so its port 8001 is no longer a separate API. Containers are
+`dsv41-exl3-head` and `dsv41-exl3-worker`, both with `unless-stopped` restart
+policies. The former `qwen38-flash` containers are stopped and retained for
+rollback. Ollama embeddings on port 11434 remain available on both boxes.
+On spark1, `qwen3-embedding:0.6b` now runs on CPU with an 8K context to fit
+beside DeepSeek; spark2 retains its original Ollama model configuration.
+
+Verified: `/health` returned 200, `/v1/models` advertised the exact ID and
+262,144 context, a thinking-off chat returned `323` for 17 × 19 in 0.29 s,
+tool calling returned valid calculator arguments in 2.09 s, and a local
+OpenClaw agent turn returned `DEEPSEEK_OK` through the new provider model.
+The running OpenClaw gateway also sent a request to that model and logged
+`GATEWAY_OK`.
+OpenClaw's 9.8K-token agent prompt took 37 s end to end; this is a single
+smoke point, not a throughput benchmark.
+
+**History below:** dated Qwen entries and their older “LIVE” or “CURRENT”
+labels describe previous deployments and are superseded by this snapshot and
+the current blocks in each section.
+
+**Previous `vllm-chat` model ids** (historical Qwen deployment):
 
 ```
 spark1 (192.168.1.147:8001):  qwen3.8-flash-next  (container `qwen38-flash`, SINGLE-BOX TP=1, Qwen3.8-Flash-Next NVFP4 experts + blockwise-fp8 side layers ("hybrid"), 262K ctx, util 0.80, seqs 8, MTP-2 spec decode, APC ON (block_size fix), deterministic QSA top-k, reduced draft vocab, bf16 KV, PLE n-gram table mmapped from NVMe, TOOL CALLING ON (qwen3_coder parser) + reasoning parser qwen3, vLLM 0.1.dev20073+g8e685d198)  ← LIVE 2026-09-10. NOTE the served id is LOWERCASE and unlike every previous id — every client must be repointed.
@@ -13,7 +75,7 @@ spark2 (192.168.1.121:8006):  Vela 2.0 (vllm-sr + KR Labs; 0.8B / 4B / 9B, ONE A
 spark1 (192.168.1.147:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — the live MemPalace embedding path; VERIFIED UNAFFECTED by the 2026-09-10 swap)
 spark2 (192.168.1.121:11434): qwen3-embedding:0.6b  (Ollama, lazy-load — unloads after 5 min idle; was vllm-embed on port 8000 until 2026-06-30)
 ```
-> **▶ LIVE (2026-10-12 ~04:28 UTC): spark2 back to `qwen38-flash` on :8001 — BOTH BOXES run `qwen3.8-flash-next` again. `nox-tuned` and `vela2` removed; images `decision2-runtime`, `vela2-runtime` and the Vela snapshots kept on spark2. spark1 unchanged. The NPC prototype's Nox :8005 is still DOWN (`decision2-nox-4b` stopped).**
+> **▶ SUPERSEDED (2026-10-12 ~04:28 UTC): spark2 back to `qwen38-flash` on :8001 — BOTH BOXES ran `qwen3.8-flash-next` again. `nox-tuned` and `vela2` removed; images `decision2-runtime`, `vela2-runtime` and the Vela snapshots kept on spark2. The NPC prototype's Nox :8005 remained down (`decision2-nox-4b` stopped).**
 
 > **(DONE 2026-10-12 03:12 UTC — `vela2` removed; spark2 is back to just `nox-tuned` :8005, `qwen38-flash` still STOPPED)** ~~spark2 ALSO runs `vela2` on :8006 (Vela 2.0 members in turn, `clef/eval/vela_run.sh`) next to `nox-tuned` :8005; spark2 `qwen38-flash` still STOPPED. Memory: Nox ~19 GB + Vela ≤ ~40 GB (9B FP32) of 121 GB. Remove when done: `ssh spark2 'docker rm -f vela2'`.~~**
 
@@ -729,6 +791,24 @@ both pass on a stale IP config.)
 
 ## Ports in use
 
+### Current: 2026-10-20
+
+| box | port | service | state |
+|---|---:|---|---|
+| spark1 `192.168.1.147` | 8001 | `dsv41-exl3-head` | **UP**, Flash-1017 EAQ 2.9 bpw, OpenAI-compatible API, compatibility ID `DeepSeek-v4.1-Flash-EXL3`, TP=2 across both Sparks, **600K** context (`max_model_len` 600000, raised from 262K 2026-10-17) |
+| spark2 `192.168.1.121` | 8001 | — | **No API**; `dsv41-exl3-worker` is the headless second rank over the 10.100.16.x cable |
+| spark1 | 11434 | Ollama | `qwen3-embedding:0.6b`, **CPU**, 8K context, 1024-dimensional output; same client model ID |
+| spark2 | 11434 | Ollama | `qwen3-embedding:0.6b`, original GPU-capable tag, lazy loaded |
+| both | 8000 | — | no vLLM embedding service |
+| spark2 | 8002, 8004, 8005, 8006 | — | Clef, Kai, Nox, and Vela are stopped or removed as described in the historical notes |
+
+`qwen38-flash` is stopped on both boxes. The current DeepSeek containers have
+`unless-stopped` restart policies; the upstream `start.sh` does not set that
+policy itself, so apply `docker update --restart unless-stopped` to both
+containers after a rebuild.
+
+The dated table below is the 2026-10-12 Qwen state, not the current port map.
+
 > **⚠ 2026-10-12 ~04:28 UTC — CURRENT STATE (supersedes both tables below). BOTH BOXES run `qwen38-flash` (`qwen3.8-flash-next`) on 8001. spark2 8005 is empty (`nox-tuned` removed, `decision2-nox-4b` stopped), 8006 `vela2` removed; Kai 8004 and the 8002 `clef` row are STOPPED.**
 >
 > | box | port | service | what |
@@ -764,6 +844,40 @@ both pass on a stale IP config.)
 (Port 8000 / `vllm-embed` removed 2026-06-30 — replaced by Ollama on 11434. Briefly ran SGLang `sglang-chat` on 2026-06-11; reverted to vLLM same day — see the note under the LIVE banner. **2026-06-30: swapped to a DFlash experiment; 2026-07-01: swapped again to MTP-2 80B + APC prefix caching — see top LIVE banner for full findings.**)
 
 ## VRAM budget (steady state)
+
+### Current: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
+
+| Resource | Current measurement |
+|---|---|
+| Model plus DSpark | 99.8 GiB per rank reported by vLLM; static weight estimate 99.48 GiB |
+| KV cache | 2.5 GiB per rank; 785,676-token pool across TP=2, 1.31 × 600K |
+| Engram | Matching 1017 native tables, ~189 GiB on each SSD, file-backed |
+| Available after validation | spark1 ~3.9 GiB with CPU embeddings loaded; spark2 ~7.0 GiB |
+| Minimum during near-600K test | spark1 4.84 GiB; spark2 6.80 GiB; embeddings unloaded; sampled every 3 s |
+
+GPU utilization setting remains 0.88, prefill chunk 1,536, two sequences,
+and memory guard off. Only the checkpoint and table paths changed. The
+600K budget was tested with 599,488 input tokens and 512 reserved output tokens
+on 1017. This was one request with embeddings unloaded, not a concurrency or
+embedding-co-residency stress test.
+
+### Previous: DeepSeek V4.1 Flash EXL3, 2026-10-17
+
+| resource | each Spark |
+|---|---:|
+| EXL3 model and DSpark draft in unified GPU memory | ~99.8 GiB measured at load |
+| KV cache | 2.5 GiB pinned, 785,676-token pool across TP=2 (1.31 × 600K); was 736,658 (2.81 × 262K) before the 600K raise |
+| File-backed Engram source | Two native shards, ~190 GiB on each SSD; tables are read from disk rather than pinned in GPU memory |
+| Available host memory after startup and smoke tests | ~6 GiB spark1, ~7 GiB spark2; varies with page cache |
+
+The launch uses `GPU_MEM_UTIL=0.88`, but the pinned KV setting controls the
+actual KV allocation. `DSV41_MEM_GUARD=0`. Keep large Ollama models unloaded
+while DeepSeek runs. The older Qwen budget and page-cache warnings below are
+historical.
+With spark1's CPU embedding model loaded at its new 8K context, `ollama ps`
+reported ~2.0 GB for that model and `MemAvailable` ~4.8 GiB; DeepSeek chat
+and both embedding API shapes passed while it was resident. At the previous
+32K embedding context, the CPU model held ~5.6 GB and left ~2 GiB available.
 
 > **⚠ 2026-09-10 — CURRENT budget. The two boxes now differ, so read the right column.**
 >
@@ -830,6 +944,20 @@ the 80B; spec the smaller container first if you ever co-host.**
 ---
 
 ## 1. Ollama (systemd service)
+
+**Current, 2026-10-17:** spark1's service and systemd override are unchanged,
+but its `qwen3-embedding:0.6b` **model tag** has been recreated from the same
+639 MB blob with `PARAMETER num_gpu 0` and `PARAMETER num_ctx 8192`.
+DeepSeek left too little free GPU memory for Ollama's default GPU runner;
+`/api/embed` initially returned 500 with `CUDA error: out of memory`.
+The CPU model answered native and OpenAI-compatible embedding requests with
+1,024 dimensions, and DeepSeek chat stayed healthy with it loaded. The
+original Ollama tag is backed up as
+`qwen3-embedding:pre-deepseek-20261017`; the Modelfile is
+`~/Modelfile-qwen3-embedding-cpu` on spark1. Restore the original tag with
+`ollama cp qwen3-embedding:pre-deepseek-20261017 qwen3-embedding:0.6b`
+after removing DeepSeek. spark2's embedding tag is unchanged and passed its
+normal GPU-backed request.
 
 Installed via the standard `curl https://ollama.com/install.sh | sh`
 script. Service runs as user `ollama`, group `ollama`.
@@ -975,6 +1103,140 @@ the same model on the same hardware).
 ---
 
 ## 3. vllm-chat (Docker container, port 8001)
+
+### Current: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
+
+Cutover completed **20:14:28 UTC**. The existing recipe at
+`~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks`, commit `6f7d1590ad49a2b8995188e45d7b9db31e677452`,
+and its vLLM image were retained. Both containers use image
+`sha256:63bc44dce6227dc9024c762df0ad090a6ba5fa848bf86e9d02be2ab0100cece7`,
+verified identical to the image before the upgrade.
+
+Pinned artifacts:
+
+- EXL3: `Mia-AiLab/DeepSeek-V4.1-Flash-1017-EXL3-EAQ-v1-2.9-bpw`
+  at `45ee5d0fd106c94a3d77f721e09cbb2f50e5a16b`, 39 shards, ~196 GiB.
+- Engram: `deepseek-ai/DeepSeek-V4.1-Flash-1017`
+  at `1bae0e1088993b9b82de08f59de5be5a34e42170`, native shards 47 and 48.
+- All 39 model shards and both Engram tables passed publisher SHA-256 checks.
+  Quantized bit widths and codebook multipliers match the old checkpoint;
+  DSpark stays at 4 bits, compatible with the bundled K map.
+
+Active paths (all old trees retained for rollback):
+
+| Setting | Value |
+|---|---|
+| `MODEL_HOST` | `/home/kostadis/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/model-1017-eaq` |
+| `ENGRAM_DIR` | `/home/kostadis/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/engram-src-1017` |
+| `ENGRAM_SRC` | `/home/kostadis/dsv41-engram-slim-1017` (hardlinked tables and embed-only index) |
+| `WORKER_MODEL_DIR` | `/home/kostadis/dsv41-model-1017-eaq` |
+| `WORKER_ENGRAM_DIR` | `/home/kostadis/dsv41-engram-src-1017` |
+| `HEAD_PACKED_DIR`, `WORKER_PACKED_DIR` | `/home/kostadis/dsv41-engram-packed-1017` (absent; prevents stale packed tables) |
+
+`AUTO_DOWNLOAD=0`, `EXPECTED_SHARDS=39`, and `WEIGHT_SYNC=rsync`.
+API endpoint and served compatibility ID remain unchanged, so callers continue
+using `DeepSeek-v4.1-Flash-EXL3`. TP=2, 600K context, two sequences, 1,536-token
+prefill chunks, 2.5 GiB pinned KV, DSpark k=3, prefix caching, vision, and
+`deepseek_v41` parsers are unchanged. Both restart policies were restored to
+`unless-stopped` after the launcher recreated the containers.
+
+Validation: arithmetic returned 323; thinking returned the correct $0.05 ball
+price with a separate reasoning field; `calc` emitted parseable arguments and
+accepted its tool result; 12,634-token retrieval returned the correct passphrase
+cold (11.25 s) and cached (0.63 s, 12,544 cached tokens); a red-image vision
+probe passed; CPU Ollama embeddings returned 1024 dimensions at 8K context.
+Neither rank logged `ERROR`, `Traceback`, or `Skipping unknown` in the checks.
+Near-600K validation completed **2026-10-20 23:36:49 UTC** with the same settings:
+
+- `/tokenize` and response usage both confirmed **599,488 prompt tokens**;
+  512 output tokens were reserved against the 600,000 limit. The model emitted
+  82 tokens and stopped normally (599,570 total), with **zero cached tokens**.
+- Exact recall of **5/5 random values** at approximately 5%, 25%, 50%, 75%,
+  and 95% of a synthetic archive of 15,984 records. Thinking was disabled.
+- First content token: **663.15 s (11 min 3 s)**; total **664.53 s**;
+  effective input-to-first-token rate **~904 tokens/s**, including request overhead.
+- Minimum sampled available memory: **4.84 GiB head / 6.80 GiB worker**.
+  Three-second samples showed no increase in swap use. Ollama embeddings were
+  unloaded; simultaneous embeddings or two long requests were not tested.
+- Zero preemptions, container restarts, OOM flags, or matching error log entries.
+  Afterwards `/health` returned 200 and arithmetic returned 323 in 0.30 s.
+
+This validates capacity and simple scattered-fact retrieval in one run, not
+complex reasoning over 600K tokens. Reusable harness, exact results, and memory
+samples: [`experiments/flash1017-600k/`](experiments/flash1017-600k/README.md).
+
+Single-request timing samples, temperature 0 and thinking off (end-to-end,
+not a controlled throughput or quality benchmark):
+
+| Prompt | Previous model | Flash-1017 |
+|---|---|---|
+| Prose scene | 300 output tokens / 12.97 s | 312 / 12.36 s |
+| Python interval merge | 474 output tokens / 12.77 s | 471 / 13.07 s |
+
+Evidence is in the head recipe's `upgrade-1017/`: manifests, checksum records,
+`compatibility.json`, `weight-budget.json`, `baseline.json`, `smoke.json`,
+`validation.json`, `cutover.log`, and `cutover.complete`. `env.before` is the
+previous active configuration; `env.next` is the deployed upgrade configuration.
+The temporary memory-capped download scope has finished.
+
+Rollback, from a forwarded SSH session (recreates both containers):
+
+```bash
+ssh -A spark
+cd ~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks
+cp upgrade-1017/env.before .env
+PATH="$PWD/.venv/bin:$PATH" SKIP_PULL=1 ./start.sh restart
+docker update --restart unless-stopped dsv41-exl3-head
+ssh kostadis@10.100.16.2 docker update --restart unless-stopped dsv41-exl3-worker
+```
+
+After any rollback, verify the API and update this inventory. To restart the
+current 1017 deployment, use the same `start.sh restart` command with the active
+`.env`, and reapply the two restart policies as above.
+
+### Previous: DeepSeek V4.1 Flash EXL3, 2026-10-17
+
+spark1 hosts `dsv41-exl3-head`; spark2 hosts `dsv41-exl3-worker`. They jointly
+serve `DeepSeek-v4.1-Flash-EXL3` on spark1:8001 using the checked out
+`MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks` recipe at commit
+`6f7d1590` and an image rebuilt from that checkout (recipe stamp
+`9c03768d0d64`). Recipe checkout on spark1:
+`~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks`; launch:
+`ssh -A spark 'cd ~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks && PATH="$PWD/.venv/bin:$PATH" SKIP_PULL=1 ./start.sh'`.
+
+The live `.env` sets `HEAD_IP=10.100.16.1`, `WORKER_IP=10.100.16.2`,
+`WORKER_USER=kostadis`, `WEIGHT_SYNC=rsync`, worker paths
+`/home/kostadis/dsv41-model` and `/home/kostadis/dsv41-engram-src`,
+`PORT=8001`, and `MAX_MODEL_LEN=600000` (raised from 262144 on 2026-10-17;
+previous `.env` saved as `.env.bak-20261017-262k`). The engine runs TP=2, EXL3 2.9 bpw,
+native file-backed Engram, `max_num_seqs=2`, chunked prefill 1,536,
+`kv_cache_memory_bytes=2684354560`, KV block size 64, DSpark k=3,
+prefix caching, vision, and the `deepseek_v41` tokenizer, tool, and reasoning
+parsers. Thinking is on by server default; routine clients can send
+`chat_template_kwargs: {"enable_thinking": false}`. The dgxlib registry does
+that by default for this served ID. The warmup completed 14/14 requests, but
+its optional sampler-cache postcondition was unmet, so a new sampling shape
+may JIT on first use.
+
+Cold startup passed `/health` after 380 s. `/v1/models` reported 262,144 max
+length, and the short chat and tool-call checks passed. The older Qwen service
+description below is retained as the rollback record.
+
+**600K raise (2026-10-17 ~16:45 UTC).** Only `MAX_MODEL_LEN` changed; the
+2.5 GiB pinned KV pool is the same, because V4.1 KV is tiny. Applied with
+`./start.sh restart`, which recreates both containers **without** a restart
+policy, so `docker update --restart unless-stopped` was re-run on both.
+Verified: `/v1/models` → `max_model_len` 600000; boot log `GPU KV cache size:
+785,676 tokens, Maximum concurrency for 600,000 tokens per request: 1.31x`;
+head MemAvailable 6.2 GiB / worker 7.5 GiB after boot; thinking-off chat
+returned `17 × 19 = 323`; tool call returned `calc({"expr": "123*456"})` with
+`finish_reason: tool_calls`. **Not yet stress-tested with a long prompt.**
+Upstream measured a 601K prompt at ~742 s TTFT (~810 tok/s prefill) with a
+2.1 GiB head MemAvailable low-water, but on 2048-token chunks, not our 1536,
+and without spark1's ~2 GB CPU embedding model. The memory floor is reached
+during a long prefill, not at boot. Do not raise toward 1M: that needs a
+bigger KV pool, and upstream reports a 3 GiB pool dies at ~470K of a 600K
+prompt. Revert: restore the `.env` backup and `./start.sh restart`.
 
 Chat completions + tool calling service. Backs llm_wiki, CampaignGenerator,
 opencode, future chat clients (see `desktop-chat-clients.md`), and any
@@ -1212,6 +1474,14 @@ on GB10 (sm_121) is mature enough to realize that.
 
 ## 4. spark2 vllm-chat slot (Docker container, port 8001)
 
+**Current, 2026-10-17:** spark2 is the headless DeepSeek TP=2 worker
+(`dsv41-exl3-worker`), not an independent chat endpoint. Its model and Engram
+files live at `/home/kostadis/dsv41-model` and
+`/home/kostadis/dsv41-engram-src`. The worker communicates with spark1 over
+`10.100.16.2` / `enp1s0f0np0` and RoCE `rocep1s0f0` (GID index 3).
+`qwen38-flash` remains stopped for rollback. Earlier “CURRENT” blocks below
+refer to the former independent Qwen endpoint.
+
 > **✅ 2026-10-08: this slot is LIVE again** — `qwen38-flash` restarted with `docker start`; the CURRENT block below applies. The Clef/Decision 2.0 note that follows is historical.
 
 > **(superseded) ⚠ 2026-10-02: this slot is EMPTY on spark2.** The box runs the Clef decision
@@ -1442,6 +1712,21 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 ---
 
 ## 7. Client-side configuration
+
+### Current: 2026-10-17
+
+| client | state |
+|---|---|
+| OpenClaw on this workstation | `~/.openclaw/openclaw.json` now defaults to `spark1-local/DeepSeek-v4.1-Flash-EXL3` at `http://192.168.1.147:8001/v1`, 262K context. Its `qwen-chat-template` compatibility setting sends the generic `chat_template_kwargs.enable_thinking` switch; `--thinking off` returned `DEEPSEEK_OK` in a local agent turn. Backup: `~/.openclaw/openclaw.json.bak-20261017-before-deepseek`. |
+| dgxlib consumers | Exact ID is registered in `dgxlib/models.yaml`: reasoning capable, thinking off by default, two concurrent calls, 900 s idle timeout (raised from 600 s with the 600K context, since a near-600K prefill takes ~12 min before the first token). Set `DGX_MODEL=DeepSeek-v4.1-Flash-EXL3` and point to spark1:8001 when invoking clients that lack a rendered default. |
+| MemPalace, llm_wiki, opencode | Configurations on the laptop or Windows host are outside this workstation. Set their chat model to `DeepSeek-v4.1-Flash-EXL3` and use spark1:8001; spark2:8001 has no API. Ollama embedding calls on 11434 keep their existing model. |
+
+On spark1, the Ollama embedding ID and URL stay the same, but the tag now
+defaults to CPU and an 8K context. This was verified through
+`/v1/embeddings` with a 1,024-dimensional vector. Longer embedding inputs
+need to be split by the client.
+
+The 2026-09-10 Qwen client table below is historical.
 
 > **▶ LIVE (2026-09-10): spark1:8001 serves `qwen3.8-flash-next` (lowercase). CLIENT REPOINT STATUS — audited per client on the WORKSTATION, not assumed:**
 >
@@ -1740,6 +2025,41 @@ the top-level `"model"` field to `dgx2/nemotron3-nano-30b`.
 
 ## 8. Rebuild-from-scratch order
 
+### Current: DeepSeek V4.1 Flash EXL3
+
+1. On spark1, clone
+   `https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks`
+   at commit `6f7d1590`. Install the recipe's Hugging Face CLI requirements.
+2. Download the EXL3 2.9 bpw checkpoint into the recipe's `model/` (39 shards,
+   ~197 GiB) and only native Engram shards 47 and 48 plus config/index into
+   `engram-src/` (~190 GiB). The recipe's `start.sh` can fetch missing files.
+3. Prepare `.env` with the two 10.100.16.x cable addresses, the
+   `enp1s0f0np0` network interface, `rocep1s0f0` RoCE HCA and GID index 3;
+   set `WEIGHT_SYNC=rsync`, worker model/Engram paths as in §3,
+   `PORT=8001`, `MAX_MODEL_LEN=600000`.
+4. Copy the staged checkpoint and Engram files to spark2 over the cable, or
+   let `start.sh` sync them. With Qwen stopped on both boxes, run the §3
+   launch command using SSH agent forwarding (`ssh -A spark`) so spark1 can
+   authenticate to spark2. The launcher builds a matching image, ships it to
+   the worker, starts both ranks, and checks `/health`.
+5. Run `docker update --restart unless-stopped dsv41-exl3-head` on spark1 and
+   the equivalent command for `dsv41-exl3-worker` on spark2. Verify the model
+   ID at spark1:8001, then test chat with
+   `chat_template_kwargs: {"enable_thinking": false}` and a tool call.
+6. On spark1, preserve Ollama's original embedding tag with
+   `ollama cp qwen3-embedding:0.6b qwen3-embedding:pre-deepseek-20261017`.
+   Create `~/Modelfile-qwen3-embedding-cpu` containing
+   `FROM qwen3-embedding:pre-deepseek-20261017`, `PARAMETER num_gpu 0`, and
+   `PARAMETER num_ctx 8192` on separate lines. Run
+   `ollama create qwen3-embedding:0.6b -f ~/Modelfile-qwen3-embedding-cpu`
+   and verify `/v1/embeddings` returns 1,024 dimensions. On a rebuilt box,
+   skip the `ollama cp` step if the backup tag already exists.
+
+For rollback, stop the two DeepSeek containers, then run
+`docker start qwen38-flash` on **each** Spark. The Qwen containers and local
+checkpoints were retained. Repoint clients to `qwen3.8-flash-next` if rolled
+back. The Qwen rebuild steps below are historical.
+
 > **⚠ 2026-09-10 — spark1 rebuild is now a DIFFERENT procedure from spark2.**
 > spark1 runs `qwen3.8-flash-next` out of a locally built image and a locally
 > assembled hybrid checkpoint; neither comes from a plain `docker pull` + HF
@@ -1969,6 +2289,18 @@ spark2 ships from NVIDIA with a few defaults that bit us:
 ---
 
 ## 9. Common operational commands
+
+### Current DeepSeek cluster
+
+```bash
+ssh -A spark 'cd ~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks && ./start.sh status'
+ssh -A spark 'cd ~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks && ./start.sh logs'
+curl -fsS http://192.168.1.147:8001/health
+curl -fsS http://192.168.1.147:8001/v1/models
+```
+
+The commands below manage earlier single-box deployments and are retained as
+history.
 
 ### spark1
 

@@ -1,0 +1,30 @@
+{
+  "revision": "60ad3651641b5c97679c807e064ab1d7a3ca1455",
+  "files": [
+    {
+      "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00001-of-00005.gguf",
+      "size": 5780923,
+      "sha256": "b843148a82de2b24df0c5a656669edbb9212eb69a41953249fe6c50d04186177"
+    },
+    {
+      "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00002-of-00005.gguf",
+      "size": 49120285248,
+      "sha256": "4cb1b13e50db73650d6d9fcaf22cd938b4b2e993740c2abe6815f82107048461"
+    },
+    {
+      "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00003-of-00005.gguf",
+      "size": 48899707008,
+      "sha256": "def479df0dca997b9cad4716f6375296c1f805887b5cde669105db99f0d9dd75"
+    },
+    {
+      "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00004-of-00005.gguf",
+      "size": 24358544704,
+      "sha256": "863e1ba47e2479aedc9ce2cc3fe2f57e091548c943bd56d7dd149a771637a17d"
+    },
+    {
+      "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00005-of-00005.gguf",
+      "size": 110595290592,
+      "sha256": "771805301e695d72d268151dfc43043581ba904298574aa879d4349cbe67b020"
+    }
+  ]
+}
