@@ -1,0 +1,100 @@
+Oct 21 01:59:56 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:00:05 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:00:08 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:02:45 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:03:08 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:03:31 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:03:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:04:09 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:05:26 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:06:03 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:06:32 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:07:07 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:08:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:09:57 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:10:44 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:12:18 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:13:06 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:13:34 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:13:52 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:14:20 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:14:35 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:15:21 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:18:16 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:18:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:19:06 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:19:08 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:19:34 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:20:07 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:23:00 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:23:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:25:48 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:26:20 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:28:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:30:34 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:31:22 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:33:32 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:34:16 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:34:18 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:34:42 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:34:43 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:34:45 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:34:49 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:35:00 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:37:44 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:38:34 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:38:37 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:40:49 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:43:11 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:43:32 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:46:43 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:48:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:48:39 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:51:21 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:52:34 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:53:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:56:27 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:57:34 gx10-46ea kernel: audit: type=1400 audit(1792551454.347:879): apparmor="DENIED" operation="capable" class="cap" profile="ubuntu_pro_esm_cache_systemd_detect_virt" pid=3355778 comm="systemd-detect-" capability=38  capname="perfmon"
+Oct 21 02:57:34 gx10-46ea kernel: audit: type=1400 audit(1792551454.349:880): apparmor="DENIED" operation="capable" class="cap" profile="ubuntu_pro_esm_cache//cloud_id" pid=3355627 comm="cloud-id" capability=38  capname="perfmon"
+Oct 21 02:58:09 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:58:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 02:59:34 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:00:17 gx10-46ea kernel: audit: type=1400 audit(1792551617.582:881): apparmor="DENIED" operation="open" class="file" profile="snap.firmware-updater.firmware-notifier" name="/proc/sys/vm/max_map_count" pid=3403532 comm="firmware-notifi" requested_mask="r" denied_mask="r" fsuid=1000 ouid=0
+Oct 21 03:00:18 gx10-46ea kernel: audit: type=1400 audit(1792551618.104:882): apparmor="DENIED" operation="open" class="file" profile="snap.firmware-updater.firmware-notifier" name="/proc/sys/vm/max_map_count" pid=3403618 comm="firmware-notifi" requested_mask="r" denied_mask="r" fsuid=1000 ouid=0
+Oct 21 03:00:18 gx10-46ea kernel: audit: type=1400 audit(1792551618.609:883): apparmor="DENIED" operation="open" class="file" profile="snap.firmware-updater.firmware-notifier" name="/proc/sys/vm/max_map_count" pid=3403695 comm="firmware-notifi" requested_mask="r" denied_mask="r" fsuid=1000 ouid=0
+Oct 21 03:00:19 gx10-46ea kernel: audit: type=1400 audit(1792551619.896:884): apparmor="DENIED" operation="open" class="file" profile="snap.firmware-updater.firmware-notifier" name="/proc/sys/vm/max_map_count" pid=3403771 comm="firmware-notifi" requested_mask="r" denied_mask="r" fsuid=1000 ouid=0
+Oct 21 03:00:20 gx10-46ea kernel: audit: type=1400 audit(1792551620.357:885): apparmor="DENIED" operation="open" class="file" profile="snap.firmware-updater.firmware-notifier" name="/proc/sys/vm/max_map_count" pid=3403844 comm="firmware-notifi" requested_mask="r" denied_mask="r" fsuid=1000 ouid=0
+Oct 21 03:01:28 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:01:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:01:35 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:01:36 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:03:32 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:06:43 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:08:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:10:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:10:35 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:10:36 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:10:48 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:13:28 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:13:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:14:25 gx10-46ea kernel: NVRM: nvCheckOkFailedNoLog: Check failed: Out of memory [NV_ERR_NO_MEMORY] (0x00000051) returned from _memdescAllocInternal(pMemDesc) @ mem_desc.c:1359
+Oct 21 03:14:25 gx10-46ea kernel: NVRM: nvAssertOkFailedNoLog: Assertion failed: Out of memory [NV_ERR_NO_MEMORY] (0x00000051) returned from status @ kernel_graphics_context.c:1178
+Oct 21 03:14:25 gx10-46ea kernel: NVRM: nvCheckOkFailedNoLog: Check failed: Out of memory [NV_ERR_NO_MEMORY] (0x00000051) returned from kgrctxAllocMainCtxBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel) @ kernel_graphics_context.c:1387
+Oct 21 03:14:25 gx10-46ea kernel: NVRM: nvCheckOkFailedNoLog: Check failed: Out of memory [NV_ERR_NO_MEMORY] (0x00000051) returned from kgrctxAllocCtxBuffers(pGpu, pKernelGraphicsObject->pKernelGraphicsContext, pKernelGraphics, pKernelGraphicsObject) @ kernel_graphics_object.c:215
+Oct 21 03:15:56 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:16:56 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:18:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:21:21 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:22:52 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:22:55 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:23:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:23:58 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:24:01 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:24:11 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:24:53 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:26:59 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:28:33 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:30:48 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:31:18 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:33:32 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!
+Oct 21 03:34:54 gx10-46ea kernel: IPv6: enP7s7: IPv6 duplicate address 2600:1702:7bd0:c870::3b used by 30:c5:99:be:3e:5c detected!

@@ -1,0 +1,81 @@
+{
+  "checked_utc": "2026-10-21T03:45:42Z",
+  "models": {
+    "object": "list",
+    "data": [
+      {
+        "id": "DeepSeek-v4.1-Flash-EXL3",
+        "object": "model",
+        "created": 1792554342,
+        "owned_by": "vllm",
+        "root": "/model",
+        "parent": null,
+        "max_model_len": 600000,
+        "permission": [
+          {
+            "id": "modelperm-b81333c1ec056065",
+            "object": "model_permission",
+            "created": 1792554342,
+            "allow_create_engine": false,
+            "allow_sampling": true,
+            "allow_logprobs": true,
+            "allow_search_indices": false,
+            "allow_view": true,
+            "allow_fine_tuning": false,
+            "organization": "*",
+            "group": null,
+            "is_blocking": false
+          }
+        ]
+      }
+    ]
+  },
+  "arithmetic": {
+    "id": "chatcmpl-925f6eb24b410676",
+    "object": "chat.completion",
+    "created": 1792554342,
+    "model": "DeepSeek-v4.1-Flash-EXL3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "323",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": null
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": null,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+    "usage": {
+      "prompt_tokens": 18,
+      "total_tokens": 20,
+      "completion_tokens": 2,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "created_cache_tokens": 0,
+        "multimodal_tokens": null
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  },
+  "arithmetic_seconds": 0.3107563390076393,
+  "health": 200
+}

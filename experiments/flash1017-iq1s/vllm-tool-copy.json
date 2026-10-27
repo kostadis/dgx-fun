@@ -1,0 +1,622 @@
+[
+  {
+    "index": 0,
+    "expected": "353a5e4d5f9ec4a417b6941e694f20fdc970a3e486ce3df5e3f8eecd43edf05e060259392b856698aead706bc050ad5f1ec55770a2ceddcf631f95720ab74acd35c3a39191729e0c55df8472ad187d2c8452a38a99db72261703d3f5d31e2bdbde8efe46",
+    "response": {
+      "id": "chatcmpl-b87b22f2d0b6b5b6",
+      "object": "chat.completion",
+      "created": 1792552140,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-964501d3c834eecc",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"353a5e4d5f9ec4a417b6941e694f20fdc970a3e486ce3df5e3f8eecd43edf05e060259392b856698aead706bc050ad5f1ec55770a2ceddcf631f95720ab74acd35c3a39191729e0c55df8472ad187d2c8452a38a99db72261703d3f5d31e2bdbde8efe46\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 398,
+        "total_tokens": 550,
+        "completion_tokens": 152,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 7.6812091400061036
+  },
+  {
+    "index": 1,
+    "expected": "7b851399891e7bac51266de4aa62510cfd77f972670d6cabdf301fc4b4e8a46f6fbc64d1b5a191c67a6888d6efb97fc7a49a4410238eaedc7a5a37a7721d9c30ae197352722ec27ec4350a59520827cb113399a7d73912c836978afea8b39d5ebc2c5fc5",
+    "response": {
+      "id": "chatcmpl-8d991ee5ff95b417",
+      "object": "chat.completion",
+      "created": 1792552147,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-98660999e4396733",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"7b851399891e7bac51266de4aa62510cfd77f972670d6cabdf301fc4b4e8a46f6fbc64d1b5a191c67a6888d6efb97fc7a49a4410238eaedc7a5a37a7721d9c30ae197352722ec27ec4350a59520827cb113399a7d73912c836978afea8b39d5ebc2c5fc5\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 398,
+        "total_tokens": 550,
+        "completion_tokens": 152,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 3.6625872400036315
+  },
+  {
+    "index": 2,
+    "expected": "b87f901b72aa4f16b0725fa4ace378d9e62574cebf5e46fa305a1b9b68fe25adefc6c5fadff5926d832b92e19b5072dd66a9c5fe0c1974339788ead818bb7fe5243a6f4b282d5b129daa1e61da5754761548c18ad16034697dd917dceb1247be9e6655fc",
+    "response": {
+      "id": "chatcmpl-936c9bf25cb357ae",
+      "object": "chat.completion",
+      "created": 1792552151,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-a3df3def83889c73",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"b87f901b72aa4f16b0725fa4ace378d9e62574cebf5e46fa305a1b9b68fe25adefc6c5fadff5926d832b92e19b5072dd66a9c5fe0c1974339788ead818bb7fe5243a6f4b282d5b129daa1e61da5754761548c18ad16034697dd917dceb1247be9e6655fc\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 398,
+        "total_tokens": 550,
+        "completion_tokens": 152,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 3.713570735999383
+  },
+  {
+    "index": 3,
+    "expected": "a551c1a67d8cd9b4da7f69335c029c9d4a492800be674b39c66645095bf0423002e3c5f1d06ca31bce9e7a55fcf35350b4470c1df8f678cc2b3fdf5538092bd1e868bc3aa0ac4eca5d5ab4c780aa3ea53851c7b2228126a5deea09e89565275158d721d9",
+    "response": {
+      "id": "chatcmpl-99875e6ca122902d",
+      "object": "chat.completion",
+      "created": 1792552155,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-b9be466f261820dd",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"a551c1a67d8cd9b4da7f69335c029c9d4a492800be674b39c66645095bf0423002e3c5f1d06ca31bce9e7a55fcf35350b4470c1df8f678cc2b3fdf5538092bd1e868bc3aa0ac4eca5d5ab4c780aa3ea53851c7b2228126a5deea09e89565275158d721d9\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 402,
+        "total_tokens": 558,
+        "completion_tokens": 156,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 3.8057407809974393
+  },
+  {
+    "index": 4,
+    "expected": "fd9b7ad86a0c6aa6fb3d1114b4cb6aa34f22e6e0e86f759cf5408d4753e9a8493fd9cc8c9283189637e8aa0fbb6f251966104267f312d00fdb751a60ff467559a705d81c7eddeb0c8e9a510c11a29dcecf9f844e21c438fc3163784ae202f288a81bc1d1",
+    "response": {
+      "id": "chatcmpl-850314c15f604a73",
+      "object": "chat.completion",
+      "created": 1792552158,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-be121841d8121e0c",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"fd9b7ad86a0c6aa6fb3d1114b4cb6aa34f22e6e0e86f759cf5408d4753e9a8493fd9cc8c9283189637e8aa0fbb6f251966104267f312d00fdb751a60ff467559a705d81c7eddeb0c8e9a510c11a29dcecf9f844e21c438fc3163784ae202f288a81bc1d1\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 402,
+        "total_tokens": 558,
+        "completion_tokens": 156,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 3.6557009570096852
+  },
+  {
+    "index": 5,
+    "expected": "affe8042032ba19dc269602b4472636594b457839d68d4463c40805181e00e3c5b577fff03d6a399b25a64f24ccc70aa2cd2a654f793183885485e58e5a489b34b57d8a945bc229aebbbc877548c57065bd362b7edb3fe542045b614b5df8ebae22a141c",
+    "response": {
+      "id": "chatcmpl-8764b0f848862ce9",
+      "object": "chat.completion",
+      "created": 1792552162,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-aceaf204d4b54f5d",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"affe8042032ba19dc269602b4472636594b457839d68d4463c40805181e00e3c5b577fff03d6a399b25a64f24ccc70aa2cd2a654f793183885485e58e5a489b34b57d8a945bc229aebbbc877548c57065bd362b7edb3fe542045b614b5df8ebae22a141c\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 387,
+        "total_tokens": 528,
+        "completion_tokens": 141,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 3.383986717002699
+  },
+  {
+    "index": 6,
+    "expected": "The ferry leaves at 09:42. Bring 17 copper coins, a blue notebook, and ticket AB-7294. Do not change punctuation.",
+    "response": {
+      "id": "chatcmpl-bc2c979f78aaf2f4",
+      "object": "chat.completion",
+      "created": 1792552166,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-8ec91c1c06d7e5f5",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"The ferry leaves at 09:42. Bring 17 copper coins, a blue notebook, and ticket AB-7294. Do not change punctuation.\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 313,
+        "total_tokens": 379,
+        "completion_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 2.0059222179988865
+  },
+  {
+    "index": 7,
+    "expected": "Evelyn said, \"We crossed the bridge before sunrise.\" The ledger records 62 crates, 4 empty barrels, and 103 silver pieces.",
+    "response": {
+      "id": "chatcmpl-be4fa4e5d519c60a",
+      "object": "chat.completion",
+      "created": 1792552168,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-be08bd83e4310274",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"Evelyn said, \\\"We crossed the bridge before sunrise.\\\" The ledger records 62 crates, 4 empty barrels, and 103 silver pieces.\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 314,
+        "total_tokens": 381,
+        "completion_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 2.0372209940105677
+  },
+  {
+    "index": 8,
+    "expected": "Archive entry 2026-10-21: temperature 18.5 degrees; status pending; reference XQ-314159. Preserve this text exactly.",
+    "response": {
+      "id": "chatcmpl-82c51377beb3fb60",
+      "object": "chat.completion",
+      "created": 1792552170,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-a08ddc6e06ca0226",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"Archive entry 2026-10-21: temperature 18.5 degrees; status pending; reference XQ-314159. Preserve this text exactly.\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 315,
+        "total_tokens": 383,
+        "completion_tokens": 68,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 2.0395952989929356
+  },
+  {
+    "index": 9,
+    "expected": "A small brass key lay beneath the folded map. Three names appeared on the envelope: Mira, Tomas, and June.",
+    "response": {
+      "id": "chatcmpl-ab62bc901089f03a",
+      "object": "chat.completion",
+      "created": 1792552172,
+      "model": "DeepSeek-v4.1-Flash-EXL3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "refusal": null,
+            "annotations": null,
+            "audio": null,
+            "function_call": null,
+            "tool_calls": [
+              {
+                "id": "chatcmpl-tool-8d475c008c70d8fb",
+                "type": "function",
+                "function": {
+                  "name": "record",
+                  "arguments": "{\"text\": \"A small brass key lay beneath the folded map. Three names appeared on the envelope: Mira, Tomas, and June.\"}"
+                }
+              }
+            ],
+            "reasoning": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "stop_reason": null,
+          "token_ids": null,
+          "routed_experts": null
+        }
+      ],
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.1.dev20904+g179dd0fa9-tp2-2b311b64",
+      "usage": {
+        "prompt_tokens": 306,
+        "total_tokens": 365,
+        "completion_tokens": 59,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "prompt_text": null,
+      "kv_transfer_params": null,
+      "ec_transfer_params": null,
+      "metrics": null
+    },
+    "exact_match": true,
+    "elapsed_seconds": 1.835854903998552
+  }
+]

@@ -1,0 +1,86 @@
+{
+  "model": "google/gemma-4-26B-A4B-it-qat",
+  "base": "http://localhost:8001/v1",
+  "started": "2026-10-24T18:43:56Z",
+  "tools": {
+    "latency_s": 0.57,
+    "finish_reason": "tool_calls",
+    "tool_calls": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "arguments": "{\"city\":\"Lisbon\"}"
+        },
+        "id": "rx5uDzlg2HNKymvVV6AF6nyMsDIlfUPw"
+      }
+    ],
+    "content": ""
+  },
+  "think": {
+    "on": {
+      "latency_s": 4.73,
+      "completion_tokens": 346,
+      "content": "$0.05",
+      "reasoning_field": "reasoning_content",
+      "reasoning_chars": 723
+    },
+    "off": {
+      "latency_s": 0.19,
+      "completion_tokens": 6,
+      "content": "$0.05",
+      "reasoning_field": null,
+      "reasoning_chars": 0
+    }
+  },
+  "decode": {
+    "completion_tokens": 1000,
+    "ttft_s": 0.091,
+    "total_s": 13.58,
+    "decode_tok_s": 74.1
+  },
+  "concurrency_1": {
+    "streams": 1,
+    "total_tokens": 500,
+    "wall_s": 6.7,
+    "aggregate_tok_s": 74.6,
+    "per_stream_tok_s": 74.6
+  },
+  "concurrency_4": {
+    "streams": 4,
+    "total_tokens": 2000,
+    "wall_s": 11.51,
+    "aggregate_tok_s": 173.8,
+    "per_stream_tok_s": 43.5
+  },
+  "concurrency_8": {
+    "streams": 8,
+    "total_tokens": 4000,
+    "wall_s": 17.06,
+    "aggregate_tok_s": 234.5,
+    "per_stream_tok_s": 29.3
+  },
+  "prefill": [
+    {
+      "target_tokens": 8000,
+      "prompt_tokens": 9099,
+      "cold_ttft_s": 4.63,
+      "cold_prefill_tok_s": 1966,
+      "warm_ttft_s": 0.12
+    },
+    {
+      "target_tokens": 32000,
+      "prompt_tokens": 36298,
+      "cold_ttft_s": 14.12,
+      "cold_prefill_tok_s": 2570,
+      "warm_ttft_s": 0.2
+    },
+    {
+      "target_tokens": 100000,
+      "prompt_tokens": 113378,
+      "cold_ttft_s": 61.25,
+      "cold_prefill_tok_s": 1851,
+      "warm_ttft_s": 0.44
+    }
+  ]
+}
