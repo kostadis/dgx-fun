@@ -30,6 +30,44 @@ default:
   max_tokens: 16384        # generous floor; reasoning models can burn a lot
 
 models:
+  "DeepSeek-v4.1-Flash-EXL3":
+    # Compatibility ID retained for Flash-1017 EAQ 2.9 bpw (2026-10-20).
+    # Current vLLM image, endpoint, and request behavior are unchanged.
+    # Two-box DGX Spark TP=2 deployment (2026-10-17), 600K context (raised
+    # from 262K the same day) and two concurrent sequences. The vLLM chat
+    # template supports enable_thinking; keep routine dgxlib calls concise
+    # unless the caller opts into reasoning. Long prefills are silent before
+    # streaming starts: upstream measured ~742 s TTFT for a 601K prompt, so
+    # idle_timeout must stay above that.
+    can_think: true
+    thinking_default: false
+    read_timeout: 3600
+    idle_timeout: 900
+    max_concurrency: 2
+
+  "google/gemma-4-26B-A4B-it":
+    # Gemma 4 26B-A4B NVFP4 (bg-digitalservices checkpoint), single box,
+    # trial 2026-10-24 on spark2:8001. gemma4 reasoning parser; the trace lands
+    # in `reasoning` and enable_thinking:false turns it off (6 vs 302 tokens on
+    # a trivial prompt). Cold prefill falls off with length: 113K tokens took
+    # ~110 s to first token, so the idle budget covers that.
+    can_think: true
+    thinking_default: false
+    read_timeout: 600
+    idle_timeout: 300
+    max_concurrency: 16
+
+  "google/gemma-4-26B-A4B-it-qat":
+    # Same model, Google's official QAT Q4_0 GGUF served by llama.cpp
+    # llama-server on spark2:8001 (2026-10-24 trial). --jinja chat template
+    # honours enable_thinking; reasoning lands in `reasoning_content`. 8 slots
+    # share one 131K pool (--kv-unified); 113K cold prefill took ~61 s.
+    can_think: true
+    thinking_default: false
+    read_timeout: 600
+    idle_timeout: 300
+    max_concurrency: 8
+
   "Qwen/Qwen3.5-122B-A10B-FP8":
     # Cross-box TP=2 on the Spark: ~20 tok/s single-stream, slower under
     # concurrent load. A full 20k-token completion (pdf-translators' budget)

@@ -1,0 +1,22 @@
+[
+  {
+    "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00001-of-00005.gguf",
+    "ok": true
+  },
+  {
+    "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00002-of-00005.gguf",
+    "ok": true
+  },
+  {
+    "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00003-of-00005.gguf",
+    "ok": true
+  },
+  {
+    "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00004-of-00005.gguf",
+    "ok": true
+  },
+  {
+    "path": "UD-IQ1_S/DeepSeek-V4.1-Flash-1017-UD-IQ1_S-00005-of-00005.gguf",
+    "ok": true
+  }
+]

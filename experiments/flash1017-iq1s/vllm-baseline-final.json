@@ -1,0 +1,339 @@
+{
+  "url": "http://192.168.1.147:8001",
+  "model": "DeepSeek-v4.1-Flash-EXL3",
+  "started_utc": "2026-10-21T03:15:47Z",
+  "cases": [
+    {
+      "name": "hex-copy-0",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\n439574d9d46358430f3065ce174a55b6b2129a42522f26a8d42eb3cbad5bb24e9e4f3e97ec749db3840ffcc4920d1a8d8dbf5c7c7f902f075d48eb47fcbf3c346153f7d0d0e23bd5616f3295f509e087b27331e2dfb878c4f29533a1bf7b9134edadbefc",
+      "expected": "439574d9d46358430f3065ce174a55b6b2129a42522f26a8d42eb3cbad5bb24e9e4f3e97ec749db3840ffcc4920d1a8d8dbf5c7c7f902f075d48eb47fcbf3c346153f7d0d0e23bd5616f3295f509e087b27331e2dfb878c4f29533a1bf7b9134edadbefc",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.598825096996734,
+      "answer": "439574d9d46358430f3065ce174a55b6b2129a42522f26a8d42eb3cbad5bb24e9e4f3e97ec749db3840ffcc4920d1a8d8dbf5c7c7f902f075d48eb47fcbf3c346153f7d0d0e23bd5616f3295f509e087b27331e2dfb878c4f29533a1bf7b9134edadbefc",
+      "usage": {
+        "prompt_tokens": 141,
+        "total_tokens": 263,
+        "completion_tokens": 122,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-1",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\n50f3aa75da9ca2a93ccdc2154226390b76dfaf1aaeb65927580a83228679c92d31a3d8ea74e04c4b9f90cf4c5c9598d9b5bfee99a64295ed92af10f9142d623eef7359cd0b4975769a8dec69c41935f9dbd67c3044cc1b7201c32b7c9f17887d83e8ff47",
+      "expected": "50f3aa75da9ca2a93ccdc2154226390b76dfaf1aaeb65927580a83228679c92d31a3d8ea74e04c4b9f90cf4c5c9598d9b5bfee99a64295ed92af10f9142d623eef7359cd0b4975769a8dec69c41935f9dbd67c3044cc1b7201c32b7c9f17887d83e8ff47",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.643993813006091,
+      "answer": "50f3aa75da9ca2a93ccdc2154226390b76dfaf1aaeb65927580a83228679c92d31a3d8ea74e04c4b9f90cf4c5c9598d9b5bfee99a64295ed92af10f9142d623eef7359cd0b4975769a8dec69c41935f9dbd67c3044cc1b7201c32b7c9f17887d83e8ff47",
+      "usage": {
+        "prompt_tokens": 140,
+        "total_tokens": 261,
+        "completion_tokens": 121,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-2",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\n09af7c266129d0ca74f2c3d5479da5a5542f5af3df29190a6aef4f3ffba8874b078808c8398cb5daab8126572b015c225c7cf9392ab96cc59fa28332ad39259223a42ce9c5024f1d9200190f22ed1249227575cc3c4d45689aa67f2cf123d869f0181dfa",
+      "expected": "09af7c266129d0ca74f2c3d5479da5a5542f5af3df29190a6aef4f3ffba8874b078808c8398cb5daab8126572b015c225c7cf9392ab96cc59fa28332ad39259223a42ce9c5024f1d9200190f22ed1249227575cc3c4d45689aa67f2cf123d869f0181dfa",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.574924581000232,
+      "answer": "09af7c266129d0ca74f2c3d5479da5a5542f5af3df29190a6aef4f3ffba8874b078808c8398cb5daab8126572b015c225c7cf9392ab96cc59fa28332ad39259223a42ce9c5024f1d9200190f22ed1249227575cc3c4d45689aa67f2cf123d869f0181dfa",
+      "usage": {
+        "prompt_tokens": 133,
+        "total_tokens": 247,
+        "completion_tokens": 114,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-3",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\n12d2831e4b288a0977ad8b7b38dd1f0e609570a2dae270e929aa9e5fd4d7bcc430c61e053f23a98d020c4b3817396c8617e2454a7a343c47619acf39f30d12f1c6a6ee85fe7e60ed53a8b35d653b9c3d0cc894cf980e73dc0802f680c722c25fe082f7a9",
+      "expected": "12d2831e4b288a0977ad8b7b38dd1f0e609570a2dae270e929aa9e5fd4d7bcc430c61e053f23a98d020c4b3817396c8617e2454a7a343c47619acf39f30d12f1c6a6ee85fe7e60ed53a8b35d653b9c3d0cc894cf980e73dc0802f680c722c25fe082f7a9",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.782373093010392,
+      "answer": "12d2831e4b288a0977ad8b7b38dd1f0e609570a2dae270e929aa9e5fd4d7bcc430c61e053f23a98d020c4b3817396c8617e2454a7a343c47619acf39f30d12f1c6a6ee85fe7e60ed53a8b35d653b9c3d0cc894cf980e73dc0802f680c722c25fe082f7a9",
+      "usage": {
+        "prompt_tokens": 145,
+        "total_tokens": 271,
+        "completion_tokens": 126,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-4",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\na5083874d371d5a0ef650374eddae6effe9481012a34d41173cfd66e063838a7d28674bc0782d8649592fb0cf88f6121722eb5b56ec8ad827e3d4dcaa6be86444b4ef645f53b66dc15209b8fb163a4a50b1e9be35da6ee112b3a54e94da02bdb7888d450",
+      "expected": "a5083874d371d5a0ef650374eddae6effe9481012a34d41173cfd66e063838a7d28674bc0782d8649592fb0cf88f6121722eb5b56ec8ad827e3d4dcaa6be86444b4ef645f53b66dc15209b8fb163a4a50b1e9be35da6ee112b3a54e94da02bdb7888d450",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.5338295469991863,
+      "answer": "a5083874d371d5a0ef650374eddae6effe9481012a34d41173cfd66e063838a7d28674bc0782d8649592fb0cf88f6121722eb5b56ec8ad827e3d4dcaa6be86444b4ef645f53b66dc15209b8fb163a4a50b1e9be35da6ee112b3a54e94da02bdb7888d450",
+      "usage": {
+        "prompt_tokens": 134,
+        "total_tokens": 249,
+        "completion_tokens": 115,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-5",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\n3c4047ececfc56156157f25fe0aa1fc6b6cb2955711fb0bc4c4a40adf9590760f99b3ed168c1aed9140a299e0173482652167e95ce4f1e43b140d953712ecc31a5e63c07c1b1c0204bf76df663869c61cede67ccbf1499f1d715cc0044057bd06943cc76",
+      "expected": "3c4047ececfc56156157f25fe0aa1fc6b6cb2955711fb0bc4c4a40adf9590760f99b3ed168c1aed9140a299e0173482652167e95ce4f1e43b140d953712ecc31a5e63c07c1b1c0204bf76df663869c61cede67ccbf1499f1d715cc0044057bd06943cc76",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.4963543150079204,
+      "answer": "3c4047ececfc56156157f25fe0aa1fc6b6cb2955711fb0bc4c4a40adf9590760f99b3ed168c1aed9140a299e0173482652167e95ce4f1e43b140d953712ecc31a5e63c07c1b1c0204bf76df663869c61cede67ccbf1499f1d715cc0044057bd06943cc76",
+      "usage": {
+        "prompt_tokens": 132,
+        "total_tokens": 245,
+        "completion_tokens": 113,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-6",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\ndecf3fdffbaf1c6638494c13198d2203ad5e218d3ced09bd151be01f9354363a2df3bb69d7c3f6d2d0090c9e5a7e2ade0344fbef2210d4bd021320c0690cc4208f8d17a3fe379cced4b3adcb6cfdf41e8bc19ded38124aed9fb7cdd64b208d9fbfeefdcc",
+      "expected": "decf3fdffbaf1c6638494c13198d2203ad5e218d3ced09bd151be01f9354363a2df3bb69d7c3f6d2d0090c9e5a7e2ade0344fbef2210d4bd021320c0690cc4208f8d17a3fe379cced4b3adcb6cfdf41e8bc19ded38124aed9fb7cdd64b208d9fbfeefdcc",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.7235202220035717,
+      "answer": "decf3fdffbaf1c6638494c13198d2203ad5e218d3ced09bd151be01f9354363a2df3bb69d7c3f6d2d0090c9e5a7e2ade0344fbef2210d4bd021320c0690cc4208f8d17a3fe379cced4b3adcb6cfdf41e8bc19ded38124aed9fb7cdd64b208d9fbfeefdcc",
+      "usage": {
+        "prompt_tokens": 141,
+        "total_tokens": 263,
+        "completion_tokens": 122,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-7",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\n7647340c2109e2bd90e63e9857de721edf0fc3995cf5c4876f5112cf41581e79c569e8d2915770a640daa22aff92a5598dee27f1594ff31bc2b6f42a045f978b91283dcfdbd9a970e8cf59a05aa65b3c8529946f1364f900db0d868c955ff89d35cf4c5e",
+      "expected": "7647340c2109e2bd90e63e9857de721edf0fc3995cf5c4876f5112cf41581e79c569e8d2915770a640daa22aff92a5598dee27f1594ff31bc2b6f42a045f978b91283dcfdbd9a970e8cf59a05aa65b3c8529946f1364f900db0d868c955ff89d35cf4c5e",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.6242127000004984,
+      "answer": "7647340c2109e2bd90e63e9857de721edf0fc3995cf5c4876f5112cf41581e79c569e8d2915770a640daa22aff92a5598dee27f1594ff31bc2b6f42a045f978b91283dcfdbd9a970e8cf59a05aa65b3c8529946f1364f900db0d868c955ff89d35cf4c5e",
+      "usage": {
+        "prompt_tokens": 136,
+        "total_tokens": 253,
+        "completion_tokens": 117,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-8",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\nd16a79268462687f62bf342368bfcb559b3f3dc448577418b33a7d9a0dae79c598bead01cbedeba934086067d34610993cc7b5db962d0ad836b0733402483f7b66a33c7829b727c7faea028145b5265b1a34d76ba6cf3517865cae1e773eb1feb816792b",
+      "expected": "d16a79268462687f62bf342368bfcb559b3f3dc448577418b33a7d9a0dae79c598bead01cbedeba934086067d34610993cc7b5db962d0ad836b0733402483f7b66a33c7829b727c7faea028145b5265b1a34d76ba6cf3517865cae1e773eb1feb816792b",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.67937047900341,
+      "answer": "d16a79268462687f62bf342368bfcb559b3f3dc448577418b33a7d9a0dae79c598bead01cbedeba934086067d34610993cc7b5db962d0ad836b0733402483f7b66a33c7829b727c7faea028145b5265b1a34d76ba6cf3517865cae1e773eb1feb816792b",
+      "usage": {
+        "prompt_tokens": 128,
+        "total_tokens": 237,
+        "completion_tokens": 109,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "hex-copy-9",
+      "prompt": "Copy the following string exactly. Output only the string, without quotes or formatting:\n50219b61bff900002fea8084554e3acfa73729a265a637a2f7f9c8285b22183d952587548bb99e9ebd550c450467b3a700ac7f94960926cd21cdc642f8680138c1448465f8aa99907caca8cf72d882ca2c209229b17cbb6036d301a91713f3c3aa977c4e",
+      "expected": "50219b61bff900002fea8084554e3acfa73729a265a637a2f7f9c8285b22183d952587548bb99e9ebd550c450467b3a700ac7f94960926cd21cdc642f8680138c1448465f8aa99907caca8cf72d882ca2c209229b17cbb6036d301a91713f3c3aa977c4e",
+      "max_tokens": 256,
+      "elapsed_seconds": 2.415879934997065,
+      "answer": "50219b61bff900002fea8084554e3acfa73729a265a637a2f7f9c8285b22183d952587548bb99e9ebd550c450467b3a700ac7f94960926cd21cdc642f8680138c1448465f8aa99907caca8cf72d882ca2c209229b17cbb6036d301a91713f3c3aa977c4e",
+      "usage": {
+        "prompt_tokens": 129,
+        "total_tokens": 239,
+        "completion_tokens": 110,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "arithmetic-0",
+      "prompt": "What is 17 times 19? Reply only with the integer.",
+      "expected": "323",
+      "max_tokens": 32,
+      "elapsed_seconds": 0.31568825100839604,
+      "answer": "323",
+      "usage": {
+        "prompt_tokens": 18,
+        "total_tokens": 20,
+        "completion_tokens": 2,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "arithmetic-1",
+      "prompt": "What is 123 times 456? Reply only with the integer.",
+      "expected": "56088",
+      "max_tokens": 32,
+      "elapsed_seconds": 0.3853686209913576,
+      "answer": "56088",
+      "usage": {
+        "prompt_tokens": 18,
+        "total_tokens": 21,
+        "completion_tokens": 3,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop",
+      "exact_match": true
+    },
+    {
+      "name": "prose",
+      "prompt": "Write a 180-word scene about a ferry captain discovering an unexpected passenger. Keep it grounded, with dialogue and a clear ending.",
+      "max_tokens": 400,
+      "elapsed_seconds": 9.050466590008,
+      "answer": "The captain did his final walk-through of the *Island Queen* before the 6 a.m. crossing. He checked the life rings, the fuel gauge, the coffee pot. All was in order. He was about to unlock the wheelhouse when he heard a faint, rhythmic thumping from the vehicle deck.\n\nHe frowned. The deck was empty. He followed the sound to a battered green hatchback parked in the corner. He peered through the window. A small, gray-muzzled dog lay curled on the back seat, its tail giving a hopeful thump against the upholstery.\n\nThe captain opened the door. \u201cHey, buddy. You\u2019re not on the manifest.\u201d\n\nThe dog lifted its head and let out a soft whine.\n\n\u201cNo collar, no ticket,\u201d the captain muttered. He sighed, looking from the dog to the clock. He scooped the animal into his arms. \u201cAlright, stowaway. You\u2019re riding up front with me. But you\u2019re buying the coffee.\u201d He carried the dog to the wheelhouse, the morning\u2019s first problem solved.",
+      "usage": {
+        "prompt_tokens": 30,
+        "total_tokens": 256,
+        "completion_tokens": 226,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop"
+    },
+    {
+      "name": "coding",
+      "prompt": "Write a Python function merge_intervals(intervals) that merges overlapping closed intervals, handles empty input, and does not mutate its input. Include three assert-based examples. Output only Python code.",
+      "max_tokens": 512,
+      "elapsed_seconds": 5.446201407001354,
+      "answer": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    sorted_intervals = sorted((list(interval) for interval in intervals), key=lambda x: x[0])\n    merged = [sorted_intervals[0][:]]\n    for start, end in sorted_intervals[1:]:\n        if start <= merged[-1][1]:\n            if end > merged[-1][1]:\n                merged[-1][1] = end\n        else:\n            merged.append([start, end])\n    return merged\n\nassert merge_intervals([]) == []\nassert merge_intervals([[1, 3], [2, 6], [8, 10], [15, 18]]) == [[1, 6], [8, 10], [15, 18]]\nassert merge_intervals([[1, 4], [4, 5]]) == [[1, 5]]\n```",
+      "usage": {
+        "prompt_tokens": 44,
+        "total_tokens": 237,
+        "completion_tokens": 193,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0,
+          "multimodal_tokens": null
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "timings": null,
+      "finish_reason": "stop"
+    }
+  ]
+}
