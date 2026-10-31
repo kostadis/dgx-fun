@@ -93,3 +93,32 @@ The practical implication for local AI: owning the box and the weights isn't eno
 - **Fix mempalace search:** the `~/.mempalace/palaces/chat` palace has a backend mismatch (`chroma` + `turbovec` artifacts coexist) — every search errors until resolved (pick one backend or use a fresh palace dir).
 - If the graph is still wanted: fix cognee's code (the issue lists the concrete changes), or point LLM+embed at a hosted API. Do **not** re-attempt external timeout-tuning — it's proven not to work.
 - `~/cognee-spark/` holds the experiment scripts (`remember_unit.py`, `heavy_phase.sh`, `npc_phase.sh`, `orchestrate_phases.sh`, `ingest_grounding.py`) and a likely-orphaned Kuzu lock; a `cognee.prune.prune_system()` / fresh `.cognee_system` is advisable before any retry.
+
+---
+
+## Addendum (2026-07-19) — testing the maintainers' suggestions from issue #3870
+
+Filed https://github.com/topoteretes/cognee/issues/3870 with the points above. Maintainer (dexters1) suggested two existing knobs instead of code changes: `RAISE_INCREMENTAL_LOADING_ERRORS=false` (per-item isolation) and the built-in LLM/embedding rate limiters (`LLM_RATE_LIMIT_*` / `EMBEDDING_RATE_LIMIT_*`) tuned to local capacity. Tested both against spark2 (MTP-8, seqs 8).
+
+**Code-read findings (before testing):**
+- `remember()` never overrides `cognify()`'s `incremental_loading` default (`True`), so `RAISE_INCREMENTAL_LOADING_ERRORS` is already live on every `remember()` call today, not an opt-in mode (`run_tasks_data_item.py:155`).
+- The rate limiter is a **moving-window RPM admission throttle** (`limits` lib), not a concurrency semaphore — it paces how fast new requests are admitted, it does not cap in-flight count. It's wired into exactly the call the issue flagged (`acreate_structured_output` in `generic_llm_api/adapter.py`).
+
+**Live test — `RAISE_INCREMENTAL_LOADING_ERRORS=false` alone:** no negative effect observed; a fresh single-doc run completed normally (~1 min for a small test doc). Confirms the per-item-isolation mechanism is real and does what the maintainer described.
+
+**GOTCHA found:** because a failed doc is never marked `DATA_ITEM_PROCESSING_COMPLETED`, and `incremental_loading=True` re-scans the whole dataset for incomplete items on every call, a doc that fails once gets **silently re-queued on every subsequent `remember()` call against that dataset** — cost compounds run over run instead of being skipped. Not mentioned in the maintainer's comment. Worth flagging back on the issue.
+
+**Live test — rate limiter enabled (`LLM_RATE_LIMIT_REQUESTS=3/60s`, `EMBEDDING_RATE_LIMIT_REQUESTS=20/60s`), full `heavy_phase.sh` (4 dense grounding docs, 30min OS timeout each, fresh graph):** **all 4 docs hit the full 30-minute timeout with ZERO logged progress** (`campaign_state.md`'s `extract_graph_and_summarize` produced no "Completed graph extraction" events at all in 30 minutes — strictly worse than the 2026-07-04 baseline, which completed extraction in ~10 min before wedging in persist). vLLM itself verified healthy/instant via direct curl during this window — not a backend problem.
+
+**Isolation A/B (small 217-word doc, fresh `dataset_name` to dodge the gotcha above):**
+| Config | Result |
+|---|---|
+| Both rate limiters OFF | completed in 1.06 min |
+| LLM limiter ON (3/60s) only, embedding OFF | completed in 0.92 min |
+| Both limiters ON (as in the failed heavy-phase run) | (not re-isolated at small scale — inferred from heavy-phase failure) |
+
+The limiter's admission logic checks out correctly in a standalone unit test (`hit_limit()` allows exactly 3, then blocks). It also doesn't visibly interfere on a trivial 1-2-chunk doc, because such a small doc never even reaches the 3-request ceiling — the throttle never actually engages, so a smoke test can't expose the failure. The stall only appeared at `campaign_state.md`'s real fan-out (~15-30 concurrent chat calls). Root cause not fully isolated (candidates: a concurrency/scaling bug in the `limits`-library moving-window check under high coroutine contention, or an interaction between the LLM and embedding limiters when both are active) — flagged as a finding, not a diagnosed bug.
+
+**Verdict:** `RAISE_INCREMENTAL_LOADING_ERRORS=false` is a safe, real improvement — keep it on. The built-in rate limiter is a **net negative** for this workload as tested — it doesn't just fail to help, it turns a "finishes extraction, wedges in persist" failure into "zero progress, ever." Reverted to OFF in `~/cognee-spark/.env`. The Part 3/4 thesis stands unmodified: the persist-phase wedge (Kuzu/LanceDB subprocess IPC) is still the untouched, harder problem neither suggestion addresses.
+
+**Loose end:** `main_dataset` now holds 4 half-processed heavy-phase docs (from this session's failed test) that will silently re-queue on the next `remember()` call per the gotcha above — `forget(everything=True)` or a fresh `dataset_name` before any future attempt.
