@@ -158,3 +158,104 @@ limit, not capacity. Clef 27B untuned still the only zero-miss filter (44–51 %
 - **Finding:** fine-tuning on a few hundred to a few thousand rulings recalibrates the readout (A: AUC
   0.90→0.96) but cannot teach conventions the text does not carry, and backbone adaptation on this
   little data trades accuracy for consistency. Typing once per entity remains the fix.
+
+## 2026-11-10 — Venn `venn-1` (Vector Decision Model) on spark2: zero-shot, frozen dataset v1
+
+**What:** `markrussinovich/venn-vdm` @ 3307c63 (MIT). Not an LLM: a 787K-param / 3 MB head
+(`markrussinovich/venn-1` @ e618a69) over a frozen **EmbeddingGemma 2** reader (~270M, one 768-d
+pooled vector per state). Same Jev Decisions body and answer shape as SystemOne, at
+`/api/alpha/decisions`, so `tasks.py` only needed one endpoint row (`venn`). The paper's frozen
+inputs (`~/data/decision-eval/v1`) were run unchanged: E1–E5, 0 errors.
+
+**Setup friction (spark2, ARM64, CPU torch):**
+- `pip install '.[embedding]'` pulls a PyPI torchvision that doesn't match `torch+cpu`, so
+  transformers fails with `Could not import module 'PreTrainedModel'` (underlying error:
+  `operator torchvision::nms does not exist`). The fix is the docs' ARM64 recipe: torchvision from the CPU index.
+- spark2's `~/.cache/huggingface` is root-owned (written by Docker), so `venn download-*` reported
+  "no network access", which was misleading. Use a private `HF_HOME=~/venn/hf`. EmbeddingGemma 2 is not gated.
+- No GPU path tried: CPU is the documented main path, and sm_121 is not mentioned anywhere upstream.
+
+**Results** (`ORDER="clef clef-flash lux nox kai venn qwen qwen-think" python3 score.py`):
+
+| | E1 prose AUC | E2 spelling acc / wrong names | E3 triage AUC / chatter | E4 per-fact acc | E5 NPC pairs | median ms |
+|---|---|---|---|---|---|---|
+| kai 0.6B | 0.72 | 15.3 % / 54 | 0.796 / 7 | 63.6 % | 5/12 | 17–53 (GPU) |
+| nox 4B | 0.82 | 19.7 % / 29 | 0.900 / 118 | 83.6 % | 11/12 | 79–206 (GPU) |
+| **venn-1** | **0.64** | **10.1 % / 268** | **0.644 / 0** | **22.6 %** | **4/12** | **297–1,180 (CPU)** |
+
+- **Last on every task, and below FlexAI's blind dice on E5** (goblin_flee 0.02 → 0.02 → 0.02: the state
+  change doesn't register). E1 raw arms ≈ 0.5, i.e. chance.
+- **Not a parsing bug.** E3: top choice is `campaign` for 684/864 tokens and never `realworld`. P(campaign)
+  averages 0.59 for real names against 0.52 for chatter. The pooled embedding encodes "this is D&D text", not "the token under review".
+  Every question here hinges on one token or one fact inside a context, which is exactly what a single pooled
+  vector loses. Its README tasks (ticket routing, wine notes) are whole-text properties.
+- **Slower than the GPU 4B decision models on this box** (CPU, single stream, 20 Grace cores): the
+  "tiny head" speed claim is about the head, and the reader dominates.
+- Every answer carries `venn.calibrated: false`; the docs say the generic head is not universally calibrated.
+
+**Lesson:** a zero-shot generic head over a sentence embedding sits below the decision models' floor (Kai)
+on CampaignGenerator decisions. Venn's design point is the **locally trained family head**
+(`register_family` / `PUT /families/{name}`) on your own labelled vectors. The fair test is E6-style
+(train on GM rulings, session/entity folds) against tuned Nox (E3 AUC 0.963). That isn't done yet.
+
+## 2026-11-10 (later) — Venn fair test: trained family heads on the GM's rulings (E6 protocol)
+
+`clef/finetune/venn_family.py`: same `e6_*_items.json`, same folds (groups shuffled with `Random(1)`,
+`i::folds`; triage by session ×3, typing by entity ×5), same train-chosen threshold and metrics as
+`train_head.py`. Venn chooses its own weight decay and epochs (or C, for the linear form) by 5-fold CV grouped
+by `group_id` inside each training slice. The reader stays frozen. The 7 + 4 verbatim-duplicate rows are trained once
+(Venn rejects repeated states) but all of them are scored. Triage trains on the GM's three labels
+(leave / chatter / name) and scores P(name), matching Nox's P(campaign). Typing trains only the five entity
+types, so Venn cannot "move" facts to event/thread/date. Log: `$DATA/results/e6/venn_family.log`.
+
+**Triage** (864 tokens; for "forwarded", lower is better):
+
+| | pooled AUC | forwarded at 0 misses / ≤2 | train-threshold held-out |
+|---|---|---|---|
+| Nox released | 0.900 | 82 % / 34 % | 96 %, 0 misses |
+| **Nox tuned head** | **0.963** | **67 % / 34 %** | **32 %, 3 misses** |
+| Venn zero-shot | 0.644 | 99 % / 96 % | — |
+| Venn residual, 24 ep (default) | 0.735 | 98 % / 94 % | 100 %, 0 |
+| Venn residual, ≤100 ep | 0.822 | 71 % / 64 % | 69 %, 2 |
+| Venn residual, ≤100 ep, balanced | 0.824 | 88 % / 75 % | 48 %, 10 |
+| Venn linear, balanced | 0.835 | 67 % / 65 % | 34 %, 17 |
+
+**Typing** (2,530 facts / 146 entities):
+
+| | per-fact acc | splits repair / control | entity-majority |
+|---|---|---|---|
+| Nox released | 87.2 % | 44 / 12 | 137/147 |
+| **Nox tuned head** | **91.3 %** | **34 / 9** | — |
+| Venn residual (24 / ≤100 ep) | 76.4 % / 77.8 % | 61–62 / 27 | 115–116 |
+| Venn linear | 81.9 % | 58 / 15 | 124 |
+
+- **Training helps a lot** (triage AUC 0.64 → 0.84), but **the best trained Venn stays below *untuned* Nox** on both
+  tasks. The 0.13 AUC gap to tuned Nox is the theory's prediction: one pooled vector of the passage can be
+  re-weighted, but it can't recover the role of the token under review. Typing errors are almost all
+  "→ npc" (object 118, faction 89, location 79, monster 56). The fact text names a person nearby and the pooled vector follows them.
+- The default `max_epochs` (24) underfits here; CV picked the upper bound every fold. The linear form beats the residual one throughout.
+- **Cost:** fits take ~35 s per fold on CPU. Embedding 2,530 short facts took 315 s; 864 triage states were already cached.
+
+## 2026-11-10 (later) — Venn × mneme: suggest a file's corpus kind (OOTA)
+
+`venn/corpus_kind_build.py` (rows = 403 declared files labelled with their kind by `mneme corpus toc`, plus up to 15 files
+per GM ruled-out path → `out`; 645 rows, 9 kinds, 72 dirs; first 8K chars) and `venn/corpus_kind_eval.py`.
+The OOTA `/corpus-gaps` backlog is currently **empty** (0 candidates), so this is held-out agreement only.
+
+| | random split by file | split by directory |
+|---|---|---|
+| path-only baseline (directory's majority kind) | **95.7 %** | n/a |
+| Venn linear | 88.5 % (95 % on its confident half) | 50.2 % |
+| Venn residual | 16.3 % | 10.1 % |
+
+- Residual families **abstain** ("none") on most long, mixed documents, so they're unusable here.
+- The directory split is uninformative: npcs and summaries each live in one directory, so a held-out fold has no
+  training examples of that kind. That's a limit of the split design, not a model result.
+- mneme kinds are mostly declared by directory, so the path is nearly the label. Content only matters for the loose
+  `docs/*.md` files (party / grounding / lore). Venn helped lore (7/10 vs path 1/10) but got grounding 0/14 and party 0/9 with ~10 examples each.
+- **CPU reader cost: 645 files × 8K chars = 1,201 s** (~1.9 s/file, sharing cores with the E6 run). Re-embedding
+  per mneme re-mine on CPU is slow, and Venn has no tested GPU path on sm_121.
+
+**Verdict:** Venn is a clean, honest design and cheap to train, but on CampaignGenerator and mneme tasks it loses to
+both the GPU decision models and simple path rules. Its niche, whole-document routing over stored vectors, isn't one
+these campaigns have today.

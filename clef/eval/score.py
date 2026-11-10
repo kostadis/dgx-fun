@@ -9,7 +9,7 @@ import tasks as T
 
 DATA = Path(os.path.expanduser(os.environ.get('DATA', '~/data/decision-eval/v1')))
 R = DATA / 'results'
-ORDER = ['clef', 'clef-flash', 'lux', 'nox', 'kai', 'jev', 'qwen', 'qwen-think']
+ORDER = os.environ.get('ORDER', 'clef clef-flash lux nox kai jev qwen qwen-think').split()
 OUT = {}
 load = lambda p: json.load(open(p))
 
