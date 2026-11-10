@@ -21,6 +21,8 @@ SYSTEMONE = {  # short name -> (url, served model id)
     'vela-4b':        (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-4B'),
     'vela-9b':        (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-9B'),
     'vela-4b-noabs':  (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-4B'),
+    # Venn venn-1 (markrussinovich/venn-vdm): 3 MB head over EmbeddingGemma 2, CPU, `venn serve` in spark2:~/venn
+    'venn':       (f'http://{SPARK2}:8007/api/alpha/decisions', 'venn-1'),
 }
 CHAT = {'qwen': False, 'qwen-think': True}   # qwen3.8-flash-next on spark1, reasoning off / on
 CHAT_URL, CHAT_MODEL = f'http://{SPARK1}:8001/v1/chat/completions', 'qwen3.8-flash-next'
