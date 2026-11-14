@@ -1,0 +1,88 @@
+{
+  "utc": "2026-11-14T01:54:51.366916+00:00",
+  "hostname": "gx10-46ea",
+  "health": "",
+  "models": {
+    "object": "list",
+    "data": [
+      {
+        "id": "qwen3.8-flash-next",
+        "object": "model",
+        "created": 1794621291,
+        "owned_by": "vllm",
+        "root": "/hf/hub/models--RadixArk--Qwen3.8-Flash-Next-NVFP4/snapshots/7b719225242aacd3dbd3f9407468c2ee9a9d2594-fp8hybrid",
+        "parent": null,
+        "max_model_len": 262144,
+        "permission": [
+          {
+            "id": "modelperm-bbfa8becda96517b",
+            "object": "model_permission",
+            "created": 1794621291,
+            "allow_create_engine": false,
+            "allow_sampling": true,
+            "allow_logprobs": true,
+            "allow_search_indices": false,
+            "allow_view": true,
+            "allow_fine_tuning": false,
+            "organization": "*",
+            "group": null,
+            "is_blocking": false
+          }
+        ]
+      }
+    ]
+  },
+  "container": {
+    "Id": "d3101a551c95e378fa98b60d69c3dd586ce2ee854c37bf24c98a2ddfa3b0f2b5",
+    "Name": "/qwen38-flash",
+    "Image": "sha256:f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d",
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 620517,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-11T07:38:44.50016661Z",
+      "FinishedAt": "2026-11-07T01:35:09.716193627Z"
+    }
+  },
+  "command": [
+    "/hf/hub/models--RadixArk--Qwen3.8-Flash-Next-NVFP4/snapshots/7b719225242aacd3dbd3f9407468c2ee9a9d2594-fp8hybrid",
+    "--served-model-name",
+    "qwen3.8-flash-next",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "8000",
+    "--load-format",
+    "safetensors",
+    "--max-model-len",
+    "262144",
+    "--max-num-seqs",
+    "8",
+    "--gpu-memory-utilization",
+    "0.80",
+    "--enable-prefix-caching",
+    "--enable-chunked-prefill",
+    "--max-num-batched-tokens",
+    "8192",
+    "-cc.cudagraph_mode=PIECEWISE",
+    "-cc.splitting_ops=[\"vllm::unified_attention_with_output\",\"vllm::unified_mla_attention_with_output\",\"vllm::mamba_mixer2\",\"vllm::mamba_mixer\",\"vllm::short_conv\",\"vllm::qwen3_8_flash_next_ple_short_conv\",\"vllm::qwen3_8_flash_next_qsa_with_output\",\"vllm::linear_attention\",\"vllm::qwen_gdn_attention_core\",\"vllm::qwen_gdn_attention_core_fused_norm_packed\",\"vllm::sparse_attn_indexer\",\"vllm::ple_mmap_lookup\"]",
+    "--no-enable-flashinfer-autotune",
+    "--kv-cache-dtype",
+    "auto",
+    "--enable-auto-tool-choice",
+    "--tool-call-parser",
+    "qwen3_coder",
+    "--reasoning-parser",
+    "qwen3",
+    "--speculative-config",
+    "{\"method\":\"mtp\",\"num_speculative_tokens\":2}"
+  ],
+  "meminfo": "MemTotal:       127600748 kB\nMemFree:         2805456 kB\nMemAvailable:   11842692 kB\nBuffers:          139420 kB\nCached:          9675852 kB\nSwapCached:      1220180 kB\nActive:          5204472 kB\nInactive:        9559448 kB\nActive(anon):    4585948 kB\nInactive(anon):   517840 kB\nActive(file):     618524 kB\nInactive(file):  9041608 kB\nUnevictable:       24084 kB\nMlocked:           24084 kB\nSwapTotal:      16777212 kB\nSwapFree:       14410432 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:               972 kB\nWriteback:             0 kB\nAnonPages:       4926656 kB\nMapped:          8913480 kB\nShmem:            149888 kB\nKReclaimable:     518548 kB\nSlab:            1515216 kB\nSReclaimable:     518548 kB\nSUnreclaim:       996668 kB\nKernelStack:       15216 kB\nShadowCallStack:    3884 kB\nPageTables:       134256 kB\nSecPageTables:    213756 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    80577584 kB\nCommitted_AS:   14022824 kB\nVmallocTotal:   135288315904 kB\nVmallocUsed:      790352 kB\nVmallocChunk:          0 kB\nPercpu:            32880 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:    815104 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:     63488 kB\nFilePmdMapped:         0 kB\nCmaTotal:         131072 kB\nCmaFree:           69320 kB\nBalloon:               0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\n",
+  "health_http_status": 200
+}

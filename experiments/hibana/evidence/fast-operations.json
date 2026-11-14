@@ -1,0 +1,598 @@
+{
+  "started_unix": 1794621167.7820504,
+  "before": {
+    "engine": "hibana",
+    "target": "flashnext",
+    "model_path": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    "revision": "7b719225242aacd3dbd3f9407468c2ee9a9d2594",
+    "w3_target_identity": "01bd50a3a264642aaa0baed5170b0c3bc9f19fdb7e613aa0d85e940b93db6225",
+    "w3_warning": null,
+    "context_length": 262144,
+    "tp_size": 1,
+    "max_running_requests": 4,
+    "max_queued_requests": 16,
+    "chunked_prefill_size": 4096,
+    "prefill_budget": 4096,
+    "solo_prefill_chunk": 8192,
+    "kv_pages": 300032,
+    "state_slots": 96,
+    "ledger_gib": {
+      "weights": 53.03,
+      "kv_pool": 3.65,
+      "state_pool": 10.34,
+      "workspaces": 0.52,
+      "proposer_and_verify": 3.66,
+      "cuda_graphs": 2.73
+    },
+    "memory_gib": {
+      "allocated": 73.93,
+      "reserved": 74.63,
+      "max_allocated": 73.99,
+      "max_reserved": 74.63,
+      "rss": 4.18
+    },
+    "after_plan_gib": {
+      "workspaces": 0.5,
+      "graphs": 0.5,
+      "first_use": 2.25,
+      "activations": 1.0
+    },
+    "speculative": {
+      "algorithm": "mtp",
+      "num_draft_tokens": 8,
+      "depths_by_batch": {
+        "1": 8,
+        "2": 7,
+        "4": 6
+      },
+      "adaptive_step_cost": 0.14,
+      "draft_precision": "bf16",
+      "draft": null,
+      "accept_default": {
+        "accept_top_k": 3,
+        "accept_margin": 2.0,
+        "accept_soft": 0.5
+      }
+    },
+    "attention_backend": "flashinfer",
+    "gdn_backend": "cute",
+    "kv_cache_dtype": "float8_e4m3fn",
+    "mamba_ssm_dtype": "float32",
+    "traces": null,
+    "vision": false,
+    "config": {
+      "profile": "fast",
+      "target": "flashnext",
+      "hf_cache": "/home/kostadis/.cache/huggingface",
+      "flashnext_cache": "/home/kostadis/.cache/huggingface",
+      "max_context": 262144,
+      "max_batch": 4,
+      "cuda_arch": "12.1a",
+      "tp_allreduce": "rdma",
+      "w3_decode": true,
+      "w3_checkpoint": "/home/kostadis/hibana-trial/results-fast/w3-checkpoints/flashnext-5c4c62a62853",
+      "w3_warning": null,
+      "stable_numerics": false,
+      "gdn_prefill": "auto",
+      "ssm_state": "fp32",
+      "ssm_window": 16,
+      "ssm_compensators": null,
+      "flashnext_trunk": "fp8",
+      "trunk_keep_bf16": null,
+      "flashnext_experts": "w3",
+      "bolt_experts": "b12x",
+      "vision": false,
+      "spec": "8",
+      "spec_depths": "2:7,4:6",
+      "spec_step_cost": 0.14,
+      "spec_policy": "fixed",
+      "draft_dir": null,
+      "host_floor_gib": 16.0,
+      "draft_vocab": 0,
+      "draft_head": "w2",
+      "draft_head_rescore": 16,
+      "device_accept": true,
+      "mtp_sample": true,
+      "accept_default": "3:2.0",
+      "accept_soft": 0.5,
+      "qsa_sparse_graphs": true,
+      "qsa_prefill_backend": "auto",
+      "ple_resident": "auto",
+      "ssd": true,
+      "ssd_gib": 40.0,
+      "ssd_dir": "/home/kostadis/hibana-trial/results-fast/ssd/flashnext",
+      "ssd_block_tokens": 256,
+      "ssd_trace": false,
+      "ssd_writers": 4,
+      "ssd_staging_mib": 512,
+      "ssd_chunk_mib": 256,
+      "verify_attention": "auto",
+      "kv_format": "nvfp4",
+      "kv_pool_tokens": 300032,
+      "traces": null,
+      "traces_max_mib": 32768,
+      "trace_confidence": false,
+      "debug_sync": false,
+      "bench_verify_state": "snapshots",
+      "moe_keep": 4,
+      "moe_budget": 64,
+      "moe_budget_per_request": 12
+    },
+    "scheduler": {
+      "admitted": 24,
+      "finished": 24,
+      "cancelled": 0,
+      "retractions": 0,
+      "rejected": 0,
+      "prefill_chunks": 68,
+      "prefill_tokens": 298379,
+      "decode_steps": 1101,
+      "decode_tokens": 8941,
+      "steps": 1117,
+      "avg_step_ms": 134.73010939631808,
+      "queued": 0,
+      "prefilling": 0,
+      "running": 0,
+      "floor_holds": 0,
+      "cache": {
+        "hits": 14,
+        "misses": 18,
+        "evictions": 24,
+        "snapshot_evictions": 47,
+        "cached_tokens": 290449,
+        "flush_pending": false,
+        "locks": {
+          "total": 0
+        },
+        "snapshots": {
+          "spare": 5,
+          "not_spare": 13
+        },
+        "evicted": {
+          "flush": {
+            "not_spare": 3,
+            "spare": 8
+          },
+          "kv": {
+            "not_spare": 4,
+            "spare": 7
+          },
+          "superseded": {
+            "spare": 47
+          }
+        },
+        "pruned": 1,
+        "full_reprefills": 0,
+        "branching_resumes": 0,
+        "evictable": {
+          "kv_tokens": 290449,
+          "kv_tokens_protected": 0,
+          "snapshots": 18,
+          "snapshots_protected": 0
+        },
+        "ssd": {
+          "nodes": 5,
+          "demotions": 5,
+          "promotions": 0,
+          "evictions": 0,
+          "prefixes": 20,
+          "used_gib": 6.442,
+          "budget_gib": 40.0,
+          "block_tokens": 256,
+          "queued_blocks": 0,
+          "staged_mib": 0.0,
+          "backed_blocks": 1179,
+          "tails": 20,
+          "tails_written_through": 20,
+          "tails_through_dropped": 0,
+          "queued_tails": 0,
+          "forced_gathers": 0,
+          "evict_dropped": 0,
+          "restores": 0,
+          "restore_fails": 0,
+          "restored_tokens": 0,
+          "restored_kv_tokens": 0,
+          "waited_for_writes": 0,
+          "deleted": 0,
+          "evict_ms_total": 3.3,
+          "evict_ms_max": 0.9,
+          "settle_ms_total": 0.0,
+          "settle_ms_max": 0.0,
+          "room_waits": 0,
+          "room_wait_writes": 0,
+          "room_wait_ms_total": 0.0,
+          "room_wait_ms_max": 0.0,
+          "step_ms_total": 650.5,
+          "step_ms_max": 123.0,
+          "restore_ms_avg": 0.0,
+          "async_restores": 0,
+          "restore_wait_steps": 0,
+          "restore_blocked_ms_total": 0.0,
+          "restore_gib": 0.0,
+          "restore_read_gbps": 0.0,
+          "restore_scatter_ms_avg": 0.0,
+          "restore_e2e_gbps": 0.0,
+          "store": {
+            "dir": "/home/kostadis/hibana-trial/results-fast/ssd/flashnext/v2/e0",
+            "writes": 1199,
+            "reads": 0,
+            "deletes": 0,
+            "write_gib": 6.433,
+            "read_gib": 0.0,
+            "write_errors": 0,
+            "read_errors": 0,
+            "last_error": null,
+            "pending": 0,
+            "writers": 4,
+            "direct_writes": true,
+            "write_ms_avg": 12.58,
+            "read_ms_avg": 0.0
+          }
+        },
+        "draft_resumes": {
+          "hits": 14,
+          "fallbacks": 0
+        }
+      },
+      "ttft_p50": 0.10850692889653146,
+      "ttft_p95": 29.619464143179357,
+      "ttft_window_count": 24,
+      "ttft_window_capacity": 2048
+    },
+    "spec_stats": {
+      "rounds": 1101,
+      "proposed": 8650,
+      "accepted": 7731,
+      "emitted": 8941,
+      "accept_rate": 0.893757225433526,
+      "tokens_per_round": 8.12079927338783,
+      "state_strategy": "reconstruct",
+      "verify_buffer_bytes": 107993088,
+      "verify_depth": 8,
+      "verify_depths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "round_ms": 46.90037619916352,
+      "relaxed_accepts": 146
+    },
+    "messages_api": {
+      "server_tools_ignored": 0
+    },
+    "constrained": {
+      "json_schema": 1,
+      "json_object": 17,
+      "tool_call": 1
+    },
+    "refusal_guard": {
+      "refusal_reminders": 0,
+      "refusal_stops": 0
+    }
+  },
+  "invalid_requests": [
+    {
+      "change": {
+        "messages": []
+      },
+      "status": 400,
+      "body": "{\"detail\":\"messages required\"}"
+    },
+    {
+      "change": {
+        "temperature": -1
+      },
+      "status": 400,
+      "body": "{\"error\":{\"message\":\"invalid temperature: -1\",\"type\":\"invalid_request_error\"}}"
+    },
+    {
+      "change": {
+        "max_tokens": 0
+      },
+      "status": 400,
+      "body": "{\"error\":{\"message\":\"max_new_tokens must be a positive integer\",\"type\":\"invalid_request_error\"}}"
+    }
+  ],
+  "disconnected_after": {
+    "id": "chatcmpl-4c8b386b6a6742f5ac955305",
+    "object": "chat.completion.chunk",
+    "created": 1794621167,
+    "model": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    "choices": [
+      {
+        "index": 0,
+        "delta": {
+          "role": "assistant",
+          "content": "Here"
+        },
+        "finish_reason": null
+      }
+    ]
+  },
+  "after": {
+    "engine": "hibana",
+    "target": "flashnext",
+    "model_path": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    "revision": "7b719225242aacd3dbd3f9407468c2ee9a9d2594",
+    "w3_target_identity": "01bd50a3a264642aaa0baed5170b0c3bc9f19fdb7e613aa0d85e940b93db6225",
+    "w3_warning": null,
+    "context_length": 262144,
+    "tp_size": 1,
+    "max_running_requests": 4,
+    "max_queued_requests": 16,
+    "chunked_prefill_size": 4096,
+    "prefill_budget": 4096,
+    "solo_prefill_chunk": 8192,
+    "kv_pages": 300032,
+    "state_slots": 96,
+    "ledger_gib": {
+      "weights": 53.03,
+      "kv_pool": 3.65,
+      "state_pool": 10.34,
+      "workspaces": 0.52,
+      "proposer_and_verify": 3.66,
+      "cuda_graphs": 2.73
+    },
+    "memory_gib": {
+      "allocated": 73.93,
+      "reserved": 74.63,
+      "max_allocated": 73.99,
+      "max_reserved": 74.63,
+      "rss": 4.18
+    },
+    "after_plan_gib": {
+      "workspaces": 0.5,
+      "graphs": 0.5,
+      "first_use": 2.25,
+      "activations": 1.0
+    },
+    "speculative": {
+      "algorithm": "mtp",
+      "num_draft_tokens": 8,
+      "depths_by_batch": {
+        "1": 8,
+        "2": 7,
+        "4": 6
+      },
+      "adaptive_step_cost": 0.14,
+      "draft_precision": "bf16",
+      "draft": null,
+      "accept_default": {
+        "accept_top_k": 3,
+        "accept_margin": 2.0,
+        "accept_soft": 0.5
+      }
+    },
+    "attention_backend": "flashinfer",
+    "gdn_backend": "cute",
+    "kv_cache_dtype": "float8_e4m3fn",
+    "mamba_ssm_dtype": "float32",
+    "traces": null,
+    "vision": false,
+    "config": {
+      "profile": "fast",
+      "target": "flashnext",
+      "hf_cache": "/home/kostadis/.cache/huggingface",
+      "flashnext_cache": "/home/kostadis/.cache/huggingface",
+      "max_context": 262144,
+      "max_batch": 4,
+      "cuda_arch": "12.1a",
+      "tp_allreduce": "rdma",
+      "w3_decode": true,
+      "w3_checkpoint": "/home/kostadis/hibana-trial/results-fast/w3-checkpoints/flashnext-5c4c62a62853",
+      "w3_warning": null,
+      "stable_numerics": false,
+      "gdn_prefill": "auto",
+      "ssm_state": "fp32",
+      "ssm_window": 16,
+      "ssm_compensators": null,
+      "flashnext_trunk": "fp8",
+      "trunk_keep_bf16": null,
+      "flashnext_experts": "w3",
+      "bolt_experts": "b12x",
+      "vision": false,
+      "spec": "8",
+      "spec_depths": "2:7,4:6",
+      "spec_step_cost": 0.14,
+      "spec_policy": "fixed",
+      "draft_dir": null,
+      "host_floor_gib": 16.0,
+      "draft_vocab": 0,
+      "draft_head": "w2",
+      "draft_head_rescore": 16,
+      "device_accept": true,
+      "mtp_sample": true,
+      "accept_default": "3:2.0",
+      "accept_soft": 0.5,
+      "qsa_sparse_graphs": true,
+      "qsa_prefill_backend": "auto",
+      "ple_resident": "auto",
+      "ssd": true,
+      "ssd_gib": 40.0,
+      "ssd_dir": "/home/kostadis/hibana-trial/results-fast/ssd/flashnext",
+      "ssd_block_tokens": 256,
+      "ssd_trace": false,
+      "ssd_writers": 4,
+      "ssd_staging_mib": 512,
+      "ssd_chunk_mib": 256,
+      "verify_attention": "auto",
+      "kv_format": "nvfp4",
+      "kv_pool_tokens": 300032,
+      "traces": null,
+      "traces_max_mib": 32768,
+      "trace_confidence": false,
+      "debug_sync": false,
+      "bench_verify_state": "snapshots",
+      "moe_keep": 4,
+      "moe_budget": 64,
+      "moe_budget_per_request": 12
+    },
+    "scheduler": {
+      "admitted": 25,
+      "finished": 24,
+      "cancelled": 1,
+      "retractions": 0,
+      "rejected": 0,
+      "prefill_chunks": 69,
+      "prefill_tokens": 298409,
+      "decode_steps": 1102,
+      "decode_tokens": 8944,
+      "steps": 1118,
+      "avg_step_ms": 134.72338689679415,
+      "queued": 0,
+      "prefilling": 0,
+      "running": 0,
+      "floor_holds": 0,
+      "cache": {
+        "hits": 14,
+        "misses": 19,
+        "evictions": 24,
+        "snapshot_evictions": 47,
+        "cached_tokens": 290481,
+        "flush_pending": false,
+        "locks": {
+          "total": 0
+        },
+        "snapshots": {
+          "spare": 6,
+          "not_spare": 13
+        },
+        "evicted": {
+          "flush": {
+            "not_spare": 3,
+            "spare": 8
+          },
+          "kv": {
+            "not_spare": 4,
+            "spare": 7
+          },
+          "superseded": {
+            "spare": 47
+          }
+        },
+        "pruned": 1,
+        "full_reprefills": 0,
+        "branching_resumes": 0,
+        "evictable": {
+          "kv_tokens": 290481,
+          "kv_tokens_protected": 0,
+          "snapshots": 19,
+          "snapshots_protected": 0
+        },
+        "ssd": {
+          "nodes": 5,
+          "demotions": 5,
+          "promotions": 0,
+          "evictions": 0,
+          "prefixes": 20,
+          "used_gib": 6.442,
+          "budget_gib": 40.0,
+          "block_tokens": 256,
+          "queued_blocks": 0,
+          "staged_mib": 0.0,
+          "backed_blocks": 1179,
+          "tails": 20,
+          "tails_written_through": 20,
+          "tails_through_dropped": 0,
+          "queued_tails": 0,
+          "forced_gathers": 0,
+          "evict_dropped": 0,
+          "restores": 0,
+          "restore_fails": 0,
+          "restored_tokens": 0,
+          "restored_kv_tokens": 0,
+          "waited_for_writes": 0,
+          "deleted": 0,
+          "evict_ms_total": 3.3,
+          "evict_ms_max": 0.9,
+          "settle_ms_total": 0.0,
+          "settle_ms_max": 0.0,
+          "room_waits": 0,
+          "room_wait_writes": 0,
+          "room_wait_ms_total": 0.0,
+          "room_wait_ms_max": 0.0,
+          "step_ms_total": 651.0,
+          "step_ms_max": 123.0,
+          "restore_ms_avg": 0.0,
+          "async_restores": 0,
+          "restore_wait_steps": 0,
+          "restore_blocked_ms_total": 0.0,
+          "restore_gib": 0.0,
+          "restore_read_gbps": 0.0,
+          "restore_scatter_ms_avg": 0.0,
+          "restore_e2e_gbps": 0.0,
+          "store": {
+            "dir": "/home/kostadis/hibana-trial/results-fast/ssd/flashnext/v2/e0",
+            "writes": 1199,
+            "reads": 0,
+            "deletes": 0,
+            "write_gib": 6.433,
+            "read_gib": 0.0,
+            "write_errors": 0,
+            "read_errors": 0,
+            "last_error": null,
+            "pending": 0,
+            "writers": 4,
+            "direct_writes": true,
+            "write_ms_avg": 12.58,
+            "read_ms_avg": 0.0
+          }
+        },
+        "draft_resumes": {
+          "hits": 14,
+          "fallbacks": 0
+        }
+      },
+      "ttft_p50": 0.10850692889653146,
+      "ttft_p95": 29.619464143179357,
+      "ttft_window_count": 24,
+      "ttft_window_capacity": 2048
+    },
+    "spec_stats": {
+      "rounds": 1102,
+      "proposed": 8654,
+      "accepted": 7733,
+      "emitted": 8944,
+      "accept_rate": 0.8935752253293274,
+      "tokens_per_round": 8.116152450090745,
+      "state_strategy": "reconstruct",
+      "verify_buffer_bytes": 107993088,
+      "verify_depth": 8,
+      "verify_depths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "round_ms": 46.891634665411,
+      "relaxed_accepts": 146
+    },
+    "messages_api": {
+      "server_tools_ignored": 0
+    },
+    "constrained": {
+      "json_schema": 1,
+      "json_object": 17,
+      "tool_call": 1
+    },
+    "refusal_guard": {
+      "refusal_reminders": 0,
+      "refusal_stops": 0
+    }
+  },
+  "health": {
+    "status": "ok",
+    "uptime_seconds": 219.15653800964355
+  },
+  "passed": true,
+  "finished_unix": 1794621168.397589
+}

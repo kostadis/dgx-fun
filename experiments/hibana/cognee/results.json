@@ -1,0 +1,758 @@
+{
+  "arms": {
+    "baseline": {
+      "arm": "baseline",
+      "completed": true,
+      "error": null,
+      "runtime": {
+        "source": "/home/kostadis/src/cognee/cognee/__init__.py",
+        "version": "1.6.2-local",
+        "installed_versions": {
+          "cognee": "1.5.3",
+          "litellm": "1.100.1",
+          "instructor": "1.15.1",
+          "ladybug": "0.19.0",
+          "lancedb": "0.38.0"
+        }
+      },
+      "source_head": "b32d8afc59e1064d9291b9828a8a147be9cc8bab",
+      "inputs": [
+        {
+          "name": "barkinar.md",
+          "bytes": 5005,
+          "sha256": "ccf45f2c7afa340a49b52c98956b63bda60b346d81d9a6d8dcd8c413e358cf01"
+        },
+        {
+          "name": "captain-dren-halveth.md",
+          "bytes": 9172,
+          "sha256": "f8055fdd593fbf7ae688cb448bd37806e741c38909d48ff159ba5baf80ce76b0"
+        },
+        {
+          "name": "falrinth.md",
+          "bytes": 6543,
+          "sha256": "91e7f475bdd98b4684a337ac510dff220b125adc3cebfe3ca5ca3d2bf12a062a"
+        },
+        {
+          "name": "hedrack.md",
+          "bytes": 3885,
+          "sha256": "dbf3a76bb6b2c7c11c82c2e97593b90952b337cdf64e4eb97c6793fe7e251cf5"
+        },
+        {
+          "name": "kelno.md",
+          "bytes": 8249,
+          "sha256": "bdcc4b9800884ed190bf3e060c96bbeb4210656776a4cbf4c9c208f8a0db2401"
+        },
+        {
+          "name": "lucius-graeme.md",
+          "bytes": 5633,
+          "sha256": "1870c84c998e34bb47a406bfe666307455831ba57ba7882f3222a74570f454f6"
+        },
+        {
+          "name": "senshock.md",
+          "bytes": 3135,
+          "sha256": "d7145a29b4676dc472ad07d28cf0b41a5589c7a3b0f63f31aa9d0c8217a8e0b3"
+        }
+      ],
+      "remember_seconds": 252.56697989301756,
+      "remember_result": "RememberResult(status='completed', dataset='hibana_shadow', dataset_id='a53c39f3-b9eb-55d0-9f78-66599e6f77f3', pipeline_run_id='5713461c-6bbb-4139-a196-ea73db4f3fd4', items=7, elapsed=248.4s)",
+      "graph": {
+        "nodes": 93,
+        "edges": 285,
+        "node_types": {
+          "TextSummary": 7,
+          "DocumentChunk": 7,
+          "TextDocument": 7,
+          "Entity": 63,
+          "EntityType": 9
+        },
+        "entity_count": 63,
+        "entity_edge_count": 101
+      },
+      "shared_reader_routing_confirmed": true,
+      "llm": {
+        "recall": {
+          "calls": 40,
+          "output_tokens": 4056,
+          "non_200": 0,
+          "upstream_seconds_sum": 485.4106936198659,
+          "proxy_queue_seconds_sum": 0.00016446015797555447
+        },
+        "remember": {
+          "calls": 15,
+          "output_tokens": 15705,
+          "non_200": 0,
+          "upstream_seconds_sum": 595.5176439413335,
+          "proxy_queue_seconds_sum": 5.1800161600112915e-05
+        }
+      },
+      "answers": [
+        {
+          "id": "hedrack_meeting",
+          "reader": "native",
+          "seconds": 5.283180725993589,
+          "result_count": 1,
+          "answer_sha256": "55d9bf48ae739b52dd2601f1a7f1a5dd81317c74d8c6e8ddd0c23d0d0b5bee9f",
+          "answer_characters": 417
+        },
+        {
+          "id": "senshock_meeting",
+          "reader": "native",
+          "seconds": 11.586092809215188,
+          "result_count": 1,
+          "answer_sha256": "6be46a64228f14234b6ddc34a6fd9297821a4dc6ab7b4fae06ceb5378c381f27",
+          "answer_characters": 952
+        },
+        {
+          "id": "orb_possession",
+          "reader": "native",
+          "seconds": 7.568564840126783,
+          "result_count": 1,
+          "answer_sha256": "b338313477b32ce703bbcedf6d40c159e4ebb865280ebebde3213741e8954993",
+          "answer_characters": 807
+        },
+        {
+          "id": "scarab_warning",
+          "reader": "native",
+          "seconds": 9.781092891003937,
+          "result_count": 1,
+          "answer_sha256": "e7cac081acccbb5a2a649538e50f2f3abb7013a8225ce2ccd703a204795523e3",
+          "answer_characters": 710
+        },
+        {
+          "id": "magic_payment",
+          "reader": "native",
+          "seconds": 9.89942685305141,
+          "result_count": 1,
+          "answer_sha256": "4230e80fbcab232a9c6fc55edf8a3daa7e8e6da8089034834f014b67d3f618ce",
+          "answer_characters": 624
+        },
+        {
+          "id": "sword_prices",
+          "reader": "native",
+          "seconds": 8.679277699906379,
+          "result_count": 1,
+          "answer_sha256": "52a914ebe5f533a02933a315c51e1b4a8a9cd58b4150c0b695798849155f43f2",
+          "answer_characters": 368
+        },
+        {
+          "id": "special_orders",
+          "reader": "native",
+          "seconds": 6.626298439921811,
+          "result_count": 1,
+          "answer_sha256": "914287da53ad3b3d17e25d4d9735d3125c125d146e829d708a9180b80ca3d47d",
+          "answer_characters": 395
+        },
+        {
+          "id": "ring_deposit",
+          "reader": "native",
+          "seconds": 6.6425830100197345,
+          "result_count": 1,
+          "answer_sha256": "54bb9b85951e008c6af7f7d6544c86fa4ef50cab45c2e56decdd0057a0a0f66c",
+          "answer_characters": 343
+        },
+        {
+          "id": "senshock_location",
+          "reader": "native",
+          "seconds": 8.45687830913812,
+          "result_count": 1,
+          "answer_sha256": "13df07c52a5d8f7619cbde16f09769704aa076d6b912c27b13aeb53726dd5d58",
+          "answer_characters": 710
+        },
+        {
+          "id": "unsupported_ironhand",
+          "reader": "native",
+          "seconds": 22.71307854889892,
+          "result_count": 1,
+          "answer_sha256": "8673d1cda4e36cdbf993e1fe752380b8182c586417c3246abd601f3ccf281da5",
+          "answer_characters": 868
+        },
+        {
+          "id": "hedrack_meeting",
+          "reader": "shared",
+          "seconds": 20.088385032024235,
+          "result_count": 1,
+          "answer_sha256": "4f2724220f838dea6d9488d8971066669558c3202ab1f16404bc00c2c655cee9",
+          "answer_characters": 544
+        },
+        {
+          "id": "senshock_meeting",
+          "reader": "shared",
+          "seconds": 20.408257101895288,
+          "result_count": 1,
+          "answer_sha256": "5361a7aa630975a0e89c0209514e3bff49befb8d8ded20785e2191817a5badec",
+          "answer_characters": 957
+        },
+        {
+          "id": "orb_possession",
+          "reader": "shared",
+          "seconds": 20.62475113198161,
+          "result_count": 1,
+          "answer_sha256": "b338313477b32ce703bbcedf6d40c159e4ebb865280ebebde3213741e8954993",
+          "answer_characters": 807
+        },
+        {
+          "id": "scarab_warning",
+          "reader": "shared",
+          "seconds": 17.227839607046917,
+          "result_count": 1,
+          "answer_sha256": "e7cac081acccbb5a2a649538e50f2f3abb7013a8225ce2ccd703a204795523e3",
+          "answer_characters": 710
+        },
+        {
+          "id": "magic_payment",
+          "reader": "shared",
+          "seconds": 24.542761160060763,
+          "result_count": 1,
+          "answer_sha256": "6ba8c532012986a7f880946c7503377c8952a0f8ff0d5d2508c56f8f514406ac",
+          "answer_characters": 631
+        },
+        {
+          "id": "sword_prices",
+          "reader": "shared",
+          "seconds": 18.068969334941357,
+          "result_count": 1,
+          "answer_sha256": "52a914ebe5f533a02933a315c51e1b4a8a9cd58b4150c0b695798849155f43f2",
+          "answer_characters": 368
+        },
+        {
+          "id": "special_orders",
+          "reader": "shared",
+          "seconds": 15.304352366132662,
+          "result_count": 1,
+          "answer_sha256": "914287da53ad3b3d17e25d4d9735d3125c125d146e829d708a9180b80ca3d47d",
+          "answer_characters": 395
+        },
+        {
+          "id": "ring_deposit",
+          "reader": "shared",
+          "seconds": 22.155715458095074,
+          "result_count": 1,
+          "answer_sha256": "54bb9b85951e008c6af7f7d6544c86fa4ef50cab45c2e56decdd0057a0a0f66c",
+          "answer_characters": 343
+        },
+        {
+          "id": "senshock_location",
+          "reader": "shared",
+          "seconds": 13.547547440975904,
+          "result_count": 1,
+          "answer_sha256": "13df07c52a5d8f7619cbde16f09769704aa076d6b912c27b13aeb53726dd5d58",
+          "answer_characters": 710
+        },
+        {
+          "id": "unsupported_ironhand",
+          "reader": "shared",
+          "seconds": 13.512171900831163,
+          "result_count": 1,
+          "answer_sha256": "1ea54cef0a2d2961b33b829a61ef961b6cc1aaea9f2e075fefa37fc2c0db6f9b",
+          "answer_characters": 877
+        }
+      ],
+      "ingestion_output_tokens_per_wall_second": 62.18152510139026,
+      "entity_edges_sha256": "ce6e898601a6441ecd09e0fd906bb872f3cdba8e662bf6e78a090dc217553b9d"
+    },
+    "exact": {
+      "arm": "exact",
+      "completed": true,
+      "error": null,
+      "runtime": {
+        "source": "/home/kostadis/src/cognee/cognee/__init__.py",
+        "version": "1.6.2-local",
+        "installed_versions": {
+          "cognee": "1.5.3",
+          "litellm": "1.100.1",
+          "instructor": "1.15.1",
+          "ladybug": "0.19.0",
+          "lancedb": "0.38.0"
+        }
+      },
+      "source_head": "b32d8afc59e1064d9291b9828a8a147be9cc8bab",
+      "inputs": [
+        {
+          "name": "barkinar.md",
+          "bytes": 5005,
+          "sha256": "ccf45f2c7afa340a49b52c98956b63bda60b346d81d9a6d8dcd8c413e358cf01"
+        },
+        {
+          "name": "captain-dren-halveth.md",
+          "bytes": 9172,
+          "sha256": "f8055fdd593fbf7ae688cb448bd37806e741c38909d48ff159ba5baf80ce76b0"
+        },
+        {
+          "name": "falrinth.md",
+          "bytes": 6543,
+          "sha256": "91e7f475bdd98b4684a337ac510dff220b125adc3cebfe3ca5ca3d2bf12a062a"
+        },
+        {
+          "name": "hedrack.md",
+          "bytes": 3885,
+          "sha256": "dbf3a76bb6b2c7c11c82c2e97593b90952b337cdf64e4eb97c6793fe7e251cf5"
+        },
+        {
+          "name": "kelno.md",
+          "bytes": 8249,
+          "sha256": "bdcc4b9800884ed190bf3e060c96bbeb4210656776a4cbf4c9c208f8a0db2401"
+        },
+        {
+          "name": "lucius-graeme.md",
+          "bytes": 5633,
+          "sha256": "1870c84c998e34bb47a406bfe666307455831ba57ba7882f3222a74570f454f6"
+        },
+        {
+          "name": "senshock.md",
+          "bytes": 3135,
+          "sha256": "d7145a29b4676dc472ad07d28cf0b41a5589c7a3b0f63f31aa9d0c8217a8e0b3"
+        }
+      ],
+      "remember_seconds": 144.82734642690048,
+      "remember_result": "RememberResult(status='completed', dataset='hibana_shadow', dataset_id='7a902a57-236a-5602-bb94-622818b4d16c', pipeline_run_id='843cc24d-8796-4974-8dd1-8d1cd3d2b22a', items=7, elapsed=141.0s)",
+      "graph": {
+        "nodes": 77,
+        "edges": 239,
+        "node_types": {
+          "TextSummary": 7,
+          "DocumentChunk": 7,
+          "TextDocument": 7,
+          "Entity": 49,
+          "EntityType": 7
+        },
+        "entity_count": 49,
+        "entity_edge_count": 83
+      },
+      "shared_reader_routing_confirmed": true,
+      "llm": {
+        "remember": {
+          "calls": 15,
+          "output_tokens": 13572,
+          "non_200": 0,
+          "upstream_seconds_sum": 347.2576535223052,
+          "proxy_queue_seconds_sum": 5.029980093240738e-05
+        },
+        "recall": {
+          "calls": 40,
+          "output_tokens": 4067,
+          "non_200": 0,
+          "upstream_seconds_sum": 432.12106869975105,
+          "proxy_queue_seconds_sum": 0.00016841874457895756
+        }
+      },
+      "answers": [
+        {
+          "id": "hedrack_meeting",
+          "reader": "native",
+          "seconds": 4.908465083921328,
+          "result_count": 1,
+          "answer_sha256": "0867ea60c826db7969de19f1fe4024ec142e6eeefde1ad3cc683c52f753c544d",
+          "answer_characters": 674
+        },
+        {
+          "id": "senshock_meeting",
+          "reader": "native",
+          "seconds": 9.312308616936207,
+          "result_count": 1,
+          "answer_sha256": "bf26bcad7c3f29d71d0fd65c4b6eb478f8d5d30e64e325115b17533aeba9508b",
+          "answer_characters": 867
+        },
+        {
+          "id": "orb_possession",
+          "reader": "native",
+          "seconds": 5.567853065207601,
+          "result_count": 1,
+          "answer_sha256": "538edf7e30782db5427dbb9cbf048001886805be69b54f144989d928d67067fc",
+          "answer_characters": 557
+        },
+        {
+          "id": "scarab_warning",
+          "reader": "native",
+          "seconds": 6.532717089168727,
+          "result_count": 1,
+          "answer_sha256": "7b6d6a2038151421e386f82d6eb3848a014435d8b0db8b20545ffe8a7d13b8a0",
+          "answer_characters": 847
+        },
+        {
+          "id": "magic_payment",
+          "reader": "native",
+          "seconds": 5.953612864948809,
+          "result_count": 1,
+          "answer_sha256": "8f2ece6c6a89155dac73762f0a749e1bae9bc9229d8a706db87bc1a1886d5a5c",
+          "answer_characters": 555
+        },
+        {
+          "id": "sword_prices",
+          "reader": "native",
+          "seconds": 5.562143195886165,
+          "result_count": 1,
+          "answer_sha256": "838acfc7dd4ff08ad289f3aede5bd229a9419032c16281f98a09a36b4fd02bdb",
+          "answer_characters": 556
+        },
+        {
+          "id": "special_orders",
+          "reader": "native",
+          "seconds": 4.496627403888851,
+          "result_count": 1,
+          "answer_sha256": "18abfd403ab3d08ab6ed72447f900672417b56581360246eda4fe7d6d4ee366e",
+          "answer_characters": 525
+        },
+        {
+          "id": "ring_deposit",
+          "reader": "native",
+          "seconds": 5.107403889996931,
+          "result_count": 1,
+          "answer_sha256": "1abba9ba00418fe22fe48702181110d2db6743aa34052475ebc8b208a8103427",
+          "answer_characters": 480
+        },
+        {
+          "id": "senshock_location",
+          "reader": "native",
+          "seconds": 6.247762484010309,
+          "result_count": 1,
+          "answer_sha256": "e80f66667f14a44ebdb35b5075625ce5a530bf238a2d397473ca39a11b0dc6dc",
+          "answer_characters": 671
+        },
+        {
+          "id": "unsupported_ironhand",
+          "reader": "native",
+          "seconds": 10.025731320958585,
+          "result_count": 1,
+          "answer_sha256": "17e3ed2966e7f72ce198a001630ad40e7cd686f7d29bdc88f8a59b9e70890adc",
+          "answer_characters": 560
+        },
+        {
+          "id": "hedrack_meeting",
+          "reader": "shared",
+          "seconds": 16.199940993916243,
+          "result_count": 1,
+          "answer_sha256": "0867ea60c826db7969de19f1fe4024ec142e6eeefde1ad3cc683c52f753c544d",
+          "answer_characters": 674
+        },
+        {
+          "id": "senshock_meeting",
+          "reader": "shared",
+          "seconds": 28.752319616032764,
+          "result_count": 1,
+          "answer_sha256": "fba12ccd12bb72dacf35e5225b521569edf67e33272756a09f6ec833dace53af",
+          "answer_characters": 889
+        },
+        {
+          "id": "orb_possession",
+          "reader": "shared",
+          "seconds": 11.907396760070696,
+          "result_count": 1,
+          "answer_sha256": "f9884f1ca7832d79c14772dc2b03b3ad61edebf2e79f7e81fa13a0c254410330",
+          "answer_characters": 531
+        },
+        {
+          "id": "scarab_warning",
+          "reader": "shared",
+          "seconds": 25.00364811089821,
+          "result_count": 1,
+          "answer_sha256": "7b6d6a2038151421e386f82d6eb3848a014435d8b0db8b20545ffe8a7d13b8a0",
+          "answer_characters": 847
+        },
+        {
+          "id": "magic_payment",
+          "reader": "shared",
+          "seconds": 13.381974451011047,
+          "result_count": 1,
+          "answer_sha256": "8f2ece6c6a89155dac73762f0a749e1bae9bc9229d8a706db87bc1a1886d5a5c",
+          "answer_characters": 555
+        },
+        {
+          "id": "sword_prices",
+          "reader": "shared",
+          "seconds": 16.973365704063326,
+          "result_count": 1,
+          "answer_sha256": "838acfc7dd4ff08ad289f3aede5bd229a9419032c16281f98a09a36b4fd02bdb",
+          "answer_characters": 556
+        },
+        {
+          "id": "special_orders",
+          "reader": "shared",
+          "seconds": 15.838840889045969,
+          "result_count": 1,
+          "answer_sha256": "a1800337143367f9b8cc2a625b3d62e940bc57ca5276d0d27a7f8ed0d205e402",
+          "answer_characters": 529
+        },
+        {
+          "id": "ring_deposit",
+          "reader": "shared",
+          "seconds": 9.915144443977624,
+          "result_count": 1,
+          "answer_sha256": "f72866f4a2f1be105a2d6dc01ed332e769a9f7d8f90ed04295dd0b9e49a66353",
+          "answer_characters": 477
+        },
+        {
+          "id": "senshock_location",
+          "reader": "shared",
+          "seconds": 23.281072786077857,
+          "result_count": 1,
+          "answer_sha256": "e80f66667f14a44ebdb35b5075625ce5a530bf238a2d397473ca39a11b0dc6dc",
+          "answer_characters": 671
+        },
+        {
+          "id": "unsupported_ironhand",
+          "reader": "shared",
+          "seconds": 24.96374349319376,
+          "result_count": 1,
+          "answer_sha256": "17e3ed2966e7f72ce198a001630ad40e7cd686f7d29bdc88f8a59b9e70890adc",
+          "answer_characters": 560
+        }
+      ],
+      "ingestion_output_tokens_per_wall_second": 93.71158372255528,
+      "entity_edges_sha256": "de88394647b6f6680e65bf62b55ccc728d62b687df2d0028aca0b879ac96fb13"
+    },
+    "fast": {
+      "arm": "fast",
+      "completed": true,
+      "error": null,
+      "runtime": {
+        "source": "/home/kostadis/src/cognee/cognee/__init__.py",
+        "version": "1.6.2-local",
+        "installed_versions": {
+          "cognee": "1.5.3",
+          "litellm": "1.100.1",
+          "instructor": "1.15.1",
+          "ladybug": "0.19.0",
+          "lancedb": "0.38.0"
+        }
+      },
+      "source_head": "b32d8afc59e1064d9291b9828a8a147be9cc8bab",
+      "inputs": [
+        {
+          "name": "barkinar.md",
+          "bytes": 5005,
+          "sha256": "ccf45f2c7afa340a49b52c98956b63bda60b346d81d9a6d8dcd8c413e358cf01"
+        },
+        {
+          "name": "captain-dren-halveth.md",
+          "bytes": 9172,
+          "sha256": "f8055fdd593fbf7ae688cb448bd37806e741c38909d48ff159ba5baf80ce76b0"
+        },
+        {
+          "name": "falrinth.md",
+          "bytes": 6543,
+          "sha256": "91e7f475bdd98b4684a337ac510dff220b125adc3cebfe3ca5ca3d2bf12a062a"
+        },
+        {
+          "name": "hedrack.md",
+          "bytes": 3885,
+          "sha256": "dbf3a76bb6b2c7c11c82c2e97593b90952b337cdf64e4eb97c6793fe7e251cf5"
+        },
+        {
+          "name": "kelno.md",
+          "bytes": 8249,
+          "sha256": "bdcc4b9800884ed190bf3e060c96bbeb4210656776a4cbf4c9c208f8a0db2401"
+        },
+        {
+          "name": "lucius-graeme.md",
+          "bytes": 5633,
+          "sha256": "1870c84c998e34bb47a406bfe666307455831ba57ba7882f3222a74570f454f6"
+        },
+        {
+          "name": "senshock.md",
+          "bytes": 3135,
+          "sha256": "d7145a29b4676dc472ad07d28cf0b41a5589c7a3b0f63f31aa9d0c8217a8e0b3"
+        }
+      ],
+      "remember_seconds": 65.67197464499623,
+      "remember_result": "RememberResult(status='completed', dataset='hibana_shadow', dataset_id='e9752548-7c7b-595f-af98-12c277622fab', pipeline_run_id='65881421-a69c-44ed-9235-cf6210846d70', items=7, elapsed=61.8s)",
+      "graph": {
+        "nodes": 71,
+        "edges": 211,
+        "node_types": {
+          "TextSummary": 7,
+          "DocumentChunk": 7,
+          "TextDocument": 7,
+          "Entity": 42,
+          "EntityType": 8
+        },
+        "entity_count": 42,
+        "entity_edge_count": 74
+      },
+      "shared_reader_routing_confirmed": true,
+      "llm": {
+        "recall": {
+          "calls": 40,
+          "output_tokens": 4529,
+          "non_200": 0,
+          "upstream_seconds_sum": 292.4838667192962,
+          "proxy_queue_seconds_sum": 0.00016800826415419579
+        },
+        "remember": {
+          "calls": 15,
+          "output_tokens": 12427,
+          "non_200": 0,
+          "upstream_seconds_sum": 150.43231167760678,
+          "proxy_queue_seconds_sum": 5.2179908379912376e-05
+        }
+      },
+      "answers": [
+        {
+          "id": "hedrack_meeting",
+          "reader": "native",
+          "seconds": 4.0109747250098735,
+          "result_count": 1,
+          "answer_sha256": "13736d6f453d00d2b18feeac2b573491f36ff9b33dde58a16c8151e1c3961d0a",
+          "answer_characters": 654
+        },
+        {
+          "id": "senshock_meeting",
+          "reader": "native",
+          "seconds": 6.231719766044989,
+          "result_count": 1,
+          "answer_sha256": "842a32c6363bc4af9562ed35022dd5736441b786c6b174b75f8d8c07ca7143a1",
+          "answer_characters": 889
+        },
+        {
+          "id": "orb_possession",
+          "reader": "native",
+          "seconds": 5.44981321785599,
+          "result_count": 1,
+          "answer_sha256": "5e844c59b0b2b41cad85a0e6abe36e6563ca73878a082890cc5d4357052ed5b6",
+          "answer_characters": 923
+        },
+        {
+          "id": "scarab_warning",
+          "reader": "native",
+          "seconds": 5.218001906992868,
+          "result_count": 1,
+          "answer_sha256": "7a86b2ee2c14bde8e3ef355533f317170fecf5e1f0c1606a9fc81638c270e0ee",
+          "answer_characters": 488
+        },
+        {
+          "id": "magic_payment",
+          "reader": "native",
+          "seconds": 4.408102249959484,
+          "result_count": 1,
+          "answer_sha256": "c8b4ac08e2c521a189c10568e6f15f4e22665ebe242ebcbac1dea7a73cec838d",
+          "answer_characters": 837
+        },
+        {
+          "id": "sword_prices",
+          "reader": "native",
+          "seconds": 4.2263113188091666,
+          "result_count": 1,
+          "answer_sha256": "12e4743513328c8dee0ed2fde6c70c36d51dd00f8d0c203455e2de75d3fd5cc9",
+          "answer_characters": 503
+        },
+        {
+          "id": "special_orders",
+          "reader": "native",
+          "seconds": 3.8689975331071764,
+          "result_count": 1,
+          "answer_sha256": "cc3ddff5a2aaa32c7e55f15fa94bef4367b6228497387358b77804e44438abee",
+          "answer_characters": 334
+        },
+        {
+          "id": "ring_deposit",
+          "reader": "native",
+          "seconds": 4.059106584172696,
+          "result_count": 1,
+          "answer_sha256": "6af245c4a97b685f69206fdbc83f8b64ccc62c770893a3013de5234f13b9a5dc",
+          "answer_characters": 431
+        },
+        {
+          "id": "senshock_location",
+          "reader": "native",
+          "seconds": 4.572869529016316,
+          "result_count": 1,
+          "answer_sha256": "c5081b5a7800283f473d9177bcfbf8115ffcdc32ac25407233755e36cbc64e34",
+          "answer_characters": 618
+        },
+        {
+          "id": "unsupported_ironhand",
+          "reader": "native",
+          "seconds": 6.664233702002093,
+          "result_count": 1,
+          "answer_sha256": "4d2a6c753c8625a8f71a376327d7e0b6b7710f7a669f340883594000943658ea",
+          "answer_characters": 678
+        },
+        {
+          "id": "hedrack_meeting",
+          "reader": "shared",
+          "seconds": 15.855759070953354,
+          "result_count": 1,
+          "answer_sha256": "8debe7739b88bb26c665d39ce2792d3eec763d4007acf7be253562f58fcd916a",
+          "answer_characters": 650
+        },
+        {
+          "id": "senshock_meeting",
+          "reader": "shared",
+          "seconds": 14.894782369025052,
+          "result_count": 1,
+          "answer_sha256": "842a32c6363bc4af9562ed35022dd5736441b786c6b174b75f8d8c07ca7143a1",
+          "answer_characters": 889
+        },
+        {
+          "id": "orb_possession",
+          "reader": "shared",
+          "seconds": 11.429039515089244,
+          "result_count": 1,
+          "answer_sha256": "2128d721261afa29cc016bf523058fed619d08449b193c233d4af3d81a3f03bc",
+          "answer_characters": 742
+        },
+        {
+          "id": "scarab_warning",
+          "reader": "shared",
+          "seconds": 11.040078771999106,
+          "result_count": 1,
+          "answer_sha256": "4335d4b99da0676b71a213944debca55739b3bc30284a271855fea74f695e5c8",
+          "answer_characters": 449
+        },
+        {
+          "id": "magic_payment",
+          "reader": "shared",
+          "seconds": 12.255940458038822,
+          "result_count": 1,
+          "answer_sha256": "c8b4ac08e2c521a189c10568e6f15f4e22665ebe242ebcbac1dea7a73cec838d",
+          "answer_characters": 837
+        },
+        {
+          "id": "sword_prices",
+          "reader": "shared",
+          "seconds": 11.123938072938472,
+          "result_count": 1,
+          "answer_sha256": "12e4743513328c8dee0ed2fde6c70c36d51dd00f8d0c203455e2de75d3fd5cc9",
+          "answer_characters": 503
+        },
+        {
+          "id": "special_orders",
+          "reader": "shared",
+          "seconds": 9.048615157837048,
+          "result_count": 1,
+          "answer_sha256": "cc3ddff5a2aaa32c7e55f15fa94bef4367b6228497387358b77804e44438abee",
+          "answer_characters": 334
+        },
+        {
+          "id": "ring_deposit",
+          "reader": "shared",
+          "seconds": 12.008890936151147,
+          "result_count": 1,
+          "answer_sha256": "6af245c4a97b685f69206fdbc83f8b64ccc62c770893a3013de5234f13b9a5dc",
+          "answer_characters": 431
+        },
+        {
+          "id": "senshock_location",
+          "reader": "shared",
+          "seconds": 10.43426523101516,
+          "result_count": 1,
+          "answer_sha256": "c5081b5a7800283f473d9177bcfbf8115ffcdc32ac25407233755e36cbc64e34",
+          "answer_characters": 618
+        },
+        {
+          "id": "unsupported_ironhand",
+          "reader": "shared",
+          "seconds": 18.12612468493171,
+          "result_count": 1,
+          "answer_sha256": "ad658fb8b83f20a22d54e004edae9aed0b40be6f45946e16d7e0dcc2490b7ff9",
+          "answer_characters": 690
+        }
+      ],
+      "ingestion_output_tokens_per_wall_second": 189.22835908584722,
+      "entity_edges_sha256": "4f0188858062e1dff54cdb2adfe10dc51dd0a522d8bf1fde154cd502342fedf1"
+    }
+  },
+  "publication": {
+    "full_answers_and_semantic_edges": "retained in ignored raw/",
+    "answer_hash_encoding": "SHA256 of UTF-8 text"
+  }
+}

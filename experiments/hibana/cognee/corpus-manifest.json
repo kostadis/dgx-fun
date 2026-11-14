@@ -1,0 +1,47 @@
+{
+  "sources": [
+    {
+      "name": "hedrack.md",
+      "sha256": "dbf3a76bb6b2c7c11c82c2e97593b90952b337cdf64e4eb97c6793fe7e251cf5",
+      "bytes": 3885,
+      "words": 614
+    },
+    {
+      "name": "lucius-graeme.md",
+      "sha256": "1870c84c998e34bb47a406bfe666307455831ba57ba7882f3222a74570f454f6",
+      "bytes": 5633,
+      "words": 967
+    },
+    {
+      "name": "falrinth.md",
+      "sha256": "91e7f475bdd98b4684a337ac510dff220b125adc3cebfe3ca5ca3d2bf12a062a",
+      "bytes": 6543,
+      "words": 1126
+    },
+    {
+      "name": "barkinar.md",
+      "sha256": "ccf45f2c7afa340a49b52c98956b63bda60b346d81d9a6d8dcd8c413e358cf01",
+      "bytes": 5005,
+      "words": 884
+    },
+    {
+      "name": "captain-dren-halveth.md",
+      "sha256": "f8055fdd593fbf7ae688cb448bd37806e741c38909d48ff159ba5baf80ce76b0",
+      "bytes": 9172,
+      "words": 1535
+    },
+    {
+      "name": "senshock.md",
+      "sha256": "d7145a29b4676dc472ad07d28cf0b41a5589c7a3b0f63f31aa9d0c8217a8e0b3",
+      "bytes": 3135,
+      "words": 505
+    },
+    {
+      "name": "kelno.md",
+      "sha256": "bdcc4b9800884ed190bf3e060c96bbeb4210656776a4cbf4c9c208f8a0db2401",
+      "bytes": 8249,
+      "words": 1408
+    }
+  ],
+  "words": 7039
+}
