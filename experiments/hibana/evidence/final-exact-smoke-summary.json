@@ -1,0 +1,23 @@
+{
+  "base": "http://127.0.0.1:30004",
+  "model": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+  "fixture_sha256": "e4f149bd425e6cb28ef9c9e5ff75967302651aa9b33f74a61fcea930f407f4c1",
+  "started_unix": 1794621241.2216945,
+  "latency_note": "SSE gaps are chunk gaps; TPOT is average per output token. Per-token ITL percentiles unavailable.",
+  "session_turns": 3,
+  "finished_unix": 1794621244.372138,
+  "groups": {
+    "smoke": {
+      "requests": 7,
+      "passed": 7,
+      "wall_seconds": 3.1473124027252197,
+      "validated_requests_per_hour": 8006.831472522278,
+      "output_tokens_per_wall_second": 35.903649063294345,
+      "ttft_p50_seconds": 0.19775177794508636,
+      "ttft_p95_seconds": 0.7815728180576116,
+      "tpot_p50_seconds": 0.015376267003982017,
+      "tpot_p95_seconds": 0.021692913336058457
+    }
+  },
+  "passed": true
+}

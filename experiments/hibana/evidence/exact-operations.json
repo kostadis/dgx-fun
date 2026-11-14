@@ -1,0 +1,576 @@
+{
+  "started_unix": 1794620105.063902,
+  "before": {
+    "engine": "hibana",
+    "target": "flashnext",
+    "model_path": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    "revision": "7b719225242aacd3dbd3f9407468c2ee9a9d2594",
+    "w3_target_identity": null,
+    "w3_warning": null,
+    "context_length": 262144,
+    "tp_size": 1,
+    "max_running_requests": 4,
+    "max_queued_requests": 16,
+    "chunked_prefill_size": 4096,
+    "prefill_budget": 4096,
+    "solo_prefill_chunk": 8192,
+    "kv_pages": 300032,
+    "state_slots": 56,
+    "ledger_gib": {
+      "weights": 68.89,
+      "kv_pool": 5.15,
+      "state_pool": 6.03,
+      "workspaces": 0.52,
+      "proposer_and_verify": 3.62,
+      "cuda_graphs": 0.71
+    },
+    "memory_gib": {
+      "allocated": 84.93,
+      "reserved": 85.26,
+      "max_allocated": 84.99,
+      "max_reserved": 85.26,
+      "rss": 2.8
+    },
+    "after_plan_gib": {
+      "workspaces": 0.5,
+      "graphs": 0.5,
+      "first_use": 2.25,
+      "activations": 1.0
+    },
+    "speculative": {
+      "algorithm": "mtp",
+      "num_draft_tokens": 4,
+      "depths_by_batch": null,
+      "adaptive_step_cost": null,
+      "draft_precision": "bf16",
+      "draft": null,
+      "accept_default": {
+        "accept_top_k": 1,
+        "accept_margin": 0.0,
+        "accept_soft": 0.0
+      }
+    },
+    "attention_backend": "flashinfer",
+    "gdn_backend": "cute",
+    "kv_cache_dtype": "float8_e4m3fn",
+    "mamba_ssm_dtype": "float32",
+    "traces": null,
+    "vision": false,
+    "config": {
+      "profile": "exact",
+      "target": "flashnext",
+      "hf_cache": "/home/kostadis/.cache/huggingface",
+      "flashnext_cache": "/home/kostadis/.cache/huggingface",
+      "max_context": 262144,
+      "max_batch": 4,
+      "cuda_arch": "12.1a",
+      "tp_allreduce": "rdma",
+      "w3_decode": false,
+      "w3_checkpoint": null,
+      "w3_warning": null,
+      "stable_numerics": false,
+      "gdn_prefill": "auto",
+      "ssm_state": "fp32",
+      "ssm_window": 16,
+      "ssm_compensators": null,
+      "flashnext_trunk": "fp8",
+      "trunk_keep_bf16": null,
+      "flashnext_experts": "w3",
+      "bolt_experts": "b12x",
+      "vision": false,
+      "spec": "4",
+      "spec_depths": null,
+      "spec_step_cost": 0.0,
+      "spec_policy": "fixed",
+      "draft_dir": null,
+      "host_floor_gib": 16.0,
+      "draft_vocab": 0,
+      "draft_head": "w2",
+      "draft_head_rescore": 16,
+      "device_accept": false,
+      "mtp_sample": false,
+      "accept_default": "1:0.0",
+      "accept_soft": 0.0,
+      "qsa_sparse_graphs": true,
+      "qsa_prefill_backend": "original",
+      "ple_resident": "auto",
+      "ssd": true,
+      "ssd_gib": 40.0,
+      "ssd_dir": "/home/kostadis/hibana-trial/results-exact/ssd/flashnext",
+      "ssd_block_tokens": 256,
+      "ssd_trace": false,
+      "ssd_writers": 4,
+      "ssd_staging_mib": 512,
+      "ssd_chunk_mib": 256,
+      "verify_attention": "auto",
+      "kv_format": "fp8",
+      "kv_pool_tokens": 300032,
+      "traces": null,
+      "traces_max_mib": 32768,
+      "trace_confidence": false,
+      "debug_sync": false,
+      "bench_verify_state": "snapshots",
+      "moe_keep": 0,
+      "moe_budget": 0,
+      "moe_budget_per_request": 0
+    },
+    "scheduler": {
+      "admitted": 24,
+      "finished": 24,
+      "cancelled": 0,
+      "retractions": 0,
+      "rejected": 0,
+      "prefill_chunks": 67,
+      "prefill_tokens": 298379,
+      "decode_steps": 2228,
+      "decode_tokens": 11084,
+      "steps": 2244,
+      "avg_step_ms": 116.4868393132244,
+      "queued": 0,
+      "prefilling": 0,
+      "running": 0,
+      "floor_holds": 0,
+      "cache": {
+        "hits": 14,
+        "misses": 18,
+        "evictions": 22,
+        "snapshot_evictions": 47,
+        "cached_tokens": 291559,
+        "flush_pending": false,
+        "locks": {
+          "total": 0
+        },
+        "snapshots": {
+          "spare": 5,
+          "not_spare": 13
+        },
+        "evicted": {
+          "flush": {
+            "not_spare": 3,
+            "spare": 8
+          },
+          "kv": {
+            "not_spare": 3,
+            "spare": 6
+          },
+          "superseded": {
+            "spare": 47
+          }
+        },
+        "pruned": 0,
+        "full_reprefills": 0,
+        "branching_resumes": 0,
+        "evictable": {
+          "kv_tokens": 291559,
+          "kv_tokens_protected": 0,
+          "snapshots": 18,
+          "snapshots_protected": 0
+        },
+        "ssd": {
+          "nodes": 5,
+          "demotions": 5,
+          "promotions": 0,
+          "evictions": 0,
+          "prefixes": 20,
+          "used_gib": 7.989,
+          "budget_gib": 40.0,
+          "block_tokens": 256,
+          "queued_blocks": 0,
+          "staged_mib": 0.0,
+          "backed_blocks": 1184,
+          "tails": 20,
+          "tails_written_through": 20,
+          "tails_through_dropped": 0,
+          "queued_tails": 0,
+          "forced_gathers": 0,
+          "evict_dropped": 0,
+          "restores": 0,
+          "restore_fails": 0,
+          "restored_tokens": 0,
+          "restored_kv_tokens": 0,
+          "waited_for_writes": 0,
+          "deleted": 0,
+          "evict_ms_total": 2.0,
+          "evict_ms_max": 0.6,
+          "settle_ms_total": 0.0,
+          "settle_ms_max": 0.0,
+          "room_waits": 0,
+          "room_wait_writes": 0,
+          "room_wait_ms_total": 0.0,
+          "room_wait_ms_max": 0.0,
+          "step_ms_total": 562.1,
+          "step_ms_max": 177.7,
+          "restore_ms_avg": 0.0,
+          "async_restores": 0,
+          "restore_wait_steps": 0,
+          "restore_blocked_ms_total": 0.0,
+          "restore_gib": 0.0,
+          "restore_read_gbps": 0.0,
+          "restore_scatter_ms_avg": 0.0,
+          "restore_e2e_gbps": 0.0,
+          "store": {
+            "dir": "/home/kostadis/hibana-trial/results-exact/ssd/flashnext/v2/e0",
+            "writes": 1204,
+            "reads": 0,
+            "deletes": 0,
+            "write_gib": 7.985,
+            "read_gib": 0.0,
+            "write_errors": 0,
+            "read_errors": 0,
+            "last_error": null,
+            "pending": 0,
+            "writers": 4,
+            "direct_writes": true,
+            "write_ms_avg": 13.95,
+            "read_ms_avg": 0.0
+          }
+        },
+        "draft_resumes": {
+          "hits": 14,
+          "fallbacks": 0
+        }
+      },
+      "ttft_p50": 0.7753984380979091,
+      "ttft_p95": 31.038526494055986,
+      "ttft_window_count": 24,
+      "ttft_window_capacity": 2048
+    },
+    "spec_stats": {
+      "rounds": 2228,
+      "proposed": 9724,
+      "accepted": 8705,
+      "emitted": 11084,
+      "accept_rate": 0.8952077334430275,
+      "tokens_per_round": 4.974865350089766,
+      "state_strategy": "reconstruct",
+      "verify_buffer_bytes": 59996160,
+      "verify_depth": 4,
+      "verify_depths": [
+        4
+      ],
+      "round_ms": 66.89498346040604,
+      "relaxed_accepts": 0
+    },
+    "messages_api": {
+      "server_tools_ignored": 0
+    },
+    "constrained": {
+      "json_schema": 1,
+      "json_object": 17,
+      "tool_call": 1
+    },
+    "refusal_guard": {
+      "refusal_reminders": 0,
+      "refusal_stops": 0
+    }
+  },
+  "invalid_requests": [
+    {
+      "change": {
+        "messages": []
+      },
+      "status": 400,
+      "body": "{\"detail\":\"messages required\"}"
+    },
+    {
+      "change": {
+        "temperature": -1
+      },
+      "status": 400,
+      "body": "{\"error\":{\"message\":\"invalid temperature: -1\",\"type\":\"invalid_request_error\"}}"
+    },
+    {
+      "change": {
+        "max_tokens": 0
+      },
+      "status": 400,
+      "body": "{\"error\":{\"message\":\"max_new_tokens must be a positive integer\",\"type\":\"invalid_request_error\"}}"
+    }
+  ],
+  "disconnected_after": {
+    "id": "chatcmpl-116e17b62376458595ea9237",
+    "object": "chat.completion.chunk",
+    "created": 1794620105,
+    "model": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    "choices": [
+      {
+        "index": 0,
+        "delta": {
+          "role": "assistant",
+          "content": "Generating"
+        },
+        "finish_reason": null
+      }
+    ]
+  },
+  "after": {
+    "engine": "hibana",
+    "target": "flashnext",
+    "model_path": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    "revision": "7b719225242aacd3dbd3f9407468c2ee9a9d2594",
+    "w3_target_identity": null,
+    "w3_warning": null,
+    "context_length": 262144,
+    "tp_size": 1,
+    "max_running_requests": 4,
+    "max_queued_requests": 16,
+    "chunked_prefill_size": 4096,
+    "prefill_budget": 4096,
+    "solo_prefill_chunk": 8192,
+    "kv_pages": 300032,
+    "state_slots": 56,
+    "ledger_gib": {
+      "weights": 68.89,
+      "kv_pool": 5.15,
+      "state_pool": 6.03,
+      "workspaces": 0.52,
+      "proposer_and_verify": 3.62,
+      "cuda_graphs": 0.71
+    },
+    "memory_gib": {
+      "allocated": 84.93,
+      "reserved": 85.26,
+      "max_allocated": 84.99,
+      "max_reserved": 85.26,
+      "rss": 2.8
+    },
+    "after_plan_gib": {
+      "workspaces": 0.5,
+      "graphs": 0.5,
+      "first_use": 2.25,
+      "activations": 1.0
+    },
+    "speculative": {
+      "algorithm": "mtp",
+      "num_draft_tokens": 4,
+      "depths_by_batch": null,
+      "adaptive_step_cost": null,
+      "draft_precision": "bf16",
+      "draft": null,
+      "accept_default": {
+        "accept_top_k": 1,
+        "accept_margin": 0.0,
+        "accept_soft": 0.0
+      }
+    },
+    "attention_backend": "flashinfer",
+    "gdn_backend": "cute",
+    "kv_cache_dtype": "float8_e4m3fn",
+    "mamba_ssm_dtype": "float32",
+    "traces": null,
+    "vision": false,
+    "config": {
+      "profile": "exact",
+      "target": "flashnext",
+      "hf_cache": "/home/kostadis/.cache/huggingface",
+      "flashnext_cache": "/home/kostadis/.cache/huggingface",
+      "max_context": 262144,
+      "max_batch": 4,
+      "cuda_arch": "12.1a",
+      "tp_allreduce": "rdma",
+      "w3_decode": false,
+      "w3_checkpoint": null,
+      "w3_warning": null,
+      "stable_numerics": false,
+      "gdn_prefill": "auto",
+      "ssm_state": "fp32",
+      "ssm_window": 16,
+      "ssm_compensators": null,
+      "flashnext_trunk": "fp8",
+      "trunk_keep_bf16": null,
+      "flashnext_experts": "w3",
+      "bolt_experts": "b12x",
+      "vision": false,
+      "spec": "4",
+      "spec_depths": null,
+      "spec_step_cost": 0.0,
+      "spec_policy": "fixed",
+      "draft_dir": null,
+      "host_floor_gib": 16.0,
+      "draft_vocab": 0,
+      "draft_head": "w2",
+      "draft_head_rescore": 16,
+      "device_accept": false,
+      "mtp_sample": false,
+      "accept_default": "1:0.0",
+      "accept_soft": 0.0,
+      "qsa_sparse_graphs": true,
+      "qsa_prefill_backend": "original",
+      "ple_resident": "auto",
+      "ssd": true,
+      "ssd_gib": 40.0,
+      "ssd_dir": "/home/kostadis/hibana-trial/results-exact/ssd/flashnext",
+      "ssd_block_tokens": 256,
+      "ssd_trace": false,
+      "ssd_writers": 4,
+      "ssd_staging_mib": 512,
+      "ssd_chunk_mib": 256,
+      "verify_attention": "auto",
+      "kv_format": "fp8",
+      "kv_pool_tokens": 300032,
+      "traces": null,
+      "traces_max_mib": 32768,
+      "trace_confidence": false,
+      "debug_sync": false,
+      "bench_verify_state": "snapshots",
+      "moe_keep": 0,
+      "moe_budget": 0,
+      "moe_budget_per_request": 0
+    },
+    "scheduler": {
+      "admitted": 25,
+      "finished": 24,
+      "cancelled": 1,
+      "retractions": 0,
+      "rejected": 0,
+      "prefill_chunks": 68,
+      "prefill_tokens": 298409,
+      "decode_steps": 2229,
+      "decode_tokens": 11088,
+      "steps": 2245,
+      "avg_step_ms": 116.62228960971159,
+      "queued": 0,
+      "prefilling": 0,
+      "running": 0,
+      "floor_holds": 0,
+      "cache": {
+        "hits": 14,
+        "misses": 19,
+        "evictions": 22,
+        "snapshot_evictions": 47,
+        "cached_tokens": 291592,
+        "flush_pending": false,
+        "locks": {
+          "total": 0
+        },
+        "snapshots": {
+          "spare": 6,
+          "not_spare": 13
+        },
+        "evicted": {
+          "flush": {
+            "not_spare": 3,
+            "spare": 8
+          },
+          "kv": {
+            "not_spare": 3,
+            "spare": 6
+          },
+          "superseded": {
+            "spare": 47
+          }
+        },
+        "pruned": 0,
+        "full_reprefills": 0,
+        "branching_resumes": 0,
+        "evictable": {
+          "kv_tokens": 291592,
+          "kv_tokens_protected": 0,
+          "snapshots": 19,
+          "snapshots_protected": 0
+        },
+        "ssd": {
+          "nodes": 5,
+          "demotions": 5,
+          "promotions": 0,
+          "evictions": 0,
+          "prefixes": 20,
+          "used_gib": 7.989,
+          "budget_gib": 40.0,
+          "block_tokens": 256,
+          "queued_blocks": 0,
+          "staged_mib": 0.0,
+          "backed_blocks": 1184,
+          "tails": 20,
+          "tails_written_through": 20,
+          "tails_through_dropped": 0,
+          "queued_tails": 0,
+          "forced_gathers": 0,
+          "evict_dropped": 0,
+          "restores": 0,
+          "restore_fails": 0,
+          "restored_tokens": 0,
+          "restored_kv_tokens": 0,
+          "waited_for_writes": 0,
+          "deleted": 0,
+          "evict_ms_total": 2.0,
+          "evict_ms_max": 0.6,
+          "settle_ms_total": 0.0,
+          "settle_ms_max": 0.0,
+          "room_waits": 0,
+          "room_wait_writes": 0,
+          "room_wait_ms_total": 0.0,
+          "room_wait_ms_max": 0.0,
+          "step_ms_total": 562.4,
+          "step_ms_max": 177.7,
+          "restore_ms_avg": 0.0,
+          "async_restores": 0,
+          "restore_wait_steps": 0,
+          "restore_blocked_ms_total": 0.0,
+          "restore_gib": 0.0,
+          "restore_read_gbps": 0.0,
+          "restore_scatter_ms_avg": 0.0,
+          "restore_e2e_gbps": 0.0,
+          "store": {
+            "dir": "/home/kostadis/hibana-trial/results-exact/ssd/flashnext/v2/e0",
+            "writes": 1204,
+            "reads": 0,
+            "deletes": 0,
+            "write_gib": 7.985,
+            "read_gib": 0.0,
+            "write_errors": 0,
+            "read_errors": 0,
+            "last_error": null,
+            "pending": 0,
+            "writers": 4,
+            "direct_writes": true,
+            "write_ms_avg": 13.95,
+            "read_ms_avg": 0.0
+          }
+        },
+        "draft_resumes": {
+          "hits": 14,
+          "fallbacks": 0
+        }
+      },
+      "ttft_p50": 0.7753984380979091,
+      "ttft_p95": 31.038526494055986,
+      "ttft_window_count": 24,
+      "ttft_window_capacity": 2048
+    },
+    "spec_stats": {
+      "rounds": 2229,
+      "proposed": 9728,
+      "accepted": 8708,
+      "emitted": 11088,
+      "accept_rate": 0.8951480263157895,
+      "tokens_per_round": 4.97442799461642,
+      "state_strategy": "reconstruct",
+      "verify_buffer_bytes": 59996160,
+      "verify_depth": 4,
+      "verify_depths": [
+        4
+      ],
+      "round_ms": 66.89513175626703,
+      "relaxed_accepts": 0
+    },
+    "messages_api": {
+      "server_tools_ignored": 0
+    },
+    "constrained": {
+      "json_schema": 1,
+      "json_object": 17,
+      "tool_call": 1
+    },
+    "refusal_guard": {
+      "refusal_reminders": 0,
+      "refusal_stops": 0
+    }
+  },
+  "health": {
+    "status": "ok",
+    "uptime_seconds": 364.36815905570984
+  },
+  "passed": true,
+  "finished_unix": 1794620105.951429
+}

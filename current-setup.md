@@ -1,5 +1,42 @@
 # Current DGX Spark Setup
 
+<!-- hibana-cognee-complete -->
+> **LATEST verification, 2026-11-14 UTC: Cognee comparison completed.** Spark2
+> again serves **`hibana-shadow-exact`**, healthy on **127.0.0.1:30004**;
+> `hibana-shadow-fast` is stopped, with its checkpoint/cache retained. Seven
+> real ToEE dossiers were ingested by the existing Cognee runtime into separate
+> storage: **252.57 s vLLM / 144.83 s exact / 65.67 s fast**. All ten requested
+> answers were correct with each native reader and the common vLLM reader,
+> but the semantic graphs differed: exact added a conflicting Orb ownership
+> edge; fast omitted the 4,000-gold deposit amount. Source chunks let Cognee
+> recover the correct answers. The existing Cognee dataset/config and spark1's
+> pinned vLLM container are unchanged. Temporary SSH forwarding is closed.
+> [Results and evidence](experiments/hibana/cognee/README.md).
+<!-- /hibana-cognee-complete -->
+
+<!-- hibana-shadow-live-2026-11-14 -->
+> **CURRENT snapshot: 2026-11-14 01:54 UTC:** spark1 continues serving the retained
+> `qwen38-flash` vLLM container on **192.168.1.147:8001**, image
+> `sha256:f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d`.
+> On spark2, **`clef-card-train` is stopped and retained** for this trial; :8002 is down.
+> Hibana's pinned Qwen3.8 Flash Next **`exact`** instance is **healthy and running**
+> at **127.0.0.1:30004** under transient user unit **`hibana-shadow-exact`**
+> (no LAN listener or boot startup). Both `exact` and `fast` passed 24 replay checks
+> each; `exact` also passed a deliberate process-crash recovery and final seven-check
+> smoke suite. **`fast` is stopped**, with its calibrated weights and cache retained.
+> Source: `~/hibana-trial/source`, commit `d474b74d5a892b2cd1cc8fc50cb17946e2a539bb`;
+> same base checkpoint revision `7b719225242aacd3dbd3f9407468c2ee9a9d2594` as vLLM.
+> Config: `exact`, MTP-4, 262144 context, batch 4, 300032-token KV pool,
+> 40 GiB maximum SSD session cache, 16 GiB host floor (guard at 8 GiB).
+> Exact-profile minimum sampled MemAvailable was **24.89 GiB**; GPU allocations
+> stayed **84.93 GiB** as cached session state grew from 201K to 299K tokens.
+> After SIGKILL/restart, 200K cached tokens were restored from SSD and the campaign
+> replay passed again. No application clients were repointed.
+> Restore Clef after stopping the Hibana unit and verifying its processes exited:
+> `ssh -F ~/.ssh/config spark2 'bash ~/hibana-trial/restore-clef.sh'`.
+> [Trial scripts and evidence](experiments/hibana/). Earlier banners below are historical.
+<!-- /hibana-shadow-live-2026-11-14 -->
+
 > **▶ LIVE (2026-10-27 00:14 UTC): DeepSeek is STOPPED on both boxes. BOTH
 > Sparks serve `qwen3.8-flash-next` on :8001, one independent server per box
 > (`192.168.1.147:8001` and `192.168.1.121:8001`), as on 2026-10-12.**
@@ -821,7 +858,17 @@ both pass on a stale IP config.)
 
 ## Ports in use
 
-### Current: 2026-10-20
+### Current: 2026-11-14, Hibana shadow trial
+
+| box | port | service | state |
+|---|---:|---|---|
+| spark1 | 8001 | `qwen38-flash` | **UP**, pinned vLLM, `qwen3.8-flash-next`, 262144 context; unchanged |
+| spark2 | 30004, loopback only | Hibana Qwen3.8 Flash Next | **UP**, `exact`, served ID `RadixArk/Qwen3.8-Flash-Next-NVFP4`, 262144 context; health and final smoke passed |
+| spark2 | 8001 | `qwen38-flash` | Stopped and retained |
+| spark2 | 8002 | `clef-card-train` | Stopped and retained for rollback |
+| both | 11434 | Ollama | Configuration unchanged |
+
+### Historical: 2026-10-20
 
 | box | port | service | state |
 |---|---:|---|---|
@@ -875,7 +922,20 @@ The dated table below is the 2026-10-12 Qwen state, not the current port map.
 
 ## VRAM budget (steady state)
 
-### Current: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
+### Current trial: Hibana, 2026-11-14
+
+The `exact` replay allocated **84.93 GiB** on spark2 according to Hibana's
+native ledger, including 68.89 GiB weights, 5.15 GiB KV pool and 6.03 GiB
+recurrent-state pool. Cached tokens grew from 201211 to 299148 with the
+allocation unchanged. Minimum sampled MemAvailable was **24.89 GiB**;
+the same interval on spark1 vLLM had **11.16 GiB** minimum. Neither replay
+increased swap usage. These configurations use different KV formats and
+pool sizes. The completed `fast` replay allocated **73.93 GiB**, with **34.51 GiB**
+minimum MemAvailable. Its state pool was larger (96 versus 56 slots).
+The final running shadow is `exact`; `fast` is stopped. No memory sampler
+remains running. [Full results](hibana-observations.md).
+
+### Historical: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
 
 | Resource | Current measurement |
 |---|---|
@@ -1134,7 +1194,16 @@ the same model on the same hardware).
 
 ## 3. vllm-chat (Docker container, port 8001)
 
-### Current: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
+### Current chat runtime: pinned Qwen3.8 vLLM, 2026-11-14
+
+Spark1's retained `qwen38-flash` container remains running on :8001, started
+2026-11-11, image `sha256:f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d`.
+Served ID `qwen3.8-flash-next`, 262144 context, FP8 hybrid trunk/NVFP4 experts,
+BF16 KV, utilization 0.80, max sequences eight, MTP-2, APC, Qwen tool and
+reasoning parsers. No container, flag or client changes were made for the
+Hibana comparison. The native DFlash trial on spark1 remains stopped.
+
+### Historical: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
 
 Cutover completed **20:14:28 UTC**. The existing recipe at
 `~/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks`, commit `6f7d1590ad49a2b8995188e45d7b9db31e677452`,
@@ -1504,7 +1573,20 @@ on GB10 (sm_121) is mature enough to realize that.
 
 ## 4. spark2 vllm-chat slot (Docker container, port 8001)
 
-**Current, 2026-10-17:** spark2 is the headless DeepSeek TP=2 worker
+### Current: 2026-11-14, Hibana shadow trial on loopback port 30004
+
+Hibana lives at `~/hibana-trial/`, pinned source and private uv environment.
+The transient `hibana-shadow-exact` service is healthy and running, after
+24 workload checks, a SIGKILL recovery and a final seven-check smoke suite.
+`fast` also passed all 24 checks, then was stopped; its calibrated checkpoint
+and SSD cache remain in `~/hibana-trial/results-fast/`. No replay or memory
+sampler remains running. No boot startup. Both `clef-card-train` (:8002) and `qwen38-flash` (:8001)
+are stopped and retained. The shadow served ID is
+`RadixArk/Qwen3.8-Flash-Next-NVFP4`; input plus output must fit 262144 tokens.
+Use the [trial runbook](experiments/hibana/README.md) for launch, telemetry,
+tunneling and rollback, and [observations](hibana-observations.md) for results.
+
+**Historical, 2026-10-17:** spark2 is the headless DeepSeek TP=2 worker
 (`dsv41-exl3-worker`), not an independent chat endpoint. Its model and Engram
 files live at `/home/kostadis/dsv41-model` and
 `/home/kostadis/dsv41-engram-src`. The worker communicates with spark1 over
@@ -1700,6 +1782,13 @@ on spark2, so prefill/decode numbers don't transfer directly.
 
 ## 5. Filesystem layout
 
+**Hibana shadow, 2026-11-14:** spark2 `~/hibana-trial/` holds the pinned
+source, private uv environment, launch/rollback helpers, and separate
+`results-exact/` and `results-fast/` directories. Each SSD session cache has a
+40 GiB cap. Experiment scripts and public receipts are under
+`experiments/hibana/`; private inputs, full answers and Cognee databases stay
+in ignored `raw/` directories on the workstation.
+
 | path | host | purpose | shared between |
 |---|---|---|---|
 | `~/.cache/huggingface` | spark1 | HF model downloads | both spark1 vLLM containers (mounted in) |
@@ -1716,6 +1805,10 @@ cache is shared between containers via the `-v` mount.
 ---
 
 ## 6. Network exposure
+
+**Hibana shadow, 2026-11-14:** spark2 binds only `127.0.0.1:30004`. For
+explicit testing, use an SSH tunnel; no application endpoint was repointed.
+The temporary Cognee-test forwarding connection has been closed.
 
 All services on both boxes listen on `0.0.0.0` and are reachable from
 any host on the LAN:
@@ -1743,7 +1836,15 @@ served model only through spark1 `192.168.1.147:8001` on the LAN.
 
 ## 7. Client-side configuration
 
-### Current: 2026-10-17
+### Current: 2026-11-14, isolated Hibana shadow
+
+Existing applications continue to use spark1:8001. No client configuration
+or dgxlib behavior registry was changed. Explicit shadow testing uses an SSH
+tunnel to spark2's loopback :30004, model `RadixArk/Qwen3.8-Flash-Next-NVFP4`.
+Clef callers on spark2:8002 are unavailable until its retained container is
+restored; the completed trial's weights and reports remain on disk.
+
+### Historical: 2026-10-17
 
 | client | state |
 |---|---|
@@ -2055,7 +2156,17 @@ the top-level `"model"` field to `dgx2/nemotron3-nano-30b`.
 
 ## 8. Rebuild-from-scratch order
 
-### Current: DeepSeek V4.1 Flash EXL3
+### Current runtime note: 2026-11-14, Hibana shadow
+
+Keep spark1's pinned vLLM container running. On spark2 stop the conflicting
+Clef/Qwen service, use the pinned Hibana checkout and `uv sync --locked`,
+then `bash ~/hibana-trial/start-shadow.sh exact`. The launcher checks host,
+source pin, conflicting containers and occupied port; it creates a transient
+user service and installs no boot startup. `fast` additionally requires the
+verified pinned calibrated checkpoint. Wait for `/health` before testing.
+See [the runbook](experiments/hibana/README.md) for exact bounds and recovery.
+
+### Historical: DeepSeek V4.1 Flash EXL3
 
 1. On spark1, clone
    `https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks`

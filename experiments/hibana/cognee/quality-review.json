@@ -1,0 +1,50 @@
+{
+  "reviewed_utc": "2026-11-14T03:57:18.702014+00:00",
+  "method": "Manual review of all native/shared answers against frozen expected facts and the source dossiers; separate targeted audit of persisted semantic Entity nodes and Entity-to-Entity edges.",
+  "scope": "Ten requested answers per reader; no exhaustive graph precision/recall claim. DocumentChunk and TextSummary source backing excluded from semantic-graph presence checks.",
+  "arms": {
+    "baseline": {
+      "reviewed_questions_per_reader": 10,
+      "requested_answers_correct": {
+        "native": 10,
+        "shared": 10
+      },
+      "answer_graph_conflict_flags": [],
+      "ring_of_invisibility_in_semantic_graph": true,
+      "ring_of_free_action_in_semantic_graph": true,
+      "deposit_4000_in_semantic_graph": true,
+      "false_senshock_orb_possession": false
+    },
+    "exact": {
+      "reviewed_questions_per_reader": 10,
+      "requested_answers_correct": {
+        "native": 10,
+        "shared": 10
+      },
+      "answer_graph_conflict_flags": [
+        "orb_possession"
+      ],
+      "ring_of_invisibility_in_semantic_graph": true,
+      "ring_of_free_action_in_semantic_graph": true,
+      "deposit_4000_in_semantic_graph": true,
+      "false_senshock_orb_possession": true
+    },
+    "fast": {
+      "reviewed_questions_per_reader": 10,
+      "requested_answers_correct": {
+        "native": 10,
+        "shared": 10
+      },
+      "answer_graph_conflict_flags": [],
+      "ring_of_invisibility_in_semantic_graph": true,
+      "ring_of_free_action_in_semantic_graph": true,
+      "deposit_4000_in_semantic_graph": false,
+      "false_senshock_orb_possession": false
+    }
+  },
+  "evidence": {
+    "false_orb_raw_exact_call": "0765690bbfe14d20836c74c350d659eb",
+    "source_falrinth": "falrinth.md:19,43",
+    "source_ring_terms": "lucius-graeme.md:36"
+  }
+}

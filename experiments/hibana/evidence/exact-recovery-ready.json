@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "unit": "hibana-shadow-exact",
+  "poll_interval_seconds": 2,
+  "last_poll_error": "URLError(ConnectionRefusedError(111, 'Connection refused'))",
+  "health": {
+    "status": "ok",
+    "uptime_seconds": 1.7467124462127686
+  },
+  "first_ready_observed_unix": 1794620214.2614954,
+  "seconds_since_unit_start": 69.65877455798909,
+  "seconds_since_crash": 109.26802062988281
+}

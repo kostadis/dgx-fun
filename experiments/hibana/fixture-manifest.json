@@ -1,0 +1,354 @@
+{
+  "run_id": "hibana-shadow-20261114-a",
+  "campaign_user_tokens": 200001,
+  "source_documents": 86,
+  "source_tokens": 437397,
+  "sources": [
+    {
+      "file": "001-session-there-are-no-magic-traps-in-that-cave.md",
+      "sha256": "408a221b3f4da8ed576ad171293bc5b0de1d35deab0e27991cad6e5e9ade4d20"
+    },
+    {
+      "file": "002-session-going-off-script.md",
+      "sha256": "4f910393fbc1775ab6cfefaa387c1141cce1e4b319db730c10c5fe573cc2ed69"
+    },
+    {
+      "file": "003-session-the-middle-person.md",
+      "sha256": "e368d60b9d96defae855342595ee22975103b3c38f1fdf7eaa8df57b4ebd7420"
+    },
+    {
+      "file": "004-session-clan-licehair.md",
+      "sha256": "b4f5c0657208ef57ddbe74130f3a3b4d5d34eb6eb0f8c5331f73221cbf83d8e8"
+    },
+    {
+      "file": "005-session-thoughts-and-prayers.md",
+      "sha256": "6de791b66204df3326e39e01e776f5f2f9add5bfaebc8501e1026750f5d198a8"
+    },
+    {
+      "file": "006-session-the-tower.md",
+      "sha256": "b09ad0e9cfa19b6a73b46058356603d3836685ec86334f30cfe35a6f2c58edc1"
+    },
+    {
+      "file": "007-session-vuerthyl.md",
+      "sha256": "a5ca1ab23f298bde3d96f8e120335a25cbdf5fdff3eaea04511269b27f5a0db6"
+    },
+    {
+      "file": "008-session-encounters-on-the-black-road.md",
+      "sha256": "1054cb1dbb496cca02fc33c0989054e5c2fa4570a0cb837b97013af4ce037a6b"
+    },
+    {
+      "file": "009-session-ending-a-civil-war.md",
+      "sha256": "b34f3d496a65c98b575c838afdb75c0d0c48cdb722abf31b73c32db0a8921206"
+    },
+    {
+      "file": "010-session-the-seer.md",
+      "sha256": "7bde375cfada8dbdc583bc8ef09709f367011fdc565c615c08a4feb9c1108d01"
+    },
+    {
+      "file": "011-session-into-the-tower.md",
+      "sha256": "0579a657cf753e3e734521995c9356c6b9b401df869b04e99864ab38ab441b5a"
+    },
+    {
+      "file": "012-session-securing-the-books-and-freeing-elquen.md",
+      "sha256": "379a1c9d0f769eb3af6d29238a0d5833409093631c0e61b2ccc6c64c984be6eb"
+    },
+    {
+      "file": "013-session-back-to-parnast-03-04-tarsakh.md",
+      "sha256": "654217b4a72b3e1925c4fb854b5ac4ef7b1f2147aefb5f6e313c4e3c59a88fe1"
+    },
+    {
+      "file": "014-session-into-the-forgotten-forest.md",
+      "sha256": "cb64c14b84b54a0bb6fa249a01661f308c45a4aff494d06d15ebf089ddc39f66"
+    },
+    {
+      "file": "015-session-oblivillish-the-royal-pixie.md",
+      "sha256": "e96103a342dd59028c2f619680541804ec860fb89d20d49efb02da04a651b8d2"
+    },
+    {
+      "file": "016-session-return-of-the-spy.md",
+      "sha256": "ed690a5bbc43182825068b61cc3c4d27da708288394b8e1ec2235e6ee91b61f7"
+    },
+    {
+      "file": "017-session-big-trouble-in-little-parnast.md",
+      "sha256": "51547f71c285ce6b917b2a25e3c359e146fd2d4f7287bfc6399ebfebceee6622"
+    },
+    {
+      "file": "018-session-attack-on-the-cabin.md",
+      "sha256": "74ff7670014e910f8eca48d047d526cb9ecfd7fc18a65129dc70ef9c2e26510d"
+    },
+    {
+      "file": "019-session-all-is-revealed-and-plans-are-set-in-motion.md",
+      "sha256": "e6aaff44fd649a541ea8a86dd09294174d3f16381a75f0a3387c7070a6545ebb"
+    },
+    {
+      "file": "020-session-the-spine-ripper-tribe.md",
+      "sha256": "a0dd94c5315e8954e4c7221c9b44c3c5d5d5b8da0df263011e7270cb944f836e"
+    },
+    {
+      "file": "021-session-the-battle-begins.md",
+      "sha256": "644a6c8ccd0fb776a5da4fa90a2f29c27c1621d4f13f537c7348a0623e5cc555"
+    },
+    {
+      "file": "022-session-release-the-wyvern.md",
+      "sha256": "d475b12567234a5332fd07cac1e594111ffcb59e3854f19f83ac1a315f9e0d45"
+    },
+    {
+      "file": "023-session-orsik.md",
+      "sha256": "e558a16956ab30e3f601ca6cef3517a0be086001a6e802ed349d23402f8d6314"
+    },
+    {
+      "file": "024-session-uncle-joon.md",
+      "sha256": "266c01cad20a1a844c8b37010a0f2f52cc9dbc508524d3f8a3632d96a50cf8ba"
+    },
+    {
+      "file": "025-session-the-murder-and-the-theft.md",
+      "sha256": "829ca05fa8570e29e29324055d7f0ebff34130de2eb40c0c0602f9a0ff39e242"
+    },
+    {
+      "file": "026-session-we-are-in-showbiz.md",
+      "sha256": "3a30be7fc248c9a2bc51499d529a26fe5f3d8b5d491ebf54ffd56bc3c6f8e69f"
+    },
+    {
+      "file": "027-session-battle-outcomes.md",
+      "sha256": "759c1524356e605bc62632a94dbf20e3947c65d8194bdb7f97c4afeb2d06c2c7"
+    },
+    {
+      "file": "028-session-to-yartar.md",
+      "sha256": "8f7fc560990bd2b4522f786f5e2c152f126b6a2dad3e328de9f810794041e069"
+    },
+    {
+      "file": "029-session-circles-within-circles.md",
+      "sha256": "2787c23a1597c3fca87c6c8869273e59f6ee240f5a57b6c28686a110f3f564bd"
+    },
+    {
+      "file": "030-session-finally-working-for-the-harpers.md",
+      "sha256": "9bbdf4a5b3ebc75cab16a8fd02df07cb27f06bc35672e92ae12fd2dd5de44add"
+    },
+    {
+      "file": "031-session-into-the-moors.md",
+      "sha256": "4c511bf28cec868f93b67c3a36d93173ce5bdbc702f68801283ee55483d82463"
+    },
+    {
+      "file": "032-session-murder-hobos.md",
+      "sha256": "0980ace4699ef6cc7e7fc21ff4e3018790d6ae18e02398a15aca9d70b2ef40a1"
+    },
+    {
+      "file": "033-session-rescuing-harthal.md",
+      "sha256": "5f69c11d377c0eb0c9bfd4a2363682c22f5871247ba2af349ee72ef1ec16f5eb"
+    },
+    {
+      "file": "034-session-3hpp-productions.md",
+      "sha256": "56f77bfc213450bc313d69a347ad0ea90259de19a67281f5ea8976e0392a6247"
+    },
+    {
+      "file": "035-session-the-play.md",
+      "sha256": "c4bd67f3662a45ec114ebf8b6557f7bf882fb1fcbcf3eece76d94649904eae91"
+    },
+    {
+      "file": "036-session-the-hit.md",
+      "sha256": "2e357ca22f56c3d4210a5eff8ca93b939e0a6deed1f5da9a4ab957a9315b4504"
+    },
+    {
+      "file": "037-session-on-the-road-again.md",
+      "sha256": "b1e87a0c854de1ac53c8448fcbdf888eea94cfaa77af951c6ef28c87a35d3286"
+    },
+    {
+      "file": "038-session-harshnag-the-grim-of-the-legendary-force-grey.md",
+      "sha256": "7636bc753c387cf9a161cc269f23797df51816ed4fefa537e9e5a32be7923e96"
+    },
+    {
+      "file": "039-session-downtime-in-mirabar.md",
+      "sha256": "a16f35e64247af5f475d2b7d0307cc4c977a71741b8655831ee16570b1afb5b4"
+    },
+    {
+      "file": "040-session-heading-into-the-spine-of-the-world.md",
+      "sha256": "49ddc09c5743f060e0f5030852fe7504030470e04b8dcde3b31a8e57d20cb041"
+    },
+    {
+      "file": "041-session-the-sign.md",
+      "sha256": "fb6f169472233935709871c85b0e56cdd36bf0511b270ecb4805184cf80dc130"
+    },
+    {
+      "file": "042-session-traveling-through-middle-valley.md",
+      "sha256": "7e498a044082177687e9506b6269c7980ef2681a22973363f930cb33eb855d84"
+    },
+    {
+      "file": "043-session-the-evil-gold-dragon.md",
+      "sha256": "e896f12ea1348fe8a508b3e1efb3fafcbb20554d485578e65c9183f9151fe5e5"
+    },
+    {
+      "file": "044-session-the-temple-of-annam.md",
+      "sha256": "cbfc264d08c1aa4b0dc270521368ba39a5a80cacde8c04e7ebebf47e38b5129e"
+    },
+    {
+      "file": "045-session-looking-for-the-giant-sword.md",
+      "sha256": "7caa705dbc99d40a4053753022bc61944e79216c061aeba488bca74830f46325"
+    },
+    {
+      "file": "046-session-find-the-relic-save-the-world.md",
+      "sha256": "798ed54458c448042759f38962ae594e38bcb30b0b9a022a971cc0997a3aa59f"
+    },
+    {
+      "file": "047-session-quests-major-and-minor.md",
+      "sha256": "a5f0516f30198b9a8db3fdc12f51e189ce790ac0b8e2677b900bc53517b5b363"
+    },
+    {
+      "file": "048-session-the-end-of-a-relationship.md",
+      "sha256": "0d70544030971479abe0285f3b7b9cab214c29a008e123cff816795b1078600b"
+    },
+    {
+      "file": "049-session-killing-a-dragon.md",
+      "sha256": "59e4d78ba4f933e16ba104e5106668a05c95ce5d08cdaba40d17dd7fc9925f1c"
+    },
+    {
+      "file": "050-session-star-crossed-dryads.md",
+      "sha256": "a6c4c5c1b0bf98a67726a8e2f9de8db4dee13779f7d752a0c8ace5282b858b4a"
+    },
+    {
+      "file": "051-session-into-the-feywild.md",
+      "sha256": "46ddd68362beb7225233c3ecdf7b84ad677070e113143250cc965dbe4c32ed3e"
+    },
+    {
+      "file": "052-session-banishment.md",
+      "sha256": "f7a950976402ca05ecdff23baf68344d8e2ceec2f718c9ba92b52da0a32ebd1e"
+    },
+    {
+      "file": "053-session-a-deal-is-made-and-the-ravens-cry-nevermore.md",
+      "sha256": "4d97612ef25e3123458383bfb6a30fea32a1a5bd694924bb1787ea474825fddc"
+    },
+    {
+      "file": "054-session-when-the-3hpp-met-harry-and-mary-and-then-orsik-got-his-fingers-dirty.md",
+      "sha256": "52fe104fc04d2568de2c56f6aac64569ae9fbf3cba5b7de5e614e52ca8a2eeee"
+    },
+    {
+      "file": "055-session-the-return-to-silverymoon.md",
+      "sha256": "ced95c6825cb87a5cd28c33388045edf708b17412c62fa3ff83738fb08c5f75e"
+    },
+    {
+      "file": "056-session-the-theater.md",
+      "sha256": "eacd62880cd2e73e331c339038d9d1df516e3bc5ce2ce2570c1fe367120b0606"
+    },
+    {
+      "file": "057-session-bob-s-song.md",
+      "sha256": "cb5f210649024e663002087371a3e68b837dc643ded51836af222c681786bc58"
+    },
+    {
+      "file": "058-session-enter-adimond-exeunt-harshnag.md",
+      "sha256": "87aedeeac8044335b1cfda373e23edc57abfada85d89c1f787b524faac358bba"
+    },
+    {
+      "file": "059-session-enter-blagothkus.md",
+      "sha256": "3cd6c415af2fc2046a395be83cedff04e421745734bb2f26345051815a0b58cf"
+    },
+    {
+      "file": "060-session-the-yakfolk.md",
+      "sha256": "881a30d3cd0c4c1438c516b4e3177c826182d310d9b00940d4586e79d263b608"
+    },
+    {
+      "file": "061-session-into-ironslag.md",
+      "sha256": "d25841a3f5bf0935096a396732907868365f46470fd87f0ec21fec801e1854c2"
+    },
+    {
+      "file": "062-session-casing-ironslag.md",
+      "sha256": "2f48df0675a8f83b35b6a24991e35f77565ea95c5b363b641c9017f3bbf95a9c"
+    },
+    {
+      "file": "063-session-the-heist.md",
+      "sha256": "f2f6e4f75dc22eb376b0c636fbc9289e06743998c5788b7807dd91bb7c9161e9"
+    },
+    {
+      "file": "064-session-the-fight-with-the-bbep.md",
+      "sha256": "3f60b28f02554b4d76fc3b4f424ea72dee0218243481c425766f094f155e72dc"
+    },
+    {
+      "file": "065-session-orsik-experiences-personal-growth-and-the-fellowship-against-bob-dissolves.md",
+      "sha256": "36402b1bd6eb50c576a050b56d4ef1c5332e562f11af6a75b3469a3bddcae68c"
+    },
+    {
+      "file": "066-session-orsik-looks-for-love-in-all-of-the-wrong-places.md",
+      "sha256": "e1a1b523a759d5580ed2f9f33d8ea557e2a7b3f529f43e8f8df7ec61d07ecc15"
+    },
+    {
+      "file": "067-session-into-the-maelstrom.md",
+      "sha256": "5fe374df6a607599f84c3a620fc740237271b7f781ade66c10d9e5898646b6ae"
+    },
+    {
+      "file": "068-session-seaworld.md",
+      "sha256": "523589a47d2dd5751a31adf7dbf3c8a904a56be7ff952a45b6e3cfa76fb417b4"
+    },
+    {
+      "file": "069-session-confronting-adimond-and-a-lot-of-exposition.md",
+      "sha256": "43be12fa618a695257eaf65aeb7a5a568f0f4ea308968e50670fae3431c1936b"
+    },
+    {
+      "file": "070-session-seeing-through-new-eyes.md",
+      "sha256": "1df38d068d773a678c9ffe23472face0847b77a694f358f6ee044d787ba3473d"
+    },
+    {
+      "file": "071-session-exploring-the-lower-courtyard.md",
+      "sha256": "8244a4633874c93dc93c3e7793d17af688912c6411a029e4138a7928da38fb04"
+    },
+    {
+      "file": "072-session-orsik-is-stunned.md",
+      "sha256": "80b8493f423f802b89af7097d8a70772bbedfdc9bae7613af36231c4fe0628cc"
+    },
+    {
+      "file": "073-session-the-wand-of-ill-fortune.md",
+      "sha256": "ded9092b888f382efb4ce3b8d834ca07c013ebe702842da57f455c0546e60715"
+    },
+    {
+      "file": "074-session-the-vampire-s-lair.md",
+      "sha256": "6c6a3c4bffb48f1e871873b3d842340c5b3f261020bf915abad4dba7a3e30176"
+    },
+    {
+      "file": "075-session-the-first-defeat-of-sandesyl.md",
+      "sha256": "48c73db07321933e7e442ad6f795aaaac326b67390f2101c13851c278960a74e"
+    },
+    {
+      "file": "076-session-dealing-with-blagothkus-and-yartar.md",
+      "sha256": "b7de50ffb1218768aa62ad19646181989a2be542d2a603a87dfa3ec285733b12"
+    },
+    {
+      "file": "077-session-the-end-of-sandesyl-and-blagothkus.md",
+      "sha256": "eca5c2817a74454733b5e6c29bc420265b090081274207e1e7ae6585fa6dcdcd"
+    },
+    {
+      "file": "078-session-on-the-grand-dame.md",
+      "sha256": "1a2820d45f5cca97a38cb87513f83f2c59ab4028198117b9af3dcef8f84806b6"
+    },
+    {
+      "file": "079-session-hekaton-s-location-revealed-at-last.md",
+      "sha256": "5c3cf1eaf15aa22466258bd6cb1440374caaa8c1424ed96c1285a42c426c419a"
+    },
+    {
+      "file": "080-session-key-and-wing-casino.md",
+      "sha256": "7a880677636c19294c6b3afe4a80e200e53dfbe5b31053e938bec881991a42e3"
+    },
+    {
+      "file": "081-session-thistle-decodes-the-conspiracy.md",
+      "sha256": "1a3d82a9feff91112d29c6e49daa939b0d028e7dd92d2a85fcd688d02cf76c8d"
+    },
+    {
+      "file": "082-session-king-hekaton-is-free-the-ordning-can-be-restored-promises-are-made.md",
+      "sha256": "765679c4ae173244ea41a75484fc42eed0d1e973d1ef10447c7acafcebae1e63"
+    },
+    {
+      "file": "083-session-choices-are-made.md",
+      "sha256": "dbd7063855e04668473f04e0843d741e13222ebd541afbbc8eb3771c2ed49ed9"
+    },
+    {
+      "file": "084-session-a-deal-is-made.md",
+      "sha256": "a430d71b5cdf48eb2068d522b8f98f03ea0e31143934df7d1695c0a09c288a6f"
+    },
+    {
+      "file": "085-session-a-deal-with-bob.md",
+      "sha256": "d9ebf36fe8710109a84f8a6e8f1886775d3c1819526300446ea5d20500a98007"
+    },
+    {
+      "file": "086-session-rescuing-bob-s-prisoners.md",
+      "sha256": "8e56642b731a64d1277409fda9731fa39c49ff36b6d07ca2dd51cf5b6e728a6b"
+    }
+  ],
+  "tokenizer_sha256": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3",
+  "fixture_sha256": "e4f149bd425e6cb28ef9c9e5ff75967302651aa9b33f74a61fcea930f407f4c1"
+}

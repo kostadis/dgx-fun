@@ -1,0 +1,125 @@
+2026-11-13T17:25:39-08:00 gx10-3e5c systemd[78780]: Started hibana-shadow-exact.service - /home/kostadis/hibana-trial/bin/uv run --locked hibana serve flashnext --exact --context-length 262144 --max-batch 4 --host 127.0.0.1 --port 30004.
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707120]: Uninstalled 1 package in 0.63ms
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707120]: Installed 1 package in 2ms
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707144]: Hibana flashnext (one Spark) on http://127.0.0.1:30004, profile exact
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707144]:   GPU: NVIDIA GB10 (SM 12.1), driver 580.173.02; memory: 121 GiB total, 118 GiB available
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707144]:   speculation: mtp, 4 drafts, draft the model's own MTP head
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707144]:   acceptance: greedy off, sampled exact
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707144]:   3-bit copies: off; device-resident acceptance: off
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707144]:   context 262144 tokens, up to 4 requests
+2026-11-13T17:25:40-08:00 gx10-3e5c uv[1707144]:   traces: off; SSD tier: /home/kostadis/hibana-trial/results-exact/ssd/flashnext, 40 GiB
+2026-11-13T17:25:43-08:00 gx10-3e5c uv[1707144]: loading flashnext: RadixArk/Qwen3.8-Flash-Next-NVFP4@7b719225
+2026-11-13T17:25:56-08:00 gx10-3e5c uv[1707144]:   loaded 8/48 layers (9s, 12.7 GiB)
+2026-11-13T17:26:03-08:00 gx10-3e5c uv[1707144]:   loaded 16/48 layers (16s, 23.8 GiB)
+2026-11-13T17:26:10-08:00 gx10-3e5c uv[1707144]:   loaded 24/48 layers (23s, 34.9 GiB)
+2026-11-13T17:26:17-08:00 gx10-3e5c uv[1707144]:   loaded 32/48 layers (30s, 46.0 GiB)
+2026-11-13T17:26:24-08:00 gx10-3e5c uv[1707144]:   loaded 40/48 layers (37s, 57.2 GiB)
+2026-11-13T17:26:31-08:00 gx10-3e5c uv[1707144]:   loaded 48/48 layers (44s, 68.3 GiB)
+2026-11-13T17:26:32-08:00 gx10-3e5c uv[1707144]:   weights loaded in 45s, 68.9 GiB allocated (fp8 trunk, 5.74 GB per decode token)
+2026-11-13T17:26:33-08:00 gx10-3e5c uv[1707144]:   counted after the pools: workspaces 0.50, graphs 0.50, first use 2.25, activations 1.00 GiB; floor 16 GiB
+2026-11-13T17:26:33-08:00 gx10-3e5c uv[1707144]:   pools: 300032 KV pages (5.15 GiB), 56 state slots (6.02 GiB, fp32 recurrent state)
+2026-11-13T17:26:43-08:00 gx10-3e5c uv[1707144]:   proposer: mtp, persistent 3.17 GiB, verify buffers 0.06 GiB, k=4
+2026-11-13T17:27:18-08:00 gx10-3e5c uv[1707144]:   captured decode graph for batch 1
+2026-11-13T17:27:18-08:00 gx10-3e5c uv[1707144]:   captured selecting decode graph for batch 1
+2026-11-13T17:27:20-08:00 gx10-3e5c uv[1707144]:   captured decode graph for batch 2
+2026-11-13T17:27:20-08:00 gx10-3e5c uv[1707144]:   captured selecting decode graph for batch 2
+2026-11-13T17:27:22-08:00 gx10-3e5c uv[1707144]:   captured decode graph for batch 4
+2026-11-13T17:27:22-08:00 gx10-3e5c uv[1707144]:   captured selecting decode graph for batch 4
+2026-11-13T17:27:23-08:00 gx10-3e5c uv[1707144]:   captured dense and selecting verify graph for batch 1
+2026-11-13T17:27:24-08:00 gx10-3e5c uv[1707144]:   captured dense and selecting verify graph for batch 2
+2026-11-13T17:27:25-08:00 gx10-3e5c uv[1707144]:   captured dense and selecting verify graph for batch 4
+2026-11-13T17:28:11-08:00 gx10-3e5c uv[1707144]:   captured draft graph for batch 1
+2026-11-13T17:28:11-08:00 gx10-3e5c uv[1707144]:   captured draft graph for batch 2
+2026-11-13T17:28:11-08:00 gx10-3e5c uv[1707144]:   captured draft graph for batch 4
+2026-11-13T17:28:17-08:00 gx10-3e5c uv[1707144]:   captured device accept graphs: 3 (+3 sampled)
+2026-11-13T17:28:18-08:00 gx10-3e5c uv[1707144]: /home/kostadis/hibana-trial/source/.venv/lib/python3.12/site-packages/triton/language/core.py:2284: UserWarning: tl.make_block_ptr is deprecated. Use TensorDescriptor or tl.make_tensor_descriptor instead.
+2026-11-13T17:28:18-08:00 gx10-3e5c uv[1707144]:   warn("tl.make_block_ptr is deprecated. Use TensorDescriptor or tl.make_tensor_descriptor instead.")
+2026-11-13T17:28:37-08:00 gx10-3e5c uv[1707144]:   warmup done
+2026-11-13T17:28:37-08:00 gx10-3e5c uv[1707144]:   ssd store: /home/kostadis/hibana-trial/results-exact/ssd/flashnext/v2/e0
+2026-11-13T17:29:01-08:00 gx10-3e5c uv[1707144]:   ssd tier: 0 stored prefixes, 0.0 of 40 GiB, 256-token blocks
+2026-11-13T17:29:01-08:00 gx10-3e5c uv[1707144]: serving on http://127.0.0.1:30004
+2026-11-13T17:35:05-08:00 gx10-3e5c systemd[78780]: hibana-shadow-exact.service: Sent signal SIGKILL to main process 1707120 (uv) on client request.
+2026-11-13T17:35:05-08:00 gx10-3e5c systemd[78780]: hibana-shadow-exact.service: Sending signal SIGKILL to process 1707144 (hibana) on client request.
+2026-11-13T17:35:05-08:00 gx10-3e5c systemd[78780]: hibana-shadow-exact.service: Main process exited, code=killed, status=9/KILL
+2026-11-13T17:35:05-08:00 gx10-3e5c systemd[78780]: hibana-shadow-exact.service: Failed with result 'signal'.
+2026-11-13T17:35:05-08:00 gx10-3e5c systemd[78780]: hibana-shadow-exact.service: Consumed 8min 49.787s CPU time, 49.6G memory peak, 988.8M memory swap peak.
+2026-11-13T17:35:44-08:00 gx10-3e5c systemd[78780]: Started hibana-shadow-exact.service - /home/kostadis/hibana-trial/bin/uv run --locked hibana serve flashnext --exact --context-length 262144 --max-batch 4 --host 127.0.0.1 --port 30004.
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711326]: Uninstalled 1 package in 2ms
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711326]: Installed 1 package in 4ms
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711349]: Hibana flashnext (one Spark) on http://127.0.0.1:30004, profile exact
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711349]:   GPU: NVIDIA GB10 (SM 12.1), driver 580.173.02; memory: 121 GiB total, 118 GiB available
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711349]:   speculation: mtp, 4 drafts, draft the model's own MTP head
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711349]:   acceptance: greedy off, sampled exact
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711349]:   3-bit copies: off; device-resident acceptance: off
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711349]:   context 262144 tokens, up to 4 requests
+2026-11-13T17:35:44-08:00 gx10-3e5c uv[1711349]:   traces: off; SSD tier: /home/kostadis/hibana-trial/results-exact/ssd/flashnext, 40 GiB
+2026-11-13T17:35:47-08:00 gx10-3e5c uv[1711349]: loading flashnext: RadixArk/Qwen3.8-Flash-Next-NVFP4@7b719225
+2026-11-13T17:35:57-08:00 gx10-3e5c uv[1711349]:   loaded 8/48 layers (8s, 12.7 GiB)
+2026-11-13T17:36:04-08:00 gx10-3e5c uv[1711349]:   loaded 16/48 layers (15s, 23.8 GiB)
+2026-11-13T17:36:11-08:00 gx10-3e5c uv[1711349]:   loaded 24/48 layers (22s, 34.9 GiB)
+2026-11-13T17:36:18-08:00 gx10-3e5c uv[1711349]:   loaded 32/48 layers (29s, 46.0 GiB)
+2026-11-13T17:36:26-08:00 gx10-3e5c uv[1711349]:   loaded 40/48 layers (37s, 57.2 GiB)
+2026-11-13T17:36:33-08:00 gx10-3e5c uv[1711349]:   loaded 48/48 layers (44s, 68.3 GiB)
+2026-11-13T17:36:33-08:00 gx10-3e5c uv[1711349]:   weights loaded in 44s, 68.9 GiB allocated (fp8 trunk, 5.74 GB per decode token)
+2026-11-13T17:36:34-08:00 gx10-3e5c uv[1711349]:   counted after the pools: workspaces 0.50, graphs 0.50, first use 2.25, activations 1.00 GiB; floor 16 GiB
+2026-11-13T17:36:34-08:00 gx10-3e5c uv[1711349]:   pools: 300032 KV pages (5.15 GiB), 55 state slots (5.91 GiB, fp32 recurrent state)
+2026-11-13T17:36:42-08:00 gx10-3e5c uv[1711349]:   proposer: mtp, persistent 3.17 GiB, verify buffers 0.06 GiB, k=4
+2026-11-13T17:36:43-08:00 gx10-3e5c uv[1711349]:   captured decode graph for batch 1
+2026-11-13T17:36:43-08:00 gx10-3e5c uv[1711349]:   captured selecting decode graph for batch 1
+2026-11-13T17:36:43-08:00 gx10-3e5c uv[1711349]:   captured decode graph for batch 2
+2026-11-13T17:36:43-08:00 gx10-3e5c uv[1711349]:   captured selecting decode graph for batch 2
+2026-11-13T17:36:44-08:00 gx10-3e5c uv[1711349]:   captured decode graph for batch 4
+2026-11-13T17:36:44-08:00 gx10-3e5c uv[1711349]:   captured selecting decode graph for batch 4
+2026-11-13T17:36:44-08:00 gx10-3e5c uv[1711349]:   captured dense and selecting verify graph for batch 1
+2026-11-13T17:36:44-08:00 gx10-3e5c uv[1711349]:   captured dense and selecting verify graph for batch 2
+2026-11-13T17:36:45-08:00 gx10-3e5c uv[1711349]:   captured dense and selecting verify graph for batch 4
+2026-11-13T17:36:46-08:00 gx10-3e5c uv[1711349]:   captured draft graph for batch 1
+2026-11-13T17:36:46-08:00 gx10-3e5c uv[1711349]:   captured draft graph for batch 2
+2026-11-13T17:36:46-08:00 gx10-3e5c uv[1711349]:   captured draft graph for batch 4
+2026-11-13T17:36:46-08:00 gx10-3e5c uv[1711349]:   captured device accept graphs: 3 (+3 sampled)
+2026-11-13T17:36:51-08:00 gx10-3e5c uv[1711349]:   warmup done
+2026-11-13T17:36:51-08:00 gx10-3e5c uv[1711349]:   ssd store: /home/kostadis/hibana-trial/results-exact/ssd/flashnext/v2/e0
+2026-11-13T17:36:52-08:00 gx10-3e5c uv[1711349]:   ssd tier: 20 stored prefixes, 8.0 of 40 GiB, 256-token blocks
+2026-11-13T17:36:52-08:00 gx10-3e5c uv[1711349]: serving on http://127.0.0.1:30004
+2026-11-13T17:37:27-08:00 gx10-3e5c systemd[78780]: Stopping hibana-shadow-exact.service - /home/kostadis/hibana-trial/bin/uv run --locked hibana serve flashnext --exact --context-length 262144 --max-batch 4 --host 127.0.0.1 --port 30004...
+2026-11-13T17:37:27-08:00 gx10-3e5c uv[1711349]: ssd tier: persisted 0 more cached prefixes; the tier holds 8.0 GiB (0 write errors)
+2026-11-13T17:37:30-08:00 gx10-3e5c systemd[78780]: Stopped hibana-shadow-exact.service - /home/kostadis/hibana-trial/bin/uv run --locked hibana serve flashnext --exact --context-length 262144 --max-batch 4 --host 127.0.0.1 --port 30004.
+2026-11-13T17:37:30-08:00 gx10-3e5c systemd[78780]: hibana-shadow-exact.service: Consumed 2min 21.619s CPU time, 50.1G memory peak, 0B memory swap peak.
+2026-11-13T17:52:51-08:00 gx10-3e5c systemd[78780]: Started hibana-shadow-exact.service - /home/kostadis/hibana-trial/bin/uv run --locked hibana serve flashnext --exact --context-length 262144 --max-batch 4 --host 127.0.0.1 --port 30004.
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766022]: Uninstalled 1 package in 2ms
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766022]: Installed 1 package in 4ms
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766046]: Hibana flashnext (one Spark) on http://127.0.0.1:30004, profile exact
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766046]:   GPU: NVIDIA GB10 (SM 12.1), driver 580.173.02; memory: 121 GiB total, 118 GiB available
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766046]:   speculation: mtp, 4 drafts, draft the model's own MTP head
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766046]:   acceptance: greedy off, sampled exact
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766046]:   3-bit copies: off; device-resident acceptance: off
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766046]:   context 262144 tokens, up to 4 requests
+2026-11-13T17:52:51-08:00 gx10-3e5c uv[1766046]:   traces: off; SSD tier: /home/kostadis/hibana-trial/results-exact/ssd/flashnext, 40 GiB
+2026-11-13T17:52:54-08:00 gx10-3e5c uv[1766046]: loading flashnext: RadixArk/Qwen3.8-Flash-Next-NVFP4@7b719225
+2026-11-13T17:53:03-08:00 gx10-3e5c uv[1766046]:   loaded 8/48 layers (9s, 12.7 GiB)
+2026-11-13T17:53:10-08:00 gx10-3e5c uv[1766046]:   loaded 16/48 layers (16s, 23.8 GiB)
+2026-11-13T17:53:18-08:00 gx10-3e5c uv[1766046]:   loaded 24/48 layers (23s, 34.9 GiB)
+2026-11-13T17:53:25-08:00 gx10-3e5c uv[1766046]:   loaded 32/48 layers (30s, 46.0 GiB)
+2026-11-13T17:53:33-08:00 gx10-3e5c uv[1766046]:   loaded 40/48 layers (38s, 57.2 GiB)
+2026-11-13T17:53:39-08:00 gx10-3e5c uv[1766046]:   loaded 48/48 layers (45s, 68.3 GiB)
+2026-11-13T17:53:40-08:00 gx10-3e5c uv[1766046]:   weights loaded in 45s, 68.9 GiB allocated (fp8 trunk, 5.74 GB per decode token)
+2026-11-13T17:53:41-08:00 gx10-3e5c uv[1766046]:   counted after the pools: workspaces 0.50, graphs 0.50, first use 2.25, activations 1.00 GiB; floor 16 GiB
+2026-11-13T17:53:41-08:00 gx10-3e5c uv[1766046]:   pools: 300032 KV pages (5.15 GiB), 56 state slots (6.02 GiB, fp32 recurrent state)
+2026-11-13T17:53:50-08:00 gx10-3e5c uv[1766046]:   proposer: mtp, persistent 3.17 GiB, verify buffers 0.06 GiB, k=4
+2026-11-13T17:53:51-08:00 gx10-3e5c uv[1766046]:   captured decode graph for batch 1
+2026-11-13T17:53:51-08:00 gx10-3e5c uv[1766046]:   captured selecting decode graph for batch 1
+2026-11-13T17:53:51-08:00 gx10-3e5c uv[1766046]:   captured decode graph for batch 2
+2026-11-13T17:53:52-08:00 gx10-3e5c uv[1766046]:   captured selecting decode graph for batch 2
+2026-11-13T17:53:52-08:00 gx10-3e5c uv[1766046]:   captured decode graph for batch 4
+2026-11-13T17:53:52-08:00 gx10-3e5c uv[1766046]:   captured selecting decode graph for batch 4
+2026-11-13T17:53:52-08:00 gx10-3e5c uv[1766046]:   captured dense and selecting verify graph for batch 1
+2026-11-13T17:53:52-08:00 gx10-3e5c uv[1766046]:   captured dense and selecting verify graph for batch 2
+2026-11-13T17:53:53-08:00 gx10-3e5c uv[1766046]:   captured dense and selecting verify graph for batch 4
+2026-11-13T17:53:53-08:00 gx10-3e5c uv[1766046]:   captured draft graph for batch 1
+2026-11-13T17:53:53-08:00 gx10-3e5c uv[1766046]:   captured draft graph for batch 2
+2026-11-13T17:53:53-08:00 gx10-3e5c uv[1766046]:   captured draft graph for batch 4
+2026-11-13T17:53:54-08:00 gx10-3e5c uv[1766046]:   captured device accept graphs: 3 (+3 sampled)
+2026-11-13T17:53:58-08:00 gx10-3e5c uv[1766046]:   warmup done
+2026-11-13T17:53:58-08:00 gx10-3e5c uv[1766046]:   ssd store: /home/kostadis/hibana-trial/results-exact/ssd/flashnext/v2/e0
+2026-11-13T17:53:59-08:00 gx10-3e5c uv[1766046]:   ssd tier: 20 stored prefixes, 8.0 of 40 GiB, 256-token blocks
+2026-11-13T17:53:59-08:00 gx10-3e5c uv[1766046]: serving on http://127.0.0.1:30004

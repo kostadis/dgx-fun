@@ -1,0 +1,289 @@
+{
+  "utc": "2026-11-14T01:54:50.618713+00:00",
+  "hostname": "gx10-3e5c",
+  "health": {
+    "status": "ok",
+    "uptime_seconds": 51.11355948448181
+  },
+  "models": {
+    "object": "list",
+    "data": [
+      {
+        "id": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+        "object": "model",
+        "owned_by": "hibana",
+        "root": "RadixArk/Qwen3.8-Flash-Next-NVFP4"
+      }
+    ]
+  },
+  "server_info": {
+    "engine": "hibana",
+    "target": "flashnext",
+    "model_path": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    "revision": "7b719225242aacd3dbd3f9407468c2ee9a9d2594",
+    "w3_target_identity": null,
+    "w3_warning": null,
+    "context_length": 262144,
+    "tp_size": 1,
+    "max_running_requests": 4,
+    "max_queued_requests": 16,
+    "chunked_prefill_size": 4096,
+    "prefill_budget": 4096,
+    "solo_prefill_chunk": 8192,
+    "kv_pages": 300032,
+    "state_slots": 56,
+    "ledger_gib": {
+      "weights": 68.89,
+      "kv_pool": 5.15,
+      "state_pool": 6.03,
+      "workspaces": 0.52,
+      "proposer_and_verify": 3.62,
+      "cuda_graphs": 0.71
+    },
+    "memory_gib": {
+      "allocated": 84.93,
+      "reserved": 85.26,
+      "max_allocated": 84.99,
+      "max_reserved": 85.26,
+      "rss": 3.43
+    },
+    "after_plan_gib": {
+      "workspaces": 0.5,
+      "graphs": 0.5,
+      "first_use": 2.25,
+      "activations": 1.0
+    },
+    "speculative": {
+      "algorithm": "mtp",
+      "num_draft_tokens": 4,
+      "depths_by_batch": null,
+      "adaptive_step_cost": null,
+      "draft_precision": "bf16",
+      "draft": null,
+      "accept_default": {
+        "accept_top_k": 1,
+        "accept_margin": 0.0,
+        "accept_soft": 0.0
+      }
+    },
+    "attention_backend": "flashinfer",
+    "gdn_backend": "cute",
+    "kv_cache_dtype": "float8_e4m3fn",
+    "mamba_ssm_dtype": "float32",
+    "traces": null,
+    "vision": false,
+    "config": {
+      "profile": "exact",
+      "target": "flashnext",
+      "hf_cache": "/home/kostadis/.cache/huggingface",
+      "flashnext_cache": "/home/kostadis/.cache/huggingface",
+      "max_context": 262144,
+      "max_batch": 4,
+      "cuda_arch": "12.1a",
+      "tp_allreduce": "rdma",
+      "w3_decode": false,
+      "w3_checkpoint": null,
+      "w3_warning": null,
+      "stable_numerics": false,
+      "gdn_prefill": "auto",
+      "ssm_state": "fp32",
+      "ssm_window": 16,
+      "ssm_compensators": null,
+      "flashnext_trunk": "fp8",
+      "trunk_keep_bf16": null,
+      "flashnext_experts": "w3",
+      "bolt_experts": "b12x",
+      "vision": false,
+      "spec": "4",
+      "spec_depths": null,
+      "spec_step_cost": 0.0,
+      "spec_policy": "fixed",
+      "draft_dir": null,
+      "host_floor_gib": 16.0,
+      "draft_vocab": 0,
+      "draft_head": "w2",
+      "draft_head_rescore": 16,
+      "device_accept": false,
+      "mtp_sample": false,
+      "accept_default": "1:0.0",
+      "accept_soft": 0.0,
+      "qsa_sparse_graphs": true,
+      "qsa_prefill_backend": "original",
+      "ple_resident": "auto",
+      "ssd": true,
+      "ssd_gib": 40.0,
+      "ssd_dir": "/home/kostadis/hibana-trial/results-exact/ssd/flashnext",
+      "ssd_block_tokens": 256,
+      "ssd_trace": false,
+      "ssd_writers": 4,
+      "ssd_staging_mib": 512,
+      "ssd_chunk_mib": 256,
+      "verify_attention": "auto",
+      "kv_format": "fp8",
+      "kv_pool_tokens": 300032,
+      "traces": null,
+      "traces_max_mib": 32768,
+      "trace_confidence": false,
+      "debug_sync": false,
+      "bench_verify_state": "snapshots",
+      "moe_keep": 0,
+      "moe_budget": 0,
+      "moe_budget_per_request": 0
+    },
+    "scheduler": {
+      "admitted": 7,
+      "finished": 7,
+      "cancelled": 0,
+      "retractions": 0,
+      "rejected": 0,
+      "prefill_chunks": 7,
+      "prefill_tokens": 606,
+      "decode_steps": 26,
+      "decode_tokens": 106,
+      "steps": 26,
+      "avg_step_ms": 108.85204520757095,
+      "queued": 0,
+      "prefilling": 0,
+      "running": 0,
+      "floor_holds": 0,
+      "cache": {
+        "hits": 3,
+        "misses": 12,
+        "evictions": 11,
+        "snapshot_evictions": 0,
+        "cached_tokens": 518,
+        "flush_pending": false,
+        "locks": {
+          "total": 0
+        },
+        "snapshots": {
+          "spare": 4,
+          "not_spare": 2
+        },
+        "evicted": {
+          "flush": {
+            "not_spare": 3,
+            "spare": 8
+          }
+        },
+        "pruned": 0,
+        "full_reprefills": 0,
+        "branching_resumes": 0,
+        "evictable": {
+          "kv_tokens": 518,
+          "kv_tokens_protected": 0,
+          "snapshots": 6,
+          "snapshots_protected": 0
+        },
+        "ssd": {
+          "nodes": 24,
+          "demotions": 0,
+          "promotions": 1,
+          "evictions": 0,
+          "prefixes": 20,
+          "used_gib": 7.989,
+          "budget_gib": 40.0,
+          "block_tokens": 256,
+          "queued_blocks": 0,
+          "staged_mib": 0.0,
+          "backed_blocks": 0,
+          "tails": 0,
+          "tails_written_through": 0,
+          "tails_through_dropped": 0,
+          "queued_tails": 0,
+          "forced_gathers": 0,
+          "evict_dropped": 0,
+          "restores": 0,
+          "restore_fails": 0,
+          "restored_tokens": 0,
+          "restored_kv_tokens": 0,
+          "waited_for_writes": 0,
+          "deleted": 0,
+          "evict_ms_total": 0.0,
+          "evict_ms_max": 0.0,
+          "settle_ms_total": 0.0,
+          "settle_ms_max": 0.0,
+          "room_waits": 0,
+          "room_wait_writes": 0,
+          "room_wait_ms_total": 0.0,
+          "room_wait_ms_max": 0.0,
+          "step_ms_total": 38.5,
+          "step_ms_max": 0.3,
+          "restore_ms_avg": 0.0,
+          "async_restores": 0,
+          "restore_wait_steps": 0,
+          "restore_blocked_ms_total": 0.0,
+          "restore_gib": 0.0,
+          "restore_read_gbps": 0.0,
+          "restore_scatter_ms_avg": 0.0,
+          "restore_e2e_gbps": 0.0,
+          "store": {
+            "dir": "/home/kostadis/hibana-trial/results-exact/ssd/flashnext/v2/e0",
+            "writes": 0,
+            "reads": 0,
+            "deletes": 0,
+            "write_gib": 0.0,
+            "read_gib": 0.0,
+            "write_errors": 0,
+            "read_errors": 0,
+            "last_error": null,
+            "pending": 0,
+            "writers": 4,
+            "direct_writes": true,
+            "write_ms_avg": 0.0,
+            "read_ms_avg": 0.0
+          }
+        },
+        "draft_resumes": {
+          "hits": 3,
+          "fallbacks": 0
+        }
+      },
+      "ttft_p50": 0.1624109330587089,
+      "ttft_p95": 0.3562541650608182,
+      "ttft_window_count": 7,
+      "ttft_window_capacity": 2048
+    },
+    "spec_stats": {
+      "rounds": 26,
+      "proposed": 104,
+      "accepted": 98,
+      "emitted": 106,
+      "accept_rate": 0.9423076923076923,
+      "tokens_per_round": 4.076923076923077,
+      "state_strategy": "reconstruct",
+      "verify_buffer_bytes": 59996160,
+      "verify_depth": 4,
+      "verify_depths": [
+        4
+      ],
+      "round_ms": 59.647946484172,
+      "relaxed_accepts": 0
+    },
+    "messages_api": {
+      "server_tools_ignored": 0
+    },
+    "constrained": {
+      "json_schema": 1,
+      "json_object": 0,
+      "tool_call": 1
+    },
+    "refusal_guard": {
+      "refusal_reminders": 0,
+      "refusal_stops": 0
+    }
+  },
+  "unit": "ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/hibana-shadow-exact.service\nActiveState=active\nActiveEnterTimestamp=Fri 2026-11-13 17:52:51 PST",
+  "containers": "",
+  "source_head": "d474b74d5a892b2cd1cc8fc50cb17946e2a539bb",
+  "source_changes": "",
+  "versions": {
+    "huggingface_hub": "1.30.0",
+    "triton": "3.7.1",
+    "xgrammar": "0.2.8",
+    "flashinfer-python": "0.6.17",
+    "torch": "2.13.0+cu130"
+  },
+  "lock_sha256": "3c025a9b27cf0c353e442df5bd6b6847008b02b6f38cb30291de9cf37d700224  /home/kostadis/hibana-trial/source/uv.lock",
+  "meminfo": "MemTotal:       127600812 kB\nMemFree:          858816 kB\nMemAvailable:   28975132 kB\nBuffers:           30888 kB\nCached:         29276164 kB\nSwapCached:        59852 kB\nActive:         12350688 kB\nInactive:       19579504 kB\nActive(anon):    3302564 kB\nInactive(anon):    38824 kB\nActive(file):    9048124 kB\nInactive(file): 19540680 kB\nUnevictable:       25120 kB\nMlocked:           25120 kB\nSwapTotal:      16777212 kB\nSwapFree:       16630040 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              3844 kB\nWriteback:             0 kB\nAnonPages:       2645164 kB\nMapped:          1485880 kB\nShmem:            711460 kB\nKReclaimable:     668956 kB\nSlab:            2627676 kB\nSReclaimable:     668956 kB\nSUnreclaim:      1958720 kB\nKernelStack:       13696 kB\nShadowCallStack:    3432 kB\nPageTables:        24964 kB\nSecPageTables:    187800 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    80577616 kB\nCommitted_AS:    8398492 kB\nVmallocTotal:   135288315904 kB\nVmallocUsed:      130676 kB\nVmallocChunk:          0 kB\nPercpu:            24720 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:      8192 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:     83968 kB\nFilePmdMapped:         0 kB\nCmaTotal:         131072 kB\nCmaFree:           69320 kB\nBalloon:               0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\n"
+}

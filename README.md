@@ -5,6 +5,7 @@ This repository contains experiments, reports, and scripts related to running LL
 ## Contents
 
 ### LLM Observations & Reports
+- **[Hibana on DGX Spark Results](hibana-spark-results.md):** Shadow comparison against pinned vLLM, including real Cognee ingestion, long-context replays, quality findings and crash recovery.
 - **Model Comparisons:** Insights on various models including Gemma 4, Qwen, and Llama.
 - **Hardware Calibration:** Reports on DGX Spark calibration and LLM serving learnings.
 - **Workflow Design:** Documentation on tiered LLM workflows and D&D session prep.
