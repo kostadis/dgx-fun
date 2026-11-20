@@ -8,10 +8,12 @@ import argparse
 import ast
 from collections import Counter
 import hashlib
+import importlib.util
 from functools import lru_cache
 import json
 import math
 import os
+import re
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -101,6 +103,69 @@ def mempalace_pieces(text):
         pieces.append((start, start + len(content)))
         cursor = start
     return pieces
+
+
+CG_ROOT = Path(os.environ.get("CAMPAIGNGENERATOR_SRC", Path.home() / "src" / "CampaignGenerator"))
+FIVETOOLS_SPLIT = 800  # mempalace add_drawer: content[i:i+chunk_size], no overlap, default 800
+
+
+@lru_cache(maxsize=None)
+def fivetools_ingest_module():
+    """CampaignGenerator's real ingest module. Pure drawer builders only:
+    no MempalaceClient is ever created, and mempalace itself is never imported."""
+    if str(CG_ROOT) not in sys.path:
+        sys.path.insert(0, str(CG_ROOT))
+    from pipelines.content_ingest import fivetools_ingest
+    assert not any(k.startswith("mempalace") for k in sys.modules), "mempalace imported"
+    return fivetools_ingest
+
+
+@lru_cache(maxsize=None)
+def _inline():
+    spec = importlib.util.spec_from_file_location("adaptive_prepare", Path(__file__).with_name("prepare.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.inline
+
+
+def normalize_text(text):
+    return re.sub(r"\s+", " ", _inline()(text)).strip().lower()
+
+
+def fivetools_pieces(module_json, references=None):
+    """Drawers exactly as fivetools_ingest builds them (adventure + referenced catalog
+    entities), each split as mempalace add_drawer splits oversized content."""
+    ingest = fivetools_ingest_module()
+    common = {"book": None, "book_room_slug": "experiment", "source_filepath": str(module_json)}
+    drawers = ingest.build_drawers_from_json(json.loads(Path(module_json).read_text()), **common)
+    if references is not None:
+        catalog = {}
+        for entity in json.loads(Path(references).read_text())["references"].values():
+            entity = dict(entity)
+            catalog.setdefault(entity.pop("__prop"), []).append(entity)
+        drawers += ingest.build_drawers_from_json(catalog, **common)
+    pieces = []
+    for number, drawer in enumerate(drawers):
+        content = drawer["content"]
+        for i in range(0, len(content), FIVETOOLS_SPLIT):
+            piece = content[i:i + FIVETOOLS_SPLIT]
+            pieces.append({"id": f"fivetools_drawers:{number}:{i // FIVETOOLS_SPLIT}", "doc_id": "fivetools",
+                           "start": -1, "end": -1, "order": [1, len(pieces)], "drawer": number,
+                           "text": piece, "retrieval_text": piece, "crumb": False, "tokens": count_tokens(piece)})
+    return pieces
+
+
+def text_complete(selected, evidence):
+    """Every evidence quote appears (markup rendered, whitespace folded) in the selected text.
+    Consecutive split pieces of one drawer rejoin with no separator."""
+    ordered = sorted(selected, key=lambda c: c["order"])
+    parts = []
+    for previous, chunk in zip([None, *ordered], ordered):
+        joined = (previous is not None and chunk["drawer"] is not None and previous["drawer"] == chunk["drawer"]
+                  and chunk["order"][1] == previous["order"][1] + 1)
+        parts.append(("" if joined or previous is None else "\n") + chunk["text"])
+    blob = normalize_text("".join(parts))
+    return all(normalize_text(gold["quote"]) in blob for gold in evidence)
 
 
 def span_coverage(spans, gold):

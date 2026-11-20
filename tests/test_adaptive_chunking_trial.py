@@ -194,5 +194,70 @@ class ExtraArmTests(unittest.TestCase):
         self.assertEqual(R.CANDIDATES, ("recursive_600", "recursive_1100", "module_headings_600"))
 
 
+class FivetoolsArmTests(unittest.TestCase):
+    ADVENTURE = {"data": [{"type": "section", "name": "Chapter 1", "entries": [
+        "The {@creature goblin|MM} boss waits in the cave.",
+        {"type": "entries", "name": "Area 1", "entries": ["A " + "long corridor stretches onward. " * 60]},
+        {"type": "list", "items": ["hidden list item text"]},
+    ]}]}
+
+    def build(self, references=None):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "adventure-x.json"
+            path.write_text(json.dumps(self.ADVENTURE))
+            ref = None
+            if references is not None:
+                ref = Path(d) / "references.json"
+                ref.write_text(json.dumps({"references": references}))
+            return R.fivetools_pieces(path, ref)
+
+    def test_long_drawer_split_at_800_without_overlap(self):
+        pieces = self.build()
+        by_drawer = {}
+        for c in pieces:
+            by_drawer.setdefault(c["drawer"], []).append(c)
+        long_groups = [g for g in by_drawer.values() if len(g) > 1]
+        self.assertTrue(long_groups)
+        for g in long_groups:
+            self.assertTrue(all(len(c["text"]) == 800 for c in g[:-1]))
+            self.assertLessEqual(len(g[-1]["text"]), 800)
+
+    def test_raw_markup_embedded_without_breadcrumb(self):
+        pieces = self.build()
+        self.assertTrue(any("{@creature goblin|MM}" in c["retrieval_text"] for c in pieces))
+        for c in pieces:
+            self.assertEqual(c["retrieval_text"], c["text"])
+            self.assertIs(c["crumb"], False)
+
+    def test_list_items_are_not_stored(self):
+        self.assertFalse(any("hidden list item" in c["text"] for c in self.build()))
+
+    def test_references_become_catalog_drawers(self):
+        ref = {"r1": {"name": "Crystal of Doom", "source": "X", "type": "W",
+                      "entries": ["While attuned you see omens."], "__prop": "item"}}
+        self.assertTrue(any("While attuned you see omens" in c["text"] for c in self.build(ref)))
+
+    def test_no_palace_client_created_and_no_mempalace_import(self):
+        import sys
+        from unittest import mock
+        with mock.patch.object(R.fivetools_ingest_module().MempalaceClient, "__init__",
+                               side_effect=AssertionError("palace client created")):
+            self.build()
+        self.assertFalse(any(k.startswith("mempalace") for k in sys.modules))
+
+    def test_text_complete_joins_split_pieces_and_renders_markup(self):
+        a = {"doc_id": "fivetools", "order": [1, 0], "drawer": 7, "text": "the {@item Crystal|X} glows bri"}
+        b = {"doc_id": "fivetools", "order": [1, 1], "drawer": 7, "text": "ghtly at dusk"}
+        ev = [{"quote": "Crystal glows brightly at dusk"}]
+        self.assertTrue(R.text_complete([b, a], ev))
+        self.assertFalse(R.text_complete([a], ev))
+
+    def test_text_complete_on_position_chunks(self):
+        a = {"doc_id": "d0", "order": [0, 0], "drawer": None, "text": "first part."}
+        b = {"doc_id": "d0", "order": [0, 50], "drawer": None, "text": "second part."}
+        self.assertTrue(R.text_complete([a, b], [{"quote": "second   part."}, {"quote": "first part."}]))
+        self.assertFalse(R.text_complete([a], [{"quote": "second part."}]))
+
+
 if __name__ == "__main__":
     unittest.main()
