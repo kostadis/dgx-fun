@@ -1,0 +1,150 @@
+{
+  "scope": "Manual source review of nine predetermined paired answers; not exhaustive answer-quality evaluation",
+  "reader": "qwen3.8-flash-next",
+  "budget": 2400,
+  "methods": {
+    "fixed_600": {
+      "complete": 7,
+      "partial": 1,
+      "unknown": 1,
+      "unsupported_factual_claims_observed": 0
+    },
+    "adaptive_4metric": {
+      "complete": 9,
+      "partial": 0,
+      "unknown": 0,
+      "unsupported_factual_claims_observed": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "q01",
+      "method": "fixed_600",
+      "requested_information": "partial",
+      "all_quotes_verbatim": false,
+      "receipt_sha256": "b989813bce257e59f4f926ddddbcccfb1638cd1cc5623acc895f8f209a7812ca",
+      "finding": "Correct operator names; explicitly lacks the requested physical descriptions. One purported quote uses an ellipsis."
+    },
+    {
+      "id": "q03",
+      "method": "fixed_600",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "cf11d1c364835d1150f5b1b38ea00bbae9f75a6f97f51718e29e4e59bf7a213c"
+    },
+    {
+      "id": "q05",
+      "method": "fixed_600",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "afaa4322011328b1fb65c5784b2b978b12c1293fd5da7f7cec72b1e637901ece"
+    },
+    {
+      "id": "q09",
+      "method": "fixed_600",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "76d961ad2630fe1ff2d186e7f00f254fb0b8a046d343548efabfdeed0da25321"
+    },
+    {
+      "id": "q15",
+      "method": "fixed_600",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "13908468a00047d590b27ccc1fb8fb06bbb9cfb27801acdd3902979edf55b238"
+    },
+    {
+      "id": "q16",
+      "method": "fixed_600",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "ce972cd88a4dcf79c0ba5d789cadf09bcd234cefbe9bb1b9bb2a2be0cc70ae03"
+    },
+    {
+      "id": "q19",
+      "method": "fixed_600",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "7aabe14029bcc276bb9ab0a337792ed8686fa87f7b5ab5ffa2f8ac1707b11691"
+    },
+    {
+      "id": "q30",
+      "method": "fixed_600",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "44575027a79835a397935f9a09cd32939eb93d2e95e4714963627e542924cf83"
+    },
+    {
+      "id": "q34",
+      "method": "fixed_600",
+      "requested_information": "unknown",
+      "all_quotes_verbatim": false,
+      "receipt_sha256": "bb7b3067e16494bdf70a1ce8fab5e41bead6c4af6de1bfa167d48963c258bfaa",
+      "finding": "Answer correctly abstains because dimensions are absent."
+    },
+    {
+      "id": "q01",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "3661bef5063b42787f971cd4ea096cc11e82730a72a6c7b2ec0de08e3516b7ea"
+    },
+    {
+      "id": "q03",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "e3885428c3b1b0757a42a157c371ae97e4ea19607744da8998aef06eb02c942a"
+    },
+    {
+      "id": "q05",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "452c781469585103e25720a586694808c9964842f435199da95e8f9fd51e8cbf"
+    },
+    {
+      "id": "q09",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "ef78c7b9e1c6a610e929751b834cfa7264ec58da1a81896b439afee146f0f87b"
+    },
+    {
+      "id": "q15",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "0a288dbb19a81afca2944bad2b439e85da20986ff1ac905f1ef6dd15faefc4e5"
+    },
+    {
+      "id": "q16",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "8bf415c10bfc20aade7c53470977463f8e9adfdb59f7b09eff7dd5fe93abcbe3"
+    },
+    {
+      "id": "q19",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "b82a9a11c9685d03341b2960e8edd3bde7ec557a979662495ce47c099d8ec4e1"
+    },
+    {
+      "id": "q30",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": true,
+      "receipt_sha256": "274228b5c8d5e358185c2cb15081a175e2f70ec39986f9581bec650d7c672dec"
+    },
+    {
+      "id": "q34",
+      "method": "adaptive_4metric",
+      "requested_information": "complete",
+      "all_quotes_verbatim": false,
+      "receipt_sha256": "b09b7d9ed920dc26b283e5b62b0c2e5f05d61ed0151521bb4586a9930903cea4",
+      "finding": "Both dimensions are supported by retrieved text; the supporting quote is abridged with an ellipsis rather than verbatim."
+    }
+  ]
+}

@@ -1,0 +1,341 @@
+{
+  "reviewer": "Codex source inspection, not independent human adjudication",
+  "scope": "12 predetermined questions across three retrieval arms at 2400 tokens",
+  "rubric": "Assess the answer prose for the frozen requested details; report quotation and contextual support separately. Destination business names and one-word answers are valid semantic answers. The frozen captive-location check expects room W20.",
+  "reader_plan_sha256": "3eacc4c73e7849e19f6f89ef72c91ba5c5b7e4a90dbfa3ad26565cbfb2d2fded",
+  "reader_image_sha256": "f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d",
+  "methods": {
+    "fixed_600": {
+      "complete_requested_prose": 11,
+      "partial_prose": 1,
+      "scene_location_conflict": 0,
+      "questions": 12,
+      "all_quotes_verbatim": 10
+    },
+    "recursive_600": {
+      "complete_requested_prose": 10,
+      "partial_prose": 1,
+      "scene_location_conflict": 1,
+      "questions": 12,
+      "all_quotes_verbatim": 9
+    },
+    "adaptive_4metric": {
+      "complete_requested_prose": 11,
+      "partial_prose": 1,
+      "scene_location_conflict": 0,
+      "questions": 12,
+      "all_quotes_verbatim": 10
+    }
+  },
+  "cases": [
+    {
+      "id": "q01",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "2558ba492eb84c3d310a07c4802d199394e1f4693a769ff67e13a0c23f5c6cbb",
+      "finding": "Semantically answers the question; automated pattern check is unnecessarily restrictive."
+    },
+    {
+      "id": "q05",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": false,
+      "designated_evidence_complete": false,
+      "receipt_sha256": "5aa4c6067b19917059c845f64a530014c02d82f0f1ad54187b6ce88a51c8d112",
+      "finding": "Answers the requested facts despite missing complete designated source spans; partial or alternative passages can suffice."
+    },
+    {
+      "id": "q09",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "9e1bd256616042266195a4533a3d5576669d33da7a6ce63e334b7c6b27cc5141"
+    },
+    {
+      "id": "q13",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "a9fa34a1fd7afa3302bed51e216291276f32186587da01d5d1e4bd88d737e53b"
+    },
+    {
+      "id": "q17",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "edb3839035378d664b3b88ba1f996b08df909a68fe59c8f8ab5c694eb299e2eb"
+    },
+    {
+      "id": "q21",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "02bb6095db573d3720c881732209347124ce0b1bbcba843c186fb6847b0d54b7"
+    },
+    {
+      "id": "q25",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "256e82d09bf08306cc760eaa5339e951e959aae2433d1060755f24e825818be3"
+    },
+    {
+      "id": "q29",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": false,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "4bc0187514db15b9025ab0a9998c74b07fe2a7f086ac6fc15e2477265302f6ff"
+    },
+    {
+      "id": "q33",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "d09648053e2247c5a3ba11b53cfd68792e7e38c2216b579713c290e1bf3e394a",
+      "finding": "Semantically answers the question; automated pattern check is unnecessarily restrictive."
+    },
+    {
+      "id": "q37",
+      "method": "fixed_600",
+      "prose_review": "partial_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": false,
+      "receipt_sha256": "08d2bff93734950f8f7b061bb8063c2365cd584da9d5f768afca52ca2ad3fbbd",
+      "finding": "Explicitly lacks the requested manifestation; source passages identify locations but the needed introduction is not retrieved."
+    },
+    {
+      "id": "q43",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "015cbbd30fbf7662779c190d7908b03c86e0a6553db1a380ab6a92955671990f"
+    },
+    {
+      "id": "q47",
+      "method": "fixed_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "3e68d4d6ed97c6fdfa03e742363fffc02f869763ffe21b6a7b51436eb19e3ed1"
+    },
+    {
+      "id": "q01",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "7a3377d6cdf1598a68645636f0884f0452939325b2bb369ae80fdbaa2ac6d4f4",
+      "finding": "Semantically answers the question; automated pattern check is unnecessarily restrictive."
+    },
+    {
+      "id": "q05",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": false,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "f2d152b13554c29430d859d105742c6f179d398da782670495f1cb9f0bbedde8"
+    },
+    {
+      "id": "q09",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "899a600cad8319b337dc6a408ed22797c8df0bba3d2d252c1698d44bb8a609c4"
+    },
+    {
+      "id": "q13",
+      "method": "recursive_600",
+      "prose_review": "partial_prose",
+      "all_quotes_verbatim": false,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "0b5676fc08e3499f3a3d99fbcbec4cafff2d2675ea6e96c11f1bac0208e783d8",
+      "finding": "Answer gives the broad mine location but omits frozen room-level detail. Room W20 is available in context. Recursive also supplies it in a quotation, so the full response is more informative than the prose score."
+    },
+    {
+      "id": "q17",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "8a3aa7fc37fbec1305e0b518a92a17d2584a7d1c47401c26b33da10b0c1c8649"
+    },
+    {
+      "id": "q21",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "b2dda15afe54c81693ef2e09334decb58718403451ffcdc449481a3e44c63240"
+    },
+    {
+      "id": "q25",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "60cc5cc2d4ce07f837e638467ca52658af6b01d415acf7699d06a8a0cc804c5b"
+    },
+    {
+      "id": "q29",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": false,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "63a85607c641802e8d46e261281b2793ef539921dd4014740ae88edd0d99f6d4"
+    },
+    {
+      "id": "q33",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "31cc5199e2662abda8d54407cf010f728c59bb58f8777e192e926667fc9c88bd",
+      "finding": "Semantically answers the question; automated pattern check is unnecessarily restrictive."
+    },
+    {
+      "id": "q37",
+      "method": "recursive_600",
+      "prose_review": "scene_location_conflict",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "e850a7b7314798ad8cb15f9677207f6fc14598dd2f5b23817b9eaa326f219d7d",
+      "finding": "Names the correct manifestation but puts the encounter in the Endless Void. The encounter section places the confrontation at the Briny Pool in B22 after returning. The question and introductory summary compress this geography, limiting comparative interpretation."
+    },
+    {
+      "id": "q43",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "f1f3b64689f8f5bdec369945524b4d7ea7d7ba575318c08ea99d43d346466fd3"
+    },
+    {
+      "id": "q47",
+      "method": "recursive_600",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "5b8348c890f1ef42d141a519d9b3e22f8a506004d4dbdaa8b9113ba09d330e82"
+    },
+    {
+      "id": "q01",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "3bb3e48554ff39fe2e93b581cdea46ad83b4eed8330ec38abd9c0a214722d2a3",
+      "finding": "Semantically answers the question; automated pattern check is unnecessarily restrictive."
+    },
+    {
+      "id": "q05",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "e1290d6789eabfb31b66138481271d63d81cbc2076adf0b4e626b12c56f19e50"
+    },
+    {
+      "id": "q09",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "971be48c307d4c07ab5e252d0e51d0337fd3f93f4727cb2c8b5847dbcdb851bc"
+    },
+    {
+      "id": "q13",
+      "method": "adaptive_4metric",
+      "prose_review": "partial_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": false,
+      "receipt_sha256": "8e36dc9819d2ab7684119e250e5774e42d472efc12a15853d984084d3dde6029",
+      "finding": "Answer gives the broad mine location but omits frozen room-level detail. Room W20 is available in context. Recursive also supplies it in a quotation, so the full response is more informative than the prose score."
+    },
+    {
+      "id": "q17",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "6a5b2e51df2a300a454acc8e903b23de04fda86760d6b3091561a009f9c15f97"
+    },
+    {
+      "id": "q21",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "985195bd36f778af1bf2a78150ddee078c53cfe3d2affd43f3d66918266365a0"
+    },
+    {
+      "id": "q25",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "17de335aefcb9439503ebd55f79526dd43ee12fcc05cb5ef5f7dade7d2ba6709"
+    },
+    {
+      "id": "q29",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": false,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "c462bea3a8da576d3fcc5a46c7bb775042ca780730a87f7ed2170482055c18f4"
+    },
+    {
+      "id": "q33",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "a2ba7437a97f92a306b90439b5ad7e25486c967884c0c8622ef2a3a3915f91e3",
+      "finding": "Semantically answers the question; automated pattern check is unnecessarily restrictive."
+    },
+    {
+      "id": "q37",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": false,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "5f5b478aaabb0da40662c68fced7fd9cd3922e3261ef14caf1d587d2f7ecda6a",
+      "finding": "Names the manifestation and both locations; the source itself describes the relationship both as two halves of a domain and as the heart of the maze. Avoid a strict exact-phrase geography score."
+    },
+    {
+      "id": "q43",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "c1ac85a1462555ed69d244ab54573088ac179aa55d2bfe560b08afec45b693f1"
+    },
+    {
+      "id": "q47",
+      "method": "adaptive_4metric",
+      "prose_review": "complete_requested_prose",
+      "all_quotes_verbatim": true,
+      "designated_evidence_complete": true,
+      "receipt_sha256": "bd4c4d8fc7d5ee069d911c5a6b57516f109e40cf2344230cf28371605b50c639"
+    }
+  ],
+  "pattern_check_caveat": "The string checks are diagnostic, not answer accuracy. They unnecessarily require the town name when the destination business is supplied, and repetition of context when a one-word entity answer is sufficient.",
+  "scene_location_check": {
+    "doc_id": "pabtso-08",
+    "section": "Ilvaash's Refraction",
+    "source_passage_sha256": [
+      "5c21f5bf5571e8bc614804896a656e0ce7b5b809c05a52ad8d6c4b0f2d27676e",
+      "7247de4c441e6bf16829f35e99adcab535f3d334dfa06b07906d910d1c3368ad"
+    ]
+  }
+}
