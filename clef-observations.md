@@ -259,3 +259,51 @@ The OOTA `/corpus-gaps` backlog is currently **empty** (0 candidates), so this i
 **Verdict:** Venn is a clean, honest design and cheap to train, but on CampaignGenerator and mneme tasks it loses to
 both the GPU decision models and simple path rules. Its niche, whole-document routing over stored vectors, isn't one
 these campaigns have today.
+
+
+## 2026-11-12 — stock Clef card-approval filter versus Gemini
+
+Restarted retained `clef` on spark2:8002 after stopping and retaining `qwen38-flash`.
+Both official Clef models loaded, but this experiment used **stock Clef 27B**,
+not a GM-tuned head. Flash loaded in 135.7 s and Clef in 386.7 s; total CUDA
+allocation 68.9 GiB, 44–45 GiB host memory available after readiness.
+
+Paired 766 frozen E1 wide-source inputs with Gemini, substituting the same fully
+specified cue-627 correction for both. Clef: 209 above 90% (2 historical
+non-approvals), 130 at 80–90% (2), 427 individual cards. Gemini: 210 (2),
+173 (4), 383 respectively. Clef groups 44 fewer cards for bulk approval and
+leaves 12 of 16 non-approved concrete proposals on cards, versus Gemini's 10.
+These small exception counts do not establish a statistically reliable winner.
+
+Clef's corrected cue-627 score is 0.9334 versus Gemini's 0.867764. All 36
+input-ablation requests repeated identically; all 765 unchanged full-set inputs
+reproduce Clef's original frozen scores exactly. Current Clef median round trip
+is 731 ms. No cards failed. All source prompts and scores are preserved.
+
+Three-group UI and exports passed browser checks. The private experiment is
+`~/data/decision-eval/clef-card-filter-v1/`; aggregate results and reproduction
+driver are in `clef/eval/clef-card-filter-v1-comparison.json` and
+`clef/eval/clef_card_filter.py`. Deployment state is in `current-setup.md`.
+
+
+## 2026-11-12 — first personalized Clef readout fit: not an upgrade
+
+Trained 1,024 final residual-scorer weights on 812 development cards, with the
+27B backbone and other head tensors frozen. Three session-grouped folds chose
+L2=0.001 from five prespecified values; no holdout labels entered selection.
+Checkpoint audit: only `residual_scorer.3.weight` changed.
+
+Actual paired inference on 306 reserved newer-session cards gave stock/tuned
+counts: over90 149/127, middle 33/73, regular 124/106. The bulk lists contain
+3/4 non-approved concrete corrections respectively; only four such exceptions
+exist in the test set. Highest-group exceptions increase from 2 to 3. AUC drops
+0.528→0.306 despite improved average log loss 0.324→0.198. This small readout
+fit does not improve the approval filter. It does not test full-head/backbone
+fine-tuning.
+
+`clef-card-train` now serves stock `clef` and explicit experimental
+`clef-card-tuned` on spark2:8002, one shared backbone; old `clef` and Qwen
+containers are retained stopped. Stock remains the default model ID. Health,
+serving parity, and 62 GiB host MemAvailable verified. Data/code/checkpoint:
+`spark2:~/clef-card-training-v1/` and `~/data/decision-eval/clef-card-training-v1/`.
+Aggregate audit: `clef/eval/clef-readout-training-v1.json`. No campaign edits.

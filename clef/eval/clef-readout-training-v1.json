@@ -1,0 +1,305 @@
+{
+  "method": "L2-anchored fine-tuning of the 1024 final residual-scorer weights; all other weights frozen",
+  "release_snapshot": "2f3de3dd85f379784083b0814d997ab627200f0c",
+  "release_code_sha256": "0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3",
+  "selection": {
+    "trainable_parameters": 1024,
+    "cross_validation": "3 folds grouped by session; seed 7",
+    "development_baseline": {
+      "rows": 812,
+      "concrete_proposals": 674,
+      "concrete_nonapprovals": 18,
+      "concrete_auc": 0.5730013550135501,
+      "concrete_log_loss": 1.200769134872937,
+      "groups": {
+        "over90": {
+          "cards": 75,
+          "nonapprovals": 1
+        },
+        "80to90": {
+          "cards": 94,
+          "nonapprovals": 0
+        },
+        "regular": {
+          "cards": 643,
+          "nonapprovals": 119
+        }
+      }
+    },
+    "candidates": [
+      {
+        "l2": 0.001,
+        "out_of_fold": {
+          "rows": 812,
+          "concrete_proposals": 674,
+          "concrete_nonapprovals": 18,
+          "concrete_auc": 0.627879403794038,
+          "concrete_log_loss": 0.2707635742883782,
+          "groups": {
+            "over90": {
+              "cards": 163,
+              "nonapprovals": 2
+            },
+            "80to90": {
+              "cards": 268,
+              "nonapprovals": 5
+            },
+            "regular": {
+              "cards": 381,
+              "nonapprovals": 113
+            }
+          }
+        }
+      },
+      {
+        "l2": 0.01,
+        "out_of_fold": {
+          "rows": 812,
+          "concrete_proposals": 674,
+          "concrete_nonapprovals": 18,
+          "concrete_auc": 0.5530149051490515,
+          "concrete_log_loss": 0.4775258193635611,
+          "groups": {
+            "over90": {
+              "cards": 0,
+              "nonapprovals": 0
+            },
+            "80to90": {
+              "cards": 38,
+              "nonapprovals": 2
+            },
+            "regular": {
+              "cards": 774,
+              "nonapprovals": 118
+            }
+          }
+        }
+      },
+      {
+        "l2": 0.1,
+        "out_of_fold": {
+          "rows": 812,
+          "concrete_proposals": 674,
+          "concrete_nonapprovals": 18,
+          "concrete_auc": 0.44114159891598914,
+          "concrete_log_loss": 0.6602451533294268,
+          "groups": {
+            "over90": {
+              "cards": 0,
+              "nonapprovals": 0
+            },
+            "80to90": {
+              "cards": 0,
+              "nonapprovals": 0
+            },
+            "regular": {
+              "cards": 812,
+              "nonapprovals": 120
+            }
+          }
+        }
+      },
+      {
+        "l2": 1.0,
+        "out_of_fold": {
+          "rows": 812,
+          "concrete_proposals": 674,
+          "concrete_nonapprovals": 18,
+          "concrete_auc": 0.4344512195121951,
+          "concrete_log_loss": 0.7238692379200267,
+          "groups": {
+            "over90": {
+              "cards": 0,
+              "nonapprovals": 0
+            },
+            "80to90": {
+              "cards": 0,
+              "nonapprovals": 0
+            },
+            "regular": {
+              "cards": 812,
+              "nonapprovals": 120
+            }
+          }
+        }
+      },
+      {
+        "l2": 10.0,
+        "out_of_fold": {
+          "rows": 812,
+          "concrete_proposals": 674,
+          "concrete_nonapprovals": 18,
+          "concrete_auc": 0.5437838753387534,
+          "concrete_log_loss": 0.9066119644518563,
+          "groups": {
+            "over90": {
+              "cards": 0,
+              "nonapprovals": 0
+            },
+            "80to90": {
+              "cards": 42,
+              "nonapprovals": 1
+            },
+            "regular": {
+              "cards": 770,
+              "nonapprovals": 119
+            }
+          }
+        }
+      }
+    ],
+    "selected_l2": 0.001,
+    "selected_out_of_fold": {
+      "rows": 812,
+      "concrete_proposals": 674,
+      "concrete_nonapprovals": 18,
+      "concrete_auc": 0.627879403794038,
+      "concrete_log_loss": 0.2707635742883782,
+      "groups": {
+        "over90": {
+          "cards": 163,
+          "nonapprovals": 2
+        },
+        "80to90": {
+          "cards": 268,
+          "nonapprovals": 5
+        },
+        "regular": {
+          "cards": 381,
+          "nonapprovals": 113
+        }
+      }
+    },
+    "development_improved_auc": true
+  },
+  "development_rows": 812,
+  "holdout_rows": 306,
+  "data_hashes": {
+    "development": "23d1699a0884024bf46e47895c2a0d651a97b9d22a0a93b7903db27425aa173e",
+    "holdout": "29d69ea14746dabddf5d8e483c657b5bc942ed6c345d12cb4d452387ac867763"
+  },
+  "checkpoint_sha256": "9586e6d4a0b10b7e6abbe717e1d0400da2b57a2e528553be97a375e5789fb81b",
+  "heldout": {
+    "stock": {
+      "rows": 306,
+      "concrete_proposals": 255,
+      "concrete_nonapprovals": 4,
+      "concrete_auc": 0.5278884462151394,
+      "concrete_log_loss": 0.3244259401236495,
+      "groups": {
+        "over90": {
+          "cards": 149,
+          "nonapprovals": 2
+        },
+        "80to90": {
+          "cards": 33,
+          "nonapprovals": 1
+        },
+        "regular": {
+          "cards": 124,
+          "nonapprovals": 35
+        }
+      }
+    },
+    "tuned": {
+      "rows": 306,
+      "concrete_proposals": 255,
+      "concrete_nonapprovals": 4,
+      "concrete_auc": 0.3057768924302789,
+      "concrete_log_loss": 0.1979125215957974,
+      "groups": {
+        "over90": {
+          "cards": 127,
+          "nonapprovals": 3
+        },
+        "80to90": {
+          "cards": 73,
+          "nonapprovals": 1
+        },
+        "regular": {
+          "cards": 106,
+          "nonapprovals": 34
+        }
+      }
+    }
+  },
+  "notes": [
+    "Holdout labels were not used for training or hyperparameter selection.",
+    "Holdout scores are actual paired full-model forward passes.",
+    "Only four concrete non-approvals occur in the heldout set; treat comparisons cautiously.",
+    "The experimental head is task-specific; stock clef remains the default model ID."
+  ],
+  "weight_audit": {
+    "changed_head_tensors": [
+      "residual_scorer.3.weight"
+    ],
+    "changed_weight_values": 1002,
+    "trainable_weights": 1024,
+    "other_head_tensors_unchanged": true,
+    "base_head_sha256": "a010ac04f078e699988e4049cbea5e62c962393f59fec366640b64e8d69a4953",
+    "training_code_sha256": "333acb5c0684f935b056b5b341fff50a92493e136ec5265076cf247f59704d50",
+    "optimizer_code_sha256": "b82df29b725d62ed8f0cfc673214e7c2725cba1a08bf60275b782e7746dafc55"
+  },
+  "operational_rounded": {
+    "stock": {
+      "rows": 306,
+      "concrete_proposals": 255,
+      "concrete_nonapprovals": 4,
+      "concrete_auc": 0.5278884462151394,
+      "concrete_log_loss": 0.32443335827371733,
+      "groups": {
+        "over90": {
+          "cards": 149,
+          "nonapprovals": 2
+        },
+        "80to90": {
+          "cards": 33,
+          "nonapprovals": 1
+        },
+        "regular": {
+          "cards": 124,
+          "nonapprovals": 35
+        }
+      }
+    },
+    "tuned": {
+      "rows": 306,
+      "concrete_proposals": 255,
+      "concrete_nonapprovals": 4,
+      "concrete_auc": 0.3057768924302789,
+      "concrete_log_loss": 0.19789389735810878,
+      "groups": {
+        "over90": {
+          "cards": 127,
+          "nonapprovals": 3
+        },
+        "80to90": {
+          "cards": 73,
+          "nonapprovals": 1
+        },
+        "regular": {
+          "cards": 106,
+          "nonapprovals": 34
+        }
+      }
+    }
+  },
+  "loss_by_concrete_verdict": {
+    "stock_approve": {
+      "n": 251,
+      "log_loss": 0.2946316717371209
+    },
+    "stock_nonapprove": {
+      "n": 4,
+      "log_loss": 2.1940162813783237
+    },
+    "tuned_approve": {
+      "n": 251,
+      "log_loss": 0.15311851838075363
+    },
+    "tuned_nonapprove": {
+      "n": 4,
+      "log_loss": 3.008736223339795
+    }
+  }
+}

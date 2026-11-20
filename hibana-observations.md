@@ -300,3 +300,23 @@ embedding/common-reader services limit timing conclusions.
 The existing Cognee data/configuration and primary vLLM service were preserved.
 Exact was restored after testing. See [the real Cognee comparison](experiments/hibana/cognee/README.md)
 for timing, quality review, configuration and complete evidence links.
+
+### User-requested fast restart, 2026-11-14 UTC
+
+The idle exact shadow (zero running, prefilling or queued requests) was stopped
+and the retained `start-shadow.sh fast` configuration started on spark2.
+Health became ready **66.65 seconds** after unit start. The server reports
+profile `fast`, calibrated target identity
+`01bd50a3a264642aaa0baed5170b0c3bc9f19fdb7e613aa0d85e940b93db6225`,
+262144 context, batch four and **73.93 GiB** allocated GPU memory. All seven
+existing streaming/chat, JSON-schema and tool-call smoke checks passed; the
+server was idle afterward. Exact is stopped, and spark1 remains on pinned vLLM.
+
+The endpoint remains `127.0.0.1:30004` on spark2, with no LAN listener or boot
+startup. Client configuration uses an SSH tunnel, OpenAI-compatible base URL
+`http://127.0.0.1:30004/v1`, and served model ID
+`RadixArk/Qwen3.8-Flash-Next-NVFP4`; the profile is selected server-side.
+No application settings or Cognee storage were changed.
+[Restart receipt](experiments/hibana/evidence/fast-user-restart-20261114-ready.json),
+[smoke summary](experiments/hibana/evidence/fast-user-restart-20261114-smoke-summary.json),
+[client instructions](experiments/hibana/README.md#configure-a-client).

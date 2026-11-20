@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spelling review · replay</title>
+<style>
+:root{--ground:#f1f3f1;--surface:#fafbfa;--ink:#171b19;--muted:#59635d;--rule:#cbd3cd;--accent:#2f6f62;--soft:#dce9e5}*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.5 system-ui,sans-serif}.wrap{max-width:1060px;margin:auto;padding:32px 24px 100px}h1,h2{font-family:Georgia,serif;line-height:1.15}h1{font-size:40px;margin:12px 0}h2{font-size:28px;margin:0}.eyebrow{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.1em}.lede,.muted{color:var(--muted)}.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:3;background:var(--ground);border-bottom:1px solid var(--rule);padding:12px 0;margin-bottom:28px}.bar span{flex:1}.section-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.section{margin:32px 0}button{font:inherit;cursor:pointer;border:1px solid var(--rule);background:var(--surface);border-radius:5px;padding:8px 12px}button:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #7db7a8;outline-offset:2px}button:disabled{cursor:default;opacity:.45}.primary{background:var(--accent);color:white;border-color:var(--accent)}.small{padding:4px 9px;font-size:13px}.list,.card{background:var(--surface);border:1px solid var(--rule);border-radius:7px}.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule)}.row:last-child{border-bottom:0}.row.approved{background:var(--soft)}.pair{font-weight:600;overflow-wrap:anywhere}.session{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.row-actions{display:flex;align-items:center;gap:8px}.badge{font-size:12px;color:var(--accent)}details{margin-top:6px}summary{cursor:pointer;font-size:13px;color:var(--accent)}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 ui-monospace,monospace;max-height:360px;overflow:auto} .card{padding:20px;margin:16px 0}.card h3{font-size:19px;margin:6px 0}.actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px}.selected{background:var(--soft);border-color:var(--accent)}textarea{display:block;resize:vertical;width:100%;min-height:55px;border:1px solid var(--rule);border-radius:4px;padding:8px;font:inherit;margin-top:12px}.notice{border-left:3px solid var(--accent);padding-left:12px;font-size:14px;color:var(--muted)}#status{min-height:24px;color:var(--accent)}.empty{padding:16px;color:var(--muted)}@media(max-width:600px){.wrap{padding:20px 14px 90px}h1{font-size:32px}.row{grid-template-columns:minmax(0,1fr)}.row-actions{justify-content:space-between}.section-top .primary{width:100%}.card{padding:14px}}
+#group-summary{display:flex;gap:10px;flex-wrap:wrap}#group-summary a{color:var(--accent);border:1px solid var(--rule);padding:6px 10px;border-radius:4px;text-decoration:none}.middle .primary{background:#93601f;border-color:#93601f}.section{scroll-margin-top:80px}
+</style>
+<div class="wrap">
+ <div class="eyebrow">Review mode experiment</div>
+ <h1>Spelling review</h1>
+ <p class="lede">Two score groups, each with its own bulk approval. Regular cards for everything else.</p>
+ <p class="notice">Historical replay. Your choices here do not change a transcript or glossary. Predictions are unmarked until you approve them. Reloading clears unsaved choices.</p>
+ <div class="bar"><span id="progress" aria-live="polite"></span><button id="save" disabled>Save replay decisions</button></div>
+ <nav id="group-summary" aria-label="Review groups"></nav>
+ <section class="section" id="high-section" aria-labelledby="high-title"><div class="section-top"><h2 id="high-title">Over 90%</h2><button class="primary" id="bulk-high" data-bulk="high"></button></div>
+ <p class="muted" id="high-description"></p><div id="high" class="list"></div></section>
+ <section class="section middle" id="middle-section" aria-labelledby="middle-title"><div class="section-top"><h2 id="middle-title">80–90%</h2><button class="primary" id="bulk-middle" data-bulk="middle"></button></div>
+ <p class="muted" id="middle-description"></p><div id="middle" class="list"></div></section>
+ <section class="section" id="cards-section" aria-labelledby="cards-title"><h2 id="cards-title">Regular cards</h2><p class="muted">Scores below 80%, open questions, and anything you pull out of either list.</p><div id="cards"></div></section>
+ <p id="status" role="status"></p>
+</div>
+<script type="application/json" id="data">__REVIEW_DATA__</script>
+<script>
+'use strict';
+const spec=JSON.parse(document.getElementById('data').textContent);
+const items=spec.items, decisions={}, notes={}, exceptions=new Set();
+const $=id=>document.getElementById(id);
+function esc(text){return String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function tierOf(it){return exceptions.has(it.id)?'cards':it.tier;}
+function pair(it){return it.display_pair?esc(it.display_pair):it.replacement?`${esc(it.token)} → ${esc(it.replacement)}`:esc(it.title);}
+function evidence(it){return `<details><summary>See original proposal and source</summary><pre>${esc(it.proposal)}\n\n${esc(it.evidence)}</pre></details>`;}
+function progress(){
+ const count=Object.keys(decisions).length, tally={approve:0,reject:0,discuss:0};
+ Object.values(decisions).forEach(d=>tally[d]++);
+ $('progress').textContent=`${count} / ${items.length} decided · ${tally.approve} approved · ${tally.reject} rejected · ${tally.discuss} to discuss`;
+ $('save').disabled=!(count||Object.keys(notes).length);
+ for(const tier of ['high','middle']){
+  const pending=items.filter(it=>tierOf(it)===tier&&!decisions[it.id]).length;
+  $(`bulk-${tier}`).textContent=pending?`Approve all ${pending} in this group`:'No pending corrections';
+  $(`bulk-${tier}`).disabled=!pending;
+ }
+}
+function render(){
+ document.querySelector('.eyebrow').textContent=`${spec.model||'Decision model'} · review mode experiment`;
+ const groups={high:items.filter(it=>tierOf(it)==='high'),middle:items.filter(it=>tierOf(it)==='middle'),cards:items.filter(it=>tierOf(it)==='cards')};
+ const highLabel=`Over ${(spec.threshold*100).toFixed(0)}%`,middleLabel=`${(spec.middle_threshold*100).toFixed(0)}–${(spec.threshold*100).toFixed(0)}%`;
+ $('high-title').textContent=`${highLabel} · ${groups.high.length}`;
+ $('middle-title').textContent=`${middleLabel} · ${groups.middle.length}`;
+ $('group-summary').innerHTML=`<a href="#high-section">${highLabel}: ${groups.high.length}</a><a href="#middle-section">${middleLabel}: ${groups.middle.length}</a><a href="#cards-section">Regular cards: ${groups.cards.length}</a>`;
+ for(const tier of ['high','middle']){
+  const rows=groups[tier];
+  $(`${tier}-description`).textContent=`${rows.length} proposed corrections. This approval button affects only this group. Pull any exception into a regular card.`;
+  $(tier).innerHTML=rows.length?rows.map(it=>`<div class="row ${decisions[it.id]==='approve'?'approved':''}" data-row="${it.id}"><div><div class="pair">${pair(it)}</div><div class="session">${esc(it.session)} · model yes score ${(it.p_yes*100).toFixed(1)}%${it.updated_score?' · updated from corrected input':''}</div>${evidence(it)}</div><div class="row-actions"><span class="badge">${decisions[it.id]==='approve'?'Approved':''}</span><button class="small" data-except="${it.id}">Review individually</button></div></div>`).join(''):'<div class="empty">No corrections in this group.</div>';
+ }
+ const cards=groups.cards;
+ $('cards-title').textContent=`Regular cards · ${cards.length}`;
+ $('cards').innerHTML=cards.map(it=>`<article class="card" data-card="${it.id}"><div class="session">${esc(it.session)}</div><h3>${pair(it)}</h3><p>${esc(it.proposed_text)}</p>${evidence(it)}<div class="actions">${['approve','reject','discuss'].map(d=>`<button data-choice="${d}" data-id="${it.id}" class="${decisions[it.id]===d?'selected':''}" aria-pressed="${decisions[it.id]===d}">${d==='approve'?'Approve':d==='reject'?'Reject':'Discuss'}</button>`).join('')}</div><label class="muted" for="note-${it.id}">Optional note</label><textarea id="note-${it.id}" data-note="${it.id}">${esc(notes[it.id]||'')}</textarea></article>`).join('');
+ progress();
+}
+document.addEventListener('click',event=>{
+ const bulk=event.target.closest('[data-bulk]');
+ if(bulk){const tier=bulk.dataset.bulk;items.filter(it=>tierOf(it)===tier&&!decisions[it.id]).forEach(it=>decisions[it.id]='approve');render();return;}
+ const exception=event.target.closest('[data-except]');
+ if(exception){const id=exception.dataset.except;exceptions.add(id);delete decisions[id];render();document.querySelector(`[data-card="${id}"]`).scrollIntoView({block:'center'});return;}
+ const choice=event.target.closest('[data-choice]');
+ if(choice){const id=choice.dataset.id,d=choice.dataset.choice;if(decisions[id]===d)delete decisions[id];else decisions[id]=d;
+  choice.closest('.actions').querySelectorAll('[data-choice]').forEach(b=>{const on=decisions[id]===b.dataset.choice;b.classList.toggle('selected',on);b.setAttribute('aria-pressed',String(on));});progress();}
+});
+document.addEventListener('input',event=>{const id=event.target.dataset.note;if(id){if(event.target.value)notes[id]=event.target.value;else delete notes[id];progress();}});
+function payload(){
+ const tally={approve:0,reject:0,discuss:0};Object.values(decisions).forEach(d=>tally[d]++);
+ return {schemaVersion:1,reviewId:spec.reviewId,replay:true,savedAt:new Date().toISOString(),decided:Object.keys(decisions).length,tally,
+  decisions:{...decisions},notes:{...notes},discuss:items.filter(it=>decisions[it.id]==='discuss').map(it=>it.id),unmarked:items.filter(it=>!decisions[it.id]).map(it=>it.id)};
+}
+$('save').addEventListener('click',()=>{
+ const data=JSON.stringify(payload(),null,2),url=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+ const a=document.createElement('a');a.href=url;a.download='card-filter-replay-decisions.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $('status').textContent='Replay decisions downloaded. Campaign files are unchanged.';
+});
+render();
+</script></html>

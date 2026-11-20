@@ -1,0 +1,187 @@
+{
+  "all": {
+    "rows": 1118,
+    "sessions": 65,
+    "verdicts": {
+      "approve": 960,
+      "discuss": 142,
+      "chatter": 4,
+      "reject": 12
+    },
+    "concrete_proposals": 929,
+    "concrete_proposal_verdicts": {
+      "approve": 907,
+      "chatter": 4,
+      "discuss": 16,
+      "reject": 2
+    },
+    "formats": {
+      "frozen_v1": 766,
+      "structured_queue_reconstruction": 46,
+      "original_shared_card": 306
+    }
+  },
+  "original_v1": {
+    "rows": 766,
+    "sessions": 59,
+    "verdicts": {
+      "approve": 662,
+      "discuss": 98,
+      "chatter": 4,
+      "reject": 2
+    },
+    "concrete_proposals": 643,
+    "concrete_proposal_verdicts": {
+      "approve": 627,
+      "chatter": 4,
+      "discuss": 11,
+      "reject": 1
+    },
+    "formats": {
+      "frozen_v1": 766
+    }
+  },
+  "additional": {
+    "rows": 352,
+    "sessions": 6,
+    "verdicts": {
+      "approve": 298,
+      "discuss": 44,
+      "reject": 10
+    },
+    "concrete_proposals": 286,
+    "concrete_proposal_verdicts": {
+      "approve": 280,
+      "discuss": 5,
+      "reject": 1
+    },
+    "formats": {
+      "structured_queue_reconstruction": 46,
+      "original_shared_card": 306
+    }
+  },
+  "splits": {
+    "development": {
+      "rows": 812,
+      "sessions": 60,
+      "verdicts": {
+        "approve": 692,
+        "discuss": 108,
+        "chatter": 4,
+        "reject": 8
+      },
+      "concrete_proposals": 674,
+      "concrete_proposal_verdicts": {
+        "approve": 656,
+        "chatter": 4,
+        "discuss": 13,
+        "reject": 1
+      },
+      "formats": {
+        "frozen_v1": 766,
+        "structured_queue_reconstruction": 46
+      }
+    },
+    "holdout": {
+      "rows": 306,
+      "sessions": 5,
+      "verdicts": {
+        "reject": 4,
+        "approve": 268,
+        "discuss": 34
+      },
+      "concrete_proposals": 255,
+      "concrete_proposal_verdicts": {
+        "reject": 1,
+        "approve": 251,
+        "discuss": 3
+      },
+      "formats": {
+        "original_shared_card": 306
+      }
+    }
+  },
+  "primary_decision_files": 65,
+  "backup_exports_not_counted": [
+    {
+      "path": "summaries/2026-10-19-chapter_73/spell_review/decisions_saved_20261022_0614.json",
+      "sha256": "1d43d0723a50c261663731df02181a5291450217f138a93ca9f5e97fc6520726",
+      "rows": 89,
+      "same_labels_as_primary": true
+    },
+    {
+      "path": "summaries/2026-10-26-chapter_74/spell_review/decisions_saved_20261028_0212.json",
+      "sha256": "5dfbc0948739f1699837e6015dbf9a013b397bf15c91712e8b86c540f772a6e1",
+      "rows": 52,
+      "same_labels_as_primary": true
+    },
+    {
+      "path": "summaries/2026-11-02-chapter_75/spell_review/decisions_saved_20261105_0647.json",
+      "sha256": "a13d64361bed167b972cde938087eb4663190db845b1283d214c35b9178b646c",
+      "rows": 69,
+      "same_labels_as_primary": true
+    }
+  ],
+  "anomalies": [
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-09-29-chapter_031",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-10-06-chapter_032",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-10-20-chapter_34-the-wet-bet-and-the-wondrous-cube",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-10-27-chapter_35-prejudice-promises-and-the-prince-of-puddles",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-11-12-chapter_36-not-an-ooze-just-a-cube",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-11-18-chapter_37-slime-spirits-and-svirfneblin-squabbles",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-11-24-chapter_38-wererats-wisdom-and-the-war-on-ooze",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-12-02-chapter_39-from-exasperation-to-expedition-blingdenstones-new-hope",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2025-12-08-chapter_40-crystals-ghosts-and-crazed-earth",
+      "preserved_from_v1": true
+    },
+    {
+      "kind": "review_id_mismatch",
+      "session": "2026-09-28-chapter_70-candle",
+      "preserved_from_v1": true
+    }
+  ],
+  "original_v1_inputs": {
+    "e1_cards_prose.json": "1aa66d2c15922b0d905e62185ddfe9dc344482fa1a372fba7cbfeef029eb8d17",
+    "e1_cards_rawC.json": "6398d2ecd4207ab0b78cdeb8d567e731d103ee0fd36adc0c75616441c8347536"
+  },
+  "policy": {
+    "target": "approve as presented versus needs an individual ruling (reject/discuss/chatter)",
+    "holdout": "Whole previously untested sessions dated after 2026-09-28; never randomly split cards from one session.",
+    "features": "Explicit allow-list; human verdicts and notes are targets only. Old examples retain the original frozen text.",
+    "training_status": "Dataset preparation only; no model fitted and no new data sent to a hosted API."
+  }
+}

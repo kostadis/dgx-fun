@@ -1,0 +1,120 @@
+{
+  "time_pacific": "2026-11-07T08:18:48.897296-08:00",
+  "health": {
+    "status": "ok"
+  },
+  "models": {
+    "models": [
+      {
+        "name": "qwen3.8-flash-next-gguf",
+        "model": "qwen3.8-flash-next-gguf",
+        "modified_at": "",
+        "size": "",
+        "digest": "",
+        "type": "model",
+        "description": "",
+        "tags": [
+          ""
+        ],
+        "capabilities": [
+          "completion"
+        ],
+        "parameters": "",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "",
+          "families": [
+            ""
+          ],
+          "parameter_size": "",
+          "quantization_level": ""
+        }
+      }
+    ],
+    "object": "list",
+    "data": [
+      {
+        "id": "qwen3.8-flash-next-gguf",
+        "aliases": [
+          "qwen3.8-flash-next-gguf"
+        ],
+        "tags": [],
+        "object": "model",
+        "architecture": {
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ]
+        },
+        "created": 1794068328,
+        "owned_by": "llamacpp",
+        "meta": {
+          "vocab_type": 2,
+          "n_vocab": 248320,
+          "n_ctx": 262144,
+          "n_ctx_train": 262144,
+          "n_embd": 2560,
+          "n_params": 176943899520,
+          "size": 102037895680,
+          "ftype": "IQ4_NL - 4.5 bpw"
+        }
+      }
+    ]
+  },
+  "context": 262144,
+  "request": {
+    "model": "qwen3.8-flash-next-gguf",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is 17 times 19? Answer only the number."
+      }
+    ],
+    "temperature": 0,
+    "max_tokens": 32000,
+    "chat_template_kwargs": {
+      "enable_thinking": false
+    }
+  },
+  "smoke": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "323"
+        }
+      }
+    ],
+    "created": 1794068329,
+    "model": "qwen3.8-flash-next-gguf",
+    "system_fingerprint": "b1-ca89968",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 4,
+      "prompt_tokens": 27,
+      "total_tokens": 31,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "id": "chatcmpl-vjQtURItJ2wfZO5QLWOy5qLihDgQ4dct",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 27,
+      "prompt_ms": 303.418,
+      "prompt_per_token_ms": 11.237703703703703,
+      "prompt_per_second": 88.9861511182593,
+      "predicted_n": 4,
+      "predicted_ms": 69.075,
+      "predicted_per_token_ms": 23.025000000000002,
+      "predicted_per_second": 43.43105320304017,
+      "draft_n": 3,
+      "draft_n_accepted": 3
+    }
+  }
+}

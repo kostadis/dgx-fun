@@ -9,6 +9,7 @@ generative model runs 8-way concurrent as in the original runs (6-way with reaso
 """
 import json, os, sys, time, traceback
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import tasks as T
@@ -17,7 +18,16 @@ DATA = Path(os.path.expanduser(os.environ.get('DATA', '~/data/decision-eval/v1')
 model, exps = sys.argv[1], sys.argv[2:]
 assert model in T.MODELS, f'unknown model {model}; one of {T.MODELS}'
 CHATTY = model in T.CHAT
-load = lambda name: json.load(open(DATA / f'{name}.json'))
+load = lambda name: json.loads((DATA / f'{name}.json').read_text())
+
+if model == 'gemini':
+    # Fail before writing benchmark results if the key, endpoint or model is unavailable.
+    T.systemone(model, 'The blue mug arrived cracked.', {
+        'damaged': {'type': 'noul', 'instructions': 'Did the mug arrive damaged?'},
+        'action': {'type': 'choice', 'instructions': 'Which action fits the mug?',
+                   'criteria': {'replace': 'The mug is broken.', 'keep': 'The mug is intact.'}},
+    })
+    print('gemini-decision-1: API preflight passed', flush=True)
 
 
 def timed(fn):
@@ -26,7 +36,8 @@ def timed(fn):
 
 def so(state, qs):
     (ans, mid, usage), ms = timed(lambda: T.systemone(model, state, qs))
-    return dict(answers=ans, served=mid, input_tokens=usage.get('input_tokens'), ms=ms)
+    return dict(answers=ans, served=mid, input_tokens=usage.get('input_tokens'), ms=ms,
+                **({'usage': usage} if model == 'gemini' else {}))
 
 
 def so_kind(state, q):  # one 'kind' choice question -> p (+ abs: the [ABS] probability, Vela via serve_vela.py)
@@ -48,9 +59,27 @@ def run(part, rows, fn, keep, threads=None):
             except Exception:
                 if i == 2: traceback.print_exc(); return {**{k: r[k] for k in keep if k in r}, 'error': True}
                 time.sleep(5)
-    t = time.time(); res = list(ThreadPoolExecutor(n).map(one, rows))
+    t = time.time(); res = []
+    checkpoint = out.with_suffix('.partial.jsonl') if model == 'gemini' else None
+    if checkpoint and checkpoint.exists():
+        # A terminated write may leave an incomplete last line; replay only complete rows.
+        res = [json.loads(line) for line in checkpoint.read_text().splitlines(keepends=True)
+               if line.endswith('\n')]
+        assert len(res) <= len(rows), 'checkpoint is longer than the input'
+        for saved, source in zip(res, rows):
+            assert all(saved.get(k) == source[k] for k in keep if k in source), 'checkpoint row mismatch'
+        checkpoint.write_text(''.join(json.dumps(row) + '\n' for row in res))
+        print(f'{part}/{model}: resumed {len(res)} checkpoint rows', flush=True)
+    with (checkpoint.open('a') if checkpoint else nullcontext()) as sink, ThreadPoolExecutor(n) as pool:
+        for row in pool.map(one, rows[len(res):]):
+            res.append(row)
+            if sink:
+                sink.write(json.dumps(row) + '\n'); sink.flush()
+            if model == 'gemini' and len(res) % 100 == 0:
+                print(f'{part}/{model}: {len(res)}/{len(rows)} rows, {time.time() - t:.0f}s', flush=True)
     errs = sum('error' in r for r in res)
-    json.dump(res, open(out, 'w'), indent=1)
+    out.write_text(json.dumps(res, indent=1))
+    if checkpoint: checkpoint.unlink()
     print(f'{part}/{model}: {len(res)} rows, {errs} errors, {time.time() - t:.0f}s')
 
 

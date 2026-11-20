@@ -1,0 +1,44 @@
+{
+  "model": "gemini-decision-1",
+  "score_arm": "e1_rawC",
+  "default_replay_threshold": 0.9,
+  "threshold_sweep": {
+    "0.5": {
+      "items": 766,
+      "flat_list": 518,
+      "individual_cards": 248,
+      "proposed_corrections": 643,
+      "historical_nonapprovals_in_flat_list": 7
+    },
+    "0.7": {
+      "items": 766,
+      "flat_list": 464,
+      "individual_cards": 302,
+      "proposed_corrections": 643,
+      "historical_nonapprovals_in_flat_list": 6
+    },
+    "0.8": {
+      "items": 766,
+      "flat_list": 382,
+      "individual_cards": 384,
+      "proposed_corrections": 643,
+      "historical_nonapprovals_in_flat_list": 6
+    },
+    "0.9": {
+      "items": 766,
+      "flat_list": 210,
+      "individual_cards": 556,
+      "proposed_corrections": 643,
+      "historical_nonapprovals_in_flat_list": 2
+    },
+    "0.95": {
+      "items": 766,
+      "flat_list": 4,
+      "individual_cards": 762,
+      "proposed_corrections": 643,
+      "historical_nonapprovals_in_flat_list": 0
+    }
+  },
+  "prototype": "Historical replay only; explicit bulk approval, per-card exceptions, no campaign edits.",
+  "limitations": "Retrospective thresholds on 643 proposed corrections with only 16 historical nonapprovals; not a guarantee on fresh cards."
+}

@@ -1,0 +1,89 @@
+{
+  "verified_utc": "2026-11-06T01:19:33.334954+00:00",
+  "restored_utc": "2026-11-06T01:18:10.678060+00:00",
+  "start": {
+    "requested": 1793927222.0130384,
+    "container_started_at": "2026-11-06T01:06:04.548157015Z",
+    "reason": "user requested return to Qwen after context tests"
+  },
+  "health": {
+    "status_code": 200,
+    "body": ""
+  },
+  "models": {
+    "object": "list",
+    "data": [
+      {
+        "id": "qwen3.8-flash-next",
+        "object": "model",
+        "created": 1793927973,
+        "owned_by": "vllm",
+        "root": "/hf/hub/models--RadixArk--Qwen3.8-Flash-Next-NVFP4/snapshots/7b719225242aacd3dbd3f9407468c2ee9a9d2594-fp8hybrid",
+        "parent": null,
+        "max_model_len": 262144,
+        "permission": [
+          {
+            "id": "modelperm-bf9ac164f08bfa97",
+            "object": "model_permission",
+            "created": 1793927973,
+            "allow_create_engine": false,
+            "allow_sampling": true,
+            "allow_logprobs": true,
+            "allow_search_indices": false,
+            "allow_view": true,
+            "allow_fine_tuning": false,
+            "organization": "*",
+            "group": null,
+            "is_blocking": false
+          }
+        ]
+      }
+    ]
+  },
+  "smoke": {
+    "id": "chatcmpl-aa4f4ea618cc9434",
+    "object": "chat.completion",
+    "created": 1793927890,
+    "model": "qwen3.8-flash-next",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "323",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": null
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": null,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.1.dev20073+g8e685d198-3daee843",
+    "usage": {
+      "prompt_tokens": 28,
+      "total_tokens": 32,
+      "completion_tokens": 4,
+      "prompt_tokens_details": null,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  },
+  "available_gib": 16.340713500976562,
+  "restart_policy": "unless-stopped",
+  "inferssd_stopped": true,
+  "retained_inferssd_context": 65536
+}

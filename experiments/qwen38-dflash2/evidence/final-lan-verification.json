@@ -1,0 +1,107 @@
+{
+  "time": "2026-11-07T02:00:30.154421+00:00",
+  "health": {
+    "status": "ok"
+  },
+  "models": {
+    "models": [
+      {
+        "name": "qwen3.8-flash-next-gguf",
+        "model": "qwen3.8-flash-next-gguf",
+        "modified_at": "",
+        "size": "",
+        "digest": "",
+        "type": "model",
+        "description": "",
+        "tags": [
+          ""
+        ],
+        "capabilities": [
+          "completion"
+        ],
+        "parameters": "",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "",
+          "families": [
+            ""
+          ],
+          "parameter_size": "",
+          "quantization_level": ""
+        }
+      }
+    ],
+    "object": "list",
+    "data": [
+      {
+        "id": "qwen3.8-flash-next-gguf",
+        "aliases": [
+          "qwen3.8-flash-next-gguf"
+        ],
+        "tags": [],
+        "object": "model",
+        "architecture": {
+          "input_modalities": [
+            "text"
+          ],
+          "output_modalities": [
+            "text"
+          ]
+        },
+        "created": 1794016830,
+        "owned_by": "llamacpp",
+        "meta": {
+          "vocab_type": 2,
+          "n_vocab": 248320,
+          "n_ctx": 32768,
+          "n_ctx_train": 262144,
+          "n_embd": 2560,
+          "n_params": 176943899520,
+          "size": 102037895680,
+          "ftype": "IQ4_NL - 4.5 bpw"
+        }
+      }
+    ]
+  },
+  "reported_context": 32768,
+  "model_id": "qwen3.8-flash-next-gguf",
+  "smoke": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "323"
+        }
+      }
+    ],
+    "created": 1794016830,
+    "model": "qwen3.8-flash-next-gguf",
+    "system_fingerprint": "b1-ca89968",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 4,
+      "prompt_tokens": 27,
+      "total_tokens": 31,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "id": "chatcmpl-XdYy7AFxkctHOJC4gaU62P2pNUDQYrSb",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 27,
+      "prompt_ms": 219.941,
+      "prompt_per_token_ms": 8.145962962962964,
+      "prompt_per_second": 122.76019477950905,
+      "predicted_n": 4,
+      "predicted_ms": 67.879,
+      "predicted_per_token_ms": 22.626333333333335,
+      "predicted_per_second": 44.19629045802088,
+      "draft_n": 3,
+      "draft_n_accepted": 3
+    }
+  }
+}

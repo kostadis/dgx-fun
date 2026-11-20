@@ -1,0 +1,8 @@
+inferssd-settings 1
+expert.source = ["/home/kostadis/inferssd-trial/runs/20261105T235558Z/artifacts/bdf81dc4cc4a9b874b61.tsv"]  # source=generated; input=complete GGUF shard/header validation
+cpu.io_cpus = ""  # source=strategy; input=decode on the performance cluster 5-9,15-19: pinned, one token streams MXFP4 at 99.6 GB/s there against 70.8 GB/s on every CPU; prefill on 19 unpinned threads; no I/O CPU
+cpu.decode_participants = 0  # source=strategy; input=the engine measures its decode participants
+place.costs = "cpu_fixed_us=146.75996536124995,cpu_route_us=114.31565178383532,drive_gbps=12.13495"  # source=strategy; input=cpu 146.8 + 114.32 us a route for one MXFP4/MXFP4/MXFP4 expert, latent 5120 hidden 2304, on 19 threads (the 10- and 20-thread measurements): 261.1 us at 1 token, 58676.4 us at 512 tokens; the drive SAMSUNG MZALC4T0HBL1-00B07 reads 12.13 GB/s with 4 MiB reads at QD 4, the best from its knee QD 4 up to QD 24 (a role read is 6270976 bytes on average)
+prefill.cpu_max_tokens = 785  # source=strategy; input=the longest pass the CPU prefills no slower than the GPU graph: 40 layers of 384 experts, 6 a token, 18812928 bytes read an expert; CPU 146.8 + 114.32 us a route reading 12.13 GB/s, GPU graph reading 12.13 GB/s
+model.engram_prefetch = 1  # source=model; profile=dsv
+model.hc_fused = 1  # source=model; profile=dsv

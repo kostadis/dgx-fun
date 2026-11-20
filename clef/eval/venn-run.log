@@ -1,0 +1,9 @@
+e1_prose/venn: 766 rows, 0 errors, 326s
+e1_rawB/venn: 766 rows, 0 errors, 394s
+e1_rawC/venn: 766 rows, 0 errors, 966s
+e2/venn: 497 rows, 0 errors, 587s
+e3/venn: 864 rows, 0 errors, 298s
+e4_ent/venn: 103 rows, 0 errors, 77s
+e4_facts/venn: 1691 rows, 0 errors, 507s
+e4_ctrl/venn: 839 rows, 0 errors, 254s
+e5/venn: 12 rows, 0 errors, 11s

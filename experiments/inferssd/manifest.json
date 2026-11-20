@@ -1,0 +1,56 @@
+{
+  "repo": "mrfakename/DeepSeek-V4.1-Flash-1017-GGUF",
+  "revision": "1df54e7d1b1e442051ad393ce871870a929f243e",
+  "files": [
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf",
+      "size": 43322444352,
+      "sha256": "1344d6af67cad84abe93da0f454a6bfa8aef3ec0022f71906e9edb40f23812b3"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00002-of-00010.gguf",
+      "size": 43316676000,
+      "sha256": "b93249203c3bde33d7738a50ab976879514d49f5b9c3564f6270dee54142418f"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00003-of-00010.gguf",
+      "size": 43316676032,
+      "sha256": "96e5fe684c77232b39bea4ca5e9d49fc0fb2082ea2bde93b5a9a08a4a6363284"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00004-of-00010.gguf",
+      "size": 43316676032,
+      "sha256": "0a529b1909a0693f3b6c58804424ce27d190d616f19f7c45a3ad62533e943b7c"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00005-of-00010.gguf",
+      "size": 43316676032,
+      "sha256": "812b6f08b3b87c20ea2a7e6f8afc946b6b99471404bcb172dd943f7a82ade95d"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00006-of-00010.gguf",
+      "size": 43316676032,
+      "sha256": "ee1ba2a0d5b7f89e1e70929f4773bf8e19310a66dfa270af3269711cd5f2c51f"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00007-of-00010.gguf",
+      "size": 28877784064,
+      "sha256": "89c73265da70f074b0c7ddcbdf86f151cb27d2258ad2dee99c28263d40ca0612"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00008-of-00010.gguf",
+      "size": 104449677888,
+      "sha256": "096b13ad2b1875e043053d68cf4cd2cc1f54f4f5df9b07629c4f90be7b776559"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00009-of-00010.gguf",
+      "size": 104452537696,
+      "sha256": "cdcd2cdd1657cd60354fdb63dc899731665448ed53229dfdd32dd2ca1d517945"
+    },
+    {
+      "path": "Q8_0/DeepSeek-V4.1-Flash-1017-Q8_0-00010-of-00010.gguf",
+      "size": 10268402880,
+      "sha256": "cb9325b45fc4c585caa83c24f2f6985b7a872ec0546e4fe5af98456631d0c33c"
+    }
+  ]
+}

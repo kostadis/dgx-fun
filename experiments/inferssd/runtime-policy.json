@@ -1,0 +1,9 @@
+{
+  "platform": "linux",
+  "lock_path": "/home/kostadis/inferssd-trial/runtime.lock",
+  "stop_path": "/home/kostadis/inferssd-trial/runtime.stop",
+  "memory_budget_bytes": 107374182400,
+  "host_reserve_bytes": 8589934592,
+  "minimum_memlock_bytes": 0,
+  "cleanup_seconds": 30
+}
