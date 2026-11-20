@@ -177,3 +177,21 @@ Use fresh output filenames/directories for changed inputs. The ToEE receipts,
 private source, questions and answers remain separate. Its original runner,
 renderer and reader scripts are retained under that run's ignored
 `code-snapshot/`; the runner snapshot matches the recorded code hash.
+
+## Mempalace chunker arms (2026-11-20)
+
+Adds `mempalace_800`, `mempalace_800_crumb` and `recursive_600_nocrumb`. Seed each
+new output dir with the earlier run's `embeddings.sqlite3` so old arms are cached.
+
+```bash
+python3 experiments/adaptive-chunking/run.py \
+  --corpus experiments/adaptive-chunking/raw/corpus.json \
+  --cases experiments/adaptive-chunking/raw/cases.json \
+  --output experiments/adaptive-chunking/raw/mempalace-20261120
+python3 experiments/adaptive-chunking/run.py \
+  --corpus experiments/adaptive-chunking/raw/pabtso/corpus.json \
+  --cases experiments/adaptive-chunking/raw/pabtso/cases.json \
+  --output experiments/adaptive-chunking/raw/pabtso/mempalace-20261120
+```
+
+Write-up: [mempalace-chunker-arm-results.md](../../mempalace-chunker-arm-results.md).
