@@ -16,7 +16,7 @@
 - Budgets `1200 2400`, candidate pool 20, same embedder/endpoint defaults.
 - Frozen `raw/cases.json`, `raw/pabtso/cases.json`, and existing `pilot-20261120` dirs and `*results.json` receipts are read-only.
 - Outputs stay under `experiments/adaptive-chunking/raw/` (enforced by run.py).
-- No LLM calls. No live palace touched.
+- No LLM calls. No live palace touched: the harness uses only `chunk_text` (pure). Before importing mempalace, `run.py` sets `MEMPALACE_PALACE_PATH` to `experiments/adaptive-chunking/raw/scratch-palace/` (a distinct, throwaway palace) so any accidental palace access lands there, never in a palace in use.
 
 ## Review Focus
 
@@ -36,15 +36,16 @@
 
 **Interfaces:**
 - Produces: `mempalace_pieces(text: str) -> list[tuple[int, int]]` — ordered `(start, end)` source offsets, one per mempalace chunk; `text[start:end]` equals the chunk's `content`. Empty `chunk_text` result → `[(0, len(text))]`.
-- Produces: module constant `MEMPALACE_ROOT = Path.home() / "src" / "Mempalace"`, inserted on `sys.path` lazily inside the function.
+- Produces: module constant `MEMPALACE_ROOT = Path.home() / "src" / "Mempalace"`, inserted on `sys.path` lazily inside the function, after `os.environ["MEMPALACE_PALACE_PATH"]` is set to `raw/scratch-palace` (overwriting any inherited value).
 
 - [ ] **Step 1: Write failing tests** (unittest, same loading pattern as existing tests in the file)
   - `test_mempalace_pieces_roundtrip`: for a ~3,000-char multi-paragraph text, every `(s,e)` has `text[s:e] == chunk_text(text, "x")[i]["content"]`, starts are non-decreasing, and union of intervals covers every non-whitespace char.
   - `test_mempalace_pieces_repeated_paragraph`: text with the same paragraph repeated 3× far apart; mapped starts are strictly increasing.
   - `test_mempalace_pieces_short_section`: `mempalace_pieces("tiny")` == `[(0, 4)]`.
+  - `test_mempalace_isolated`: in a subprocess with `HOME` set to an empty temp dir, call `mempalace_pieces` on sample text; assert the temp `HOME` is still empty afterwards and `os.environ["MEMPALACE_PALACE_PATH"]` resolves under `raw/scratch-palace`. Proves no config or palace is created or read from the user's real locations.
 - [ ] **Step 2: Run** `python3 -m pytest tests/test_adaptive_chunking_trial.py -k mempalace -v` — Expected: FAIL (`mempalace_pieces` undefined).
 - [ ] **Step 3: Implement** — map each chunk with `text.find(content, cursor)` where `cursor` is the previous match's start; raise `AssertionError` with section id context if not found.
-- [ ] **Step 4: Run** same command — Expected: 3 passed. Then full file — Expected: all prior 63 tests still pass.
+- [ ] **Step 4: Run** same command — Expected: 4 passed. Then full file — Expected: all prior 63 tests still pass.
 - [ ] **Step 5: Commit** `feat(adaptive-chunking): mempalace chunk offsets`
 
 ### Task 2: Wire three arms into prepare_chunks
