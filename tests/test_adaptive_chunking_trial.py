@@ -112,5 +112,46 @@ class AdaptiveTrialTests(unittest.TestCase):
             self.assertEqual(exported["paired_comparison"]["1200"]["same_outcome"], ["q1"])
 
 
+class MempalaceArmTests(unittest.TestCase):
+    TEXT = "\n\n".join(f"Paragraph {i}. " + ("The gnolls guard room %d with spears. " % i) * 6 for i in range(12))
+
+    def test_mempalace_pieces_roundtrip(self):
+        pieces = R.mempalace_pieces(self.TEXT)
+        contents = [c["content"] for c in R._mempalace_chunk_text()(self.TEXT, "x")]
+        self.assertEqual([self.TEXT[s:e] for s, e in pieces], contents)
+        starts = [s for s, _ in pieces]
+        self.assertEqual(starts, sorted(starts))
+        covered = set()
+        for s, e in pieces:
+            covered.update(range(s, e))
+        missing = [i for i, ch in enumerate(self.TEXT) if not ch.isspace() and i not in covered]
+        self.assertEqual(missing, [])
+
+    def test_mempalace_pieces_repeated_paragraph(self):
+        para = "Read aloud: the obelisk hums with a low violet light that fills the chamber. " * 3
+        filler = "\n\n".join("Filler %d " % i + "x " * 300 for i in range(3))
+        text = "\n\n".join([para, filler, para, filler, para])
+        starts = [s for s, _ in R.mempalace_pieces(text)]
+        self.assertTrue(all(a < b for a, b in zip(starts, starts[1:])))
+
+    def test_mempalace_pieces_short_section(self):
+        self.assertEqual(R.mempalace_pieces("tiny"), [(0, 4)])
+
+    def test_mempalace_isolated(self):
+        import os, subprocess, sys
+        with tempfile.TemporaryDirectory() as home:
+            code = ("import importlib.util,os;"
+                    f"s=importlib.util.spec_from_file_location('r',{str(ROOT / 'run.py')!r});"
+                    "m=importlib.util.module_from_spec(s);s.loader.exec_module(m);"
+                    "m.mempalace_pieces('alpha beta gamma '*200);"
+                    "import sys;assert not any(k.startswith('mempalace') for k in sys.modules);"
+                    "print(os.environ['MEMPALACE_PALACE_PATH'])")
+            env = {**os.environ, "HOME": home, "MEMPALACE_SRC": str(R.MEMPALACE_ROOT), "MEMPALACE_PALACE_PATH": "/should/be/overwritten"}
+            out = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True)
+            self.assertEqual(os.listdir(home), [])
+            self.assertNotIn("mempalace", out.stderr)
+            self.assertTrue(Path(out.stdout.strip()).resolve().is_relative_to((ROOT / "raw/scratch-palace").resolve()))
+
+
 if __name__ == "__main__":
     unittest.main()

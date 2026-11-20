@@ -11,6 +11,7 @@ import hashlib
 from functools import lru_cache
 import json
 import math
+import os
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -52,6 +53,52 @@ def token_windows(text, size=600, overlap=50):
     offsets.append(len(text))
     return [text[offsets[i]:offsets[min(len(tokens), i + size)]]
             for i in range(0, len(tokens), size - overlap)]
+
+
+MEMPALACE_ROOT = Path(os.environ.get("MEMPALACE_SRC", Path.home() / "src" / "Mempalace"))
+SCRATCH_PALACE = Path(__file__).with_name("raw") / "scratch-palace"
+
+
+MEMPALACE_CONSTANTS = ("CHUNK_SIZE", "CHUNK_OVERLAP", "MIN_CHUNK_SIZE")
+
+
+@lru_cache(maxsize=None)
+def _mempalace_chunk_text():
+    """Lift chunk_text + its constants from miner.py WITHOUT importing mempalace.
+
+    Importing mempalace.miner resolves a storage backend and reads
+    ~/.mempalace/config.json; the experiment must never touch a palace in use.
+    """
+    os.environ["MEMPALACE_PALACE_PATH"] = str(SCRATCH_PALACE.resolve())
+    source = (MEMPALACE_ROOT / "mempalace" / "miner.py").read_text()
+    tree = ast.parse(source)
+    body = [n for n in tree.body
+            if (isinstance(n, ast.Assign) and any(getattr(t, "id", None) in MEMPALACE_CONSTANTS for t in n.targets))
+            or (isinstance(n, ast.FunctionDef) and n.name == "chunk_text")]
+    assert len(body) == len(MEMPALACE_CONSTANTS) + 1, "miner.py layout changed"
+    namespace = {}
+    exec(compile(ast.Module(body=body, type_ignores=[]), "mempalace_chunk_text", "exec"), namespace)
+    return namespace["chunk_text"]
+
+
+def mempalace_source_sha256():
+    return digest((MEMPALACE_ROOT / "mempalace" / "miner.py").read_text())
+
+
+def mempalace_pieces(text):
+    """Source offsets of mempalace's own drawer chunks (defaults 800/100/50)."""
+    chunks = _mempalace_chunk_text()(text, "module-section")
+    if not chunks:
+        return [(0, len(text))]
+    pieces, cursor = [], 0
+    for chunk in chunks:
+        content = chunk["content"]
+        start = text.find(content, cursor)
+        if start < 0:
+            raise AssertionError(f"mempalace chunk {chunk['chunk_index']} not found in source")
+        pieces.append((start, start + len(content)))
+        cursor = start
+    return pieces
 
 
 def span_coverage(spans, gold):
