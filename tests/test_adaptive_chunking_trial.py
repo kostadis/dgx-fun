@@ -153,5 +153,46 @@ class MempalaceArmTests(unittest.TestCase):
             self.assertTrue(Path(out.stdout.strip()).resolve().is_relative_to((ROOT / "raw/scratch-palace").resolve()))
 
 
+class ExtraArmTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        docs = []
+        for d in range(2):
+            paras = ["Section %d paragraph %d. " % (d, i) + "The drow patrol crosses the bridge at dusk. " * 12
+                     for i in range(10)]
+            text, blocks, pos = "", [], 0
+            for i, para in enumerate(paras):
+                if text:
+                    text += "\n\n"
+                start = len(text)
+                text += para
+                blocks.append({"start": start, "end": len(text), "path": ["Chapter %d" % d, "Area %d" % i]})
+            docs.append({"id": "d%d" % d, "text": text, "blocks": blocks})
+        cls.corpus = {"module_title": "Test Module", "documents": docs}
+        cls.chunks = R.prepare_chunks(cls.corpus, R.upstream_modules((ROOT / ".upstream").resolve()))
+
+    def test_extra_arms_present(self):
+        for method in ("mempalace_800", "mempalace_800_crumb", "recursive_600_nocrumb"):
+            self.assertIn(method, self.chunks)
+            self.assertTrue(self.chunks[method])
+
+    def test_nocrumb_retrieval_text(self):
+        for method in R.NO_CRUMB:
+            for c in self.chunks[method]:
+                self.assertEqual(c["retrieval_text"], c["text"])
+                self.assertIs(c["crumb"], False)
+        for c in self.chunks["mempalace_800_crumb"]:
+            self.assertTrue(c["retrieval_text"].startswith("Test Module > "))
+            self.assertIs(c["crumb"], True)
+
+    def test_recursive_nocrumb_same_bounds(self):
+        bounds = lambda m: [(c["doc_id"], c["start"], c["end"]) for c in self.chunks[m]]
+        self.assertEqual(bounds("recursive_600_nocrumb"), bounds("recursive_600"))
+        self.assertEqual(bounds("mempalace_800"), bounds("mempalace_800_crumb"))
+
+    def test_candidates_unchanged(self):
+        self.assertEqual(R.CANDIDATES, ("recursive_600", "recursive_1100", "module_headings_600"))
+
+
 if __name__ == "__main__":
     unittest.main()

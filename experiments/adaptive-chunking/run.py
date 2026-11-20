@@ -26,7 +26,9 @@ import tiktoken
 
 PIN = "ea87ce8e1a97888f3f179e7f1359ff7f43fb179d"
 CANDIDATES = ("recursive_600", "recursive_1100", "module_headings_600")
-METHODS = ("fixed_600", *CANDIDATES)
+EXTRA_METHODS = ("mempalace_800", "mempalace_800_crumb", "recursive_600_nocrumb")
+NO_CRUMB = {"mempalace_800", "recursive_600_nocrumb"}
+METHODS = ("fixed_600", *CANDIDATES, *EXTRA_METHODS)
 
 
 def write(path, data):
@@ -204,26 +206,36 @@ def prepare_chunks(corpus, upstream):
     for doc in corpus["documents"]:
         text = doc["text"]
         for method in METHODS:
-            if method == "fixed_600":
-                pieces = token_windows(text)
+            if method.startswith("mempalace_800"):
+                bounds = mempalace_pieces(text)
+                pieces = [text[a:b] for a, b in bounds]
+                covered = bytearray(len(text))
+                for a, b in bounds:
+                    covered[a:b] = b"\x01" * (b - a)
+                assert all(covered[i] or ch.isspace() for i, ch in enumerate(text)), (doc["id"], method)
             else:
-                settings = {"chunk_size": 1100 if method == "recursive_1100" else 600,
-                            "chunk_overlap": 50, "merging": "small_only", "min_chunk_tokens": 100,
-                            "max_tokens_strategy": "chunk_size"}
-                if method == "module_headings_600":
-                    settings.update(is_separator_regex=True,
-                                    separators=[r"\n(?=#{1,6} )", r"\n\n", r"\n", " ", ""])
-                pieces = splitter_cls(**settings).split_text(text)
-            pieces = post.repair_gaps_between_chunks(pieces, text)
-            assert post.check_chunk_gaps(pieces, text), (doc["id"], method)
-            bounds = post.find_chunks_start_and_end(pieces, text)
+                if method == "fixed_600":
+                    pieces = token_windows(text)
+                else:
+                    settings = {"chunk_size": 1100 if method == "recursive_1100" else 600,
+                                "chunk_overlap": 50, "merging": "small_only", "min_chunk_tokens": 100,
+                                "max_tokens_strategy": "chunk_size"}
+                    if method == "module_headings_600":
+                        settings.update(is_separator_regex=True,
+                                        separators=[r"\n(?=#{1,6} )", r"\n\n", r"\n", " ", ""])
+                    pieces = splitter_cls(**settings).split_text(text)
+                pieces = post.repair_gaps_between_chunks(pieces, text)
+                assert post.check_chunk_gaps(pieces, text), (doc["id"], method)
+                bounds = post.find_chunks_start_and_end(pieces, text)
+            crumb = method not in NO_CRUMB
             for index, (piece, (start, end)) in enumerate(zip(pieces, bounds)):
                 assert text[start:end] == piece
                 block = next((b for b in doc["blocks"] if b["start"] <= start < b["end"]), doc["blocks"][0])
                 prefix = corpus.get("module_title", "Temple of Elemental Evil") + " > " + " > ".join(block["path"])
                 chunks[method].append({"id": f'{method}:{doc["id"]}:{index}', "doc_id": doc["id"],
-                    "start": start, "end": end, "text": piece, "retrieval_text": prefix + "\n" + piece,
-                    "tokens": count_tokens(piece)})
+                    "start": start, "end": end, "text": piece,
+                    "retrieval_text": prefix + "\n" + piece if crumb else piece,
+                    "crumb": crumb, "tokens": count_tokens(piece)})
     return chunks
 
 
@@ -336,7 +348,8 @@ def main():
               "reference_export_sha256": corpus.get("reference_export_sha256"),
               "embedding_endpoint": args.endpoint, "embedding_model": args.model,
               "retrieval_candidate_pool": 20,
-              "candidate_methods": CANDIDATES, "selection_metrics": ["size_compliance", "block_integrity",
+              "candidate_methods": CANDIDATES, "extra_methods": EXTRA_METHODS,
+              "mempalace_miner_sha256": mempalace_source_sha256(), "selection_metrics": ["size_compliance", "block_integrity",
                   "intrachunk_cohesion", "contextual_coherence"],
               "coherence_max_windows_per_document": 16, "selection_weights": "equal; missing metrics ignored"}
     upstream = upstream_modules(args.upstream.resolve())
