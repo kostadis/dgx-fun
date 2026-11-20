@@ -1,0 +1,825 @@
+{
+  "corpus_sha256": "415f55e8cd9bf8ea9f60b0d53c9b1bb3e78f50db67c6358c38afcc1e0a861df0",
+  "cases_sha256": "0d346af78ffc9dd18cc9ca0b3ba12a62a6ed7793a98597c633a11faf5d296359",
+  "source_sha256": "cd0968be1184fc38749057728c5806e2d7cce16f6c4484e0c484451c1f20fbe6",
+  "upstream_commit": "ea87ce8e1a97888f3f179e7f1359ff7f43fb179d",
+  "budgets": [
+    1200,
+    2400
+  ],
+  "module_title": "Phandelver and Below: The Shattered Obelisk",
+  "module_id": "pabtso",
+  "resolved_references": 89,
+  "reference_export_sha256": "059429947a62cd856f1d6b7d76fc4c07effdad34c7670dff85f127f5b67bb053",
+  "embedding_endpoint": "http://192.168.1.121:11434",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "embedding_digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+  "runner_sha256": "6cd76a5a774bea3b25c9f08531dc41afbff43e3be3e5db58a81728fc5a13ae08",
+  "retrieval_candidate_pool": 20,
+  "candidate_methods": [
+    "recursive_600",
+    "recursive_1100",
+    "module_headings_600"
+  ],
+  "selection_metrics": [
+    "size_compliance",
+    "block_integrity",
+    "intrachunk_cohesion",
+    "contextual_coherence"
+  ],
+  "coherence_max_windows_per_document": 16,
+  "selection_weights": "equal; missing metrics ignored",
+  "module_sections": 13,
+  "questions": 48,
+  "source_tokens_o200k": 158712,
+  "selection_counts": {
+    "module_headings_600": 11,
+    "recursive_600": 1,
+    "recursive_1100": 1
+  },
+  "chunk_counts": {
+    "fixed_600": 296,
+    "recursive_600": 1161,
+    "recursive_1100": 1156,
+    "module_headings_600": 761,
+    "adaptive_4metric": 759
+  },
+  "retrieval": {
+    "fixed_600": {
+      "1200": {
+        "complete_questions": 28,
+        "questions": 48,
+        "top5_complete_questions": 42,
+        "mean_evidence_coverage": 0.592275494672755,
+        "mean_retrieved_tokens": 811.1875,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 2
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 4
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 0
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 2
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 5
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 2
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 2
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 2
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 5
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 2
+          }
+        }
+      },
+      "2400": {
+        "complete_questions": 40,
+        "questions": 48,
+        "top5_complete_questions": 42,
+        "mean_evidence_coverage": 0.8588939917825815,
+        "mean_retrieved_tokens": 2075.875,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 4
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 5
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 2
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 7
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 3
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 3
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 6
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 3
+          }
+        }
+      }
+    },
+    "recursive_600": {
+      "1200": {
+        "complete_questions": 42,
+        "questions": 48,
+        "top5_complete_questions": 42,
+        "mean_evidence_coverage": 0.9172199069587129,
+        "mean_retrieved_tokens": 1118.625,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 8
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 2
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 7
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 3
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 3
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 6
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 3
+          }
+        }
+      },
+      "2400": {
+        "complete_questions": 46,
+        "questions": 48,
+        "top5_complete_questions": 42,
+        "mean_evidence_coverage": 0.9780287114845939,
+        "mean_retrieved_tokens": 2328.7291666666665,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 8
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 3
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 7
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 4
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 4
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 6
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 4
+          }
+        }
+      }
+    },
+    "recursive_1100": {
+      "1200": {
+        "complete_questions": 42,
+        "questions": 48,
+        "top5_complete_questions": 42,
+        "mean_evidence_coverage": 0.9172199069587129,
+        "mean_retrieved_tokens": 1120.3125,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 8
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 2
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 7
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 3
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 3
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 6
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 3
+          }
+        }
+      },
+      "2400": {
+        "complete_questions": 46,
+        "questions": 48,
+        "top5_complete_questions": 42,
+        "mean_evidence_coverage": 0.9780287114845939,
+        "mean_retrieved_tokens": 2331.6875,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 8
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 3
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 7
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 4
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 4
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 6
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 4
+          }
+        }
+      }
+    },
+    "module_headings_600": {
+      "1200": {
+        "complete_questions": 40,
+        "questions": 48,
+        "top5_complete_questions": 41,
+        "mean_evidence_coverage": 0.8333333333333334,
+        "mean_retrieved_tokens": 1118.8541666666667,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 6
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 3
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 6
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 3
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 4
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 5
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 3
+          }
+        }
+      },
+      "2400": {
+        "complete_questions": 45,
+        "questions": 48,
+        "top5_complete_questions": 41,
+        "mean_evidence_coverage": 0.9375,
+        "mean_retrieved_tokens": 2315.1666666666665,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 8
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 4
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 7
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 4
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 4
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 5
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 3
+          }
+        }
+      }
+    },
+    "adaptive_4metric": {
+      "1200": {
+        "complete_questions": 40,
+        "questions": 48,
+        "top5_complete_questions": 41,
+        "mean_evidence_coverage": 0.8333333333333334,
+        "mean_retrieved_tokens": 1118.8541666666667,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 6
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 3
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 6
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 3
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 4
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 5
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 3
+          }
+        }
+      },
+      "2400": {
+        "complete_questions": 45,
+        "questions": 48,
+        "top5_complete_questions": 41,
+        "mean_evidence_coverage": 0.9375,
+        "mean_retrieved_tokens": 2315.1666666666665,
+        "by_category": {
+          "bestiary": {
+            "questions": 2,
+            "complete": 2
+          },
+          "causality": {
+            "questions": 4,
+            "complete": 3
+          },
+          "conditions": {
+            "questions": 8,
+            "complete": 8
+          },
+          "environment": {
+            "questions": 1,
+            "complete": 1
+          },
+          "identity": {
+            "questions": 4,
+            "complete": 4
+          },
+          "item_rules": {
+            "questions": 7,
+            "complete": 7
+          },
+          "locations": {
+            "questions": 4,
+            "complete": 4
+          },
+          "numbers": {
+            "questions": 4,
+            "complete": 4
+          },
+          "provenance": {
+            "questions": 4,
+            "complete": 4
+          },
+          "relationships": {
+            "questions": 6,
+            "complete": 5
+          },
+          "room_mechanics": {
+            "questions": 4,
+            "complete": 3
+          }
+        }
+      }
+    }
+  },
+  "elapsed_seconds": 433.1363509440016,
+  "embedding_seconds_this_run": 411.64631774600275,
+  "embedding_requests_this_run": 710,
+  "embedding_texts_this_run": 10796,
+  "paired_comparison": {
+    "1200": {
+      "adaptive_only": [
+        "q03",
+        "q10",
+        "q18",
+        "q20",
+        "q21",
+        "q30",
+        "q31",
+        "q33",
+        "q34",
+        "q36",
+        "q37",
+        "q39",
+        "q46"
+      ],
+      "fixed_only": [
+        "q13"
+      ],
+      "same_outcome": [
+        "q01",
+        "q02",
+        "q04",
+        "q05",
+        "q06",
+        "q07",
+        "q08",
+        "q09",
+        "q11",
+        "q12",
+        "q14",
+        "q15",
+        "q16",
+        "q17",
+        "q19",
+        "q22",
+        "q23",
+        "q24",
+        "q25",
+        "q26",
+        "q27",
+        "q28",
+        "q29",
+        "q32",
+        "q35",
+        "q38",
+        "q40",
+        "q41",
+        "q42",
+        "q43",
+        "q44",
+        "q45",
+        "q47",
+        "q48"
+      ]
+    },
+    "2400": {
+      "adaptive_only": [
+        "q03",
+        "q05",
+        "q06",
+        "q10",
+        "q11",
+        "q31",
+        "q37"
+      ],
+      "fixed_only": [
+        "q13",
+        "q35"
+      ],
+      "same_outcome": [
+        "q01",
+        "q02",
+        "q04",
+        "q07",
+        "q08",
+        "q09",
+        "q12",
+        "q14",
+        "q15",
+        "q16",
+        "q17",
+        "q18",
+        "q19",
+        "q20",
+        "q21",
+        "q22",
+        "q23",
+        "q24",
+        "q25",
+        "q26",
+        "q27",
+        "q28",
+        "q29",
+        "q30",
+        "q32",
+        "q33",
+        "q34",
+        "q36",
+        "q38",
+        "q39",
+        "q40",
+        "q41",
+        "q42",
+        "q43",
+        "q44",
+        "q45",
+        "q46",
+        "q47",
+        "q48"
+      ]
+    }
+  },
+  "answer_spot_check": {
+    "reader": "qwen3.8-flash-next",
+    "endpoint": "http://192.168.1.147:8001/v1",
+    "budget": 2400,
+    "case_ids": [
+      "q01",
+      "q05",
+      "q09",
+      "q13",
+      "q17",
+      "q21",
+      "q25",
+      "q29",
+      "q33",
+      "q37",
+      "q43",
+      "q47"
+    ],
+    "methods": {
+      "fixed_600": {
+        "questions": 12,
+        "all_fact_checks": 9,
+        "all_quotes_verbatim": 10,
+        "wall_seconds": 40.882639497001946
+      },
+      "recursive_600": {
+        "questions": 12,
+        "all_fact_checks": 9,
+        "all_quotes_verbatim": 9,
+        "wall_seconds": 42.90196074700725
+      },
+      "adaptive_4metric": {
+        "questions": 12,
+        "all_fact_checks": 9,
+        "all_quotes_verbatim": 10,
+        "wall_seconds": 43.652982185994915
+      }
+    }
+  },
+  "posthoc_budget_sensitivity": {
+    "status": "post-hoc; primary budgets unchanged",
+    "new_model_calls": 0,
+    "retrieval": {
+      "fixed_600": {
+        "1500": {
+          "complete_questions": 35,
+          "questions": 48,
+          "mean_retrieved_tokens": 1284.5416666666667
+        },
+        "1800": {
+          "complete_questions": 35,
+          "questions": 48,
+          "mean_retrieved_tokens": 1440.6041666666667
+        },
+        "3000": {
+          "complete_questions": 42,
+          "questions": 48,
+          "mean_retrieved_tokens": 2697.3958333333335
+        },
+        "4800": {
+          "complete_questions": 43,
+          "questions": 48,
+          "mean_retrieved_tokens": 4532.791666666667
+        }
+      },
+      "recursive_600": {
+        "1500": {
+          "complete_questions": 43,
+          "questions": 48,
+          "mean_retrieved_tokens": 1437.5208333333333
+        },
+        "1800": {
+          "complete_questions": 45,
+          "questions": 48,
+          "mean_retrieved_tokens": 1715.9583333333333
+        },
+        "3000": {
+          "complete_questions": 46,
+          "questions": 48,
+          "mean_retrieved_tokens": 2921.625
+        },
+        "4800": {
+          "complete_questions": 47,
+          "questions": 48,
+          "mean_retrieved_tokens": 4427.5625
+        }
+      },
+      "adaptive_4metric": {
+        "1500": {
+          "complete_questions": 42,
+          "questions": 48,
+          "mean_retrieved_tokens": 1433.1666666666667
+        },
+        "1800": {
+          "complete_questions": 44,
+          "questions": 48,
+          "mean_retrieved_tokens": 1724.6041666666667
+        },
+        "3000": {
+          "complete_questions": 46,
+          "questions": 48,
+          "mean_retrieved_tokens": 2920.7916666666665
+        },
+        "4800": {
+          "complete_questions": 47,
+          "questions": 48,
+          "mean_retrieved_tokens": 4692.916666666667
+        }
+      }
+    }
+  },
+  "limitations": [
+    "One module representation; manually selected questions, not a representative sample.",
+    "Four-metric section-level adaptation with a bounded candidate set; not a full paper replication.",
+    "Designated source-span coverage can miss alternative correct evidence.",
+    "Dense vector retrieval only; not Cognee graph ingestion or production retrieval parity.",
+    "Fact-pattern and verbatim-quote checks require manual review before quality conclusions."
+  ]
+}
