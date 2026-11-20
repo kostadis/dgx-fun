@@ -4,7 +4,15 @@ The trial compares the retained Qwen3.8 Flash Next vLLM service on spark1
 with Hibana on spark2. Application traffic continues to use vLLM. Hibana is
 loopback-only, under a transient user service, with no boot startup.
 
-**Final state, 2026-11-14 01:54 UTC:** `exact` is healthy on spark2 and passed
+**Current state, 2026-11-14 UTC:** at the user's request, `fast` is now healthy
+on spark2 under `hibana-shadow-fast`; `exact` is stopped. Restart readiness
+took 66.65 seconds, and all seven streaming/chat, structured-output and
+tool-call smoke checks passed. The calibrated checkpoint and fast SSD cache
+were reused. Spark1 still serves pinned vLLM; application settings were not
+changed. [Restart receipt](evidence/fast-user-restart-20261114-ready.json),
+[smoke results](evidence/fast-user-restart-20261114-smoke-summary.json).
+
+**Trial completion snapshot, 2026-11-14 01:54 UTC:** `exact` was healthy on spark2 and passed
 its final seven-check smoke suite. Both `exact` and `fast` passed all 24
 workload checks; `fast` is stopped, with its checkpoint/cache retained.
 [Measured results and limits](../../hibana-observations.md),
@@ -131,11 +139,57 @@ time, the retained SSD cache, cache-restored tokens and answer validation.
 For workstation access, open an SSH tunnel:
 
 ```bash
-ssh -F ~/.ssh/config -L 30004:127.0.0.1:30004 spark2
+ssh -F ~/.ssh/config -N -o ExitOnForwardFailure=yes \
+  -L 30004:127.0.0.1:30004 spark2
 ```
 
 Discover the served model ID at `http://127.0.0.1:30004/v1/models`.
 No changes to the application model registry are needed for this isolated trial.
+
+### Configure a client
+
+Keep the tunnel running on the computer running the client. On spark2 itself,
+use the same URL directly. The service remains bound to loopback on spark2.
+
+| Setting | Value |
+|---|---|
+| API type | OpenAI-compatible Chat Completions |
+| Base URL | `http://127.0.0.1:30004/v1` |
+| Model ID | `RadixArk/Qwen3.8-Flash-Next-NVFP4` |
+| API key | `local` (any nonempty placeholder; server authentication is not enabled) |
+| Context budget | 262144 tokens, including output |
+
+The `fast` profile is selected on the server. Its advertised model ID is the
+same as `exact`; no client profile flag or alternate model name is needed.
+Streaming, JSON schema output and automatic/required tool calls passed the
+restart smoke suite. Use the client's Chat Completions backend.
+
+For an existing OpenAI Python SDK installation:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://127.0.0.1:30004/v1", api_key="local")
+reply = client.chat.completions.create(
+    model="RadixArk/Qwen3.8-Flash-Next-NVFP4",
+    messages=[{"role": "user", "content": "Say hello."}],
+    max_tokens=256,
+    extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+)
+print(reply.choices[0].message.content)
+```
+
+For Cognee, set these values in the `.env` it actually loads, then restart the
+Cognee process. `COGNEE_ENV_FILE` can select that file explicitly. Keep the
+existing embedding and storage settings.
+
+```dotenv
+LLM_PROVIDER="custom"
+LLM_MODEL="openai/RadixArk/Qwen3.8-Flash-Next-NVFP4"
+LLM_ENDPOINT="http://127.0.0.1:30004/v1"
+LLM_API_KEY="local"
+LLM_ARGS='{"extra_body":{"chat_template_kwargs":{"enable_thinking":false}}}'
+```
 
 Restore the previous Clef service after stopping whichever shadow profile runs
 and confirming `/health` is down and the service cgroup is empty:

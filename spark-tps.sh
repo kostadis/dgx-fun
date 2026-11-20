@@ -1,15 +1,31 @@
 #!/usr/bin/env bash
 # spark-tps.sh — live tokens/sec + in-flight requests for both DGX Sparks.
 #
-# Polls each box's vLLM Prometheus /metrics endpoint once per second and prints
-# one refreshing line per Spark:
+# Polls each box's Prometheus /metrics endpoint once per second and prints one
+# refreshing line per Spark:
 #
 #   spark1 (192.168.1.147)   142.3 tok/s   2 running   0 waiting
-#   spark2 (192.168.1.121)     0.0 tok/s   0 running   0 waiting
+#   spark2 (192.168.1.121)    38.7 tok/s   0 running   0 waiting
 #
-# tok/s is the delta of vllm:generation_tokens_total divided by the actual
-# elapsed wall-clock between samples (so it self-corrects if a poll is slow).
-# "running" / "waiting" are the live vllm:num_requests_{running,waiting} gauges.
+# Backends are auto-detected per box, so a vLLM slot and a llama.cpp/Unsloth
+# slot can be watched side by side:
+#
+#   vLLM       vllm:generation_tokens_total       (counter -> delta/dt)
+#              vllm:num_requests_{running,waiting}
+#   llama.cpp  llamacpp:tokens_predicted_total    (counter -> delta/dt)
+#              llamacpp:predicted_tokens_seconds   (gauge, preferred when present)
+#              llamacpp:requests_{processing,deferred}
+#
+# The llama.cpp gauge is averaged over the window between two scrapes, so it is
+# already a live rate and is used in preference to the counter delta. vLLM has
+# no such gauge, so there the rate is the delta of the generation-token counter
+# divided by the actual elapsed wall-clock between samples (self-correcting if a
+# poll is slow).
+#
+# IMPORTANT — llama.cpp needs --metrics to serve /metrics at all. Without it the
+# endpoint returns HTTP 501 and this script prints "metrics disabled" instead of
+# pretending the box is down. Start the server with:
+#   llama-server ... --metrics          # or LLAMA_ARG_ENDPOINT_METRICS=1
 #
 # Usage:  ./spark-tps.sh            # both boxes, refresh every 1s (in-place)
 #         INTERVAL=2 ./spark-tps.sh # custom refresh
@@ -20,30 +36,45 @@
 # fresh row that scrolls up, with each Spark rendered as its own column and a
 # leading clock column. Good for keeping a scrollback history / piping to a log.
 #
-# Targets the vllm-chat slot on :8001. Edit BOXES below if ports/IPs change.
+# Targets spark1 :8001 (vLLM) and spark2 :8002 (llama.cpp / Unsloth GGUF).
+# Edit BOXES below if ports/IPs change.
 
 set -uo pipefail
 
 # name|host:port
 BOXES=(
   "spark1|192.168.1.147:8001"
-  "spark2|192.168.1.121:8001"
+  "spark2|192.168.1.121:8002"
 )
 
 INTERVAL="${INTERVAL:-1}"
 CURL_TIMEOUT="${CURL_TIMEOUT:-5}"
 
-# Pull /metrics for a box and emit "gen running waiting" on one line.
-# gen = generated-token counter (summed across label series; "-" if unreachable).
+# Pull /metrics for a box and emit "status gen running waiting gauge".
+#   status: ok | nometrics (endpoint disabled) | down (unreachable)
+#   gen:    generated-token counter, summed across label series
+#   gauge:  llamacpp:predicted_tokens_seconds if exposed, else "-"
+# Only ONE request is made per tick: a llama.cpp /metrics scrape resets the
+# averaging bucket, so a second probe would zero out the rate.
 scrape() {
-  local hostport="$1"
-  curl -sS --max-time "$CURL_TIMEOUT" "http://${hostport}/metrics" 2>/dev/null | awk '
-    /^vllm:generation_tokens_total[ {]/ { gen += $NF; have_gen=1 }
-    /^vllm:num_requests_running[ {]/     { run += $NF }
-    /^vllm:num_requests_waiting[ {]/     { wait += $NF }
+  local hostport="$1" raw code
+  raw=$(curl -sS --max-time "$CURL_TIMEOUT" -w '\n__HTTPCODE__%{http_code}\n' \
+        "http://${hostport}/metrics" 2>/dev/null) || true
+  code=$(printf '%s\n' "$raw" | sed -n 's/^__HTTPCODE__//p' | tail -1)
+
+  printf '%s\n' "$raw" | awk -v code="$code" '
+    /^__HTTPCODE__/                                { next }
+    /^vllm:generation_tokens_total[ {]/            { gen  += $NF; have=1 }
+    /^llamacpp:tokens_predicted_total[ {]/         { gen  += $NF; have=1 }
+    /^vllm:num_requests_running[ {]/               { run  += $NF }
+    /^llamacpp:requests_processing[ {]/            { run  += $NF }
+    /^vllm:num_requests_waiting[ {]/               { wait += $NF }
+    /^llamacpp:requests_deferred[ {]/              { wait += $NF }
+    /^llamacpp:predicted_tokens_seconds[ {]/       { gauge = $NF; have_gauge=1 }
     END {
-      if (have_gen) printf "%.0f %.0f %.0f\n", gen, run, wait
-      else          print "- - -"
+      if (have)          printf "ok %.0f %.0f %.0f %s\n", gen, run, wait, (have_gauge ? gauge : "-")
+      else if (code=="501") print "nometrics - - - -"
+      else               print "down - - - -"
     }'
 }
 
@@ -90,17 +121,30 @@ while :; do
 
   for i in "${!BOXES[@]}"; do
     IFS='|' read -r name hostport <<<"${BOXES[$i]}"
-    read -r gen run wait <<<"$(scrape "$hostport")"
+    read -r status gen run wait gauge <<<"$(scrape "$hostport")"
+    ip="${hostport%%:*}"
 
-    if [[ "$gen" == "-" ]]; then
-      LINES+=("$(printf '%-7s (%-15s)   %s' "$name" "${hostport%%:*}" "DOWN / unreachable")")
+    if [[ "$status" == "down" ]]; then
+      LINES+=("$(printf '%-7s (%-15s)   %s' "$name" "$ip" "DOWN / unreachable")")
       CELLS+=("$(printf '%-*s' "$CELL_W" "DOWN")")
       PREV_GEN[$i]=""; PREV_T[$i]="$t_now"
       continue
     fi
 
+    if [[ "$status" == "nometrics" ]]; then
+      LINES+=("$(printf '%-7s (%-15s)   %s' "$name" "$ip" \
+        "metrics disabled — restart llama-server with --metrics")")
+      CELLS+=("$(printf '%-*s' "$CELL_W" "no --metrics")")
+      PREV_GEN[$i]=""; PREV_T[$i]="$t_now"
+      continue
+    fi
+
     rate="--"
-    if [[ -n "${PREV_GEN[$i]}" ]]; then
+    if [[ "$gauge" != "-" ]]; then
+      # Backend reports its own live rate (llama.cpp, averaged over the
+      # scrape window). Use it directly; no warm-up sample needed.
+      rate=$(awk -v g="$gauge" 'BEGIN{ printf "%.1f", g }')
+    elif [[ -n "${PREV_GEN[$i]}" ]]; then
       dt=$(awk -v a="$t_now" -v b="${PREV_T[$i]}" 'BEGIN{print a-b}')
       dg=$(( gen - ${PREV_GEN[$i]} ))
       rate=$(awk -v dg="$dg" -v dt="$dt" 'BEGIN{ if (dt>0) printf "%.1f", dg/dt; else printf "0.0" }')
@@ -108,7 +152,7 @@ while :; do
     PREV_GEN[$i]="$gen"; PREV_T[$i]="$t_now"
 
     LINES+=("$(printf '%-7s (%-15s)  %8s tok/s   %2s running   %2s waiting' \
-      "$name" "${hostport%%:*}" "$rate" "$run" "$wait")")
+      "$name" "$ip" "$rate" "$run" "$wait")")
     CELLS+=("$(printf '%8s t/s %2sr %2sw' "$rate" "$run" "$wait")")
   done
 

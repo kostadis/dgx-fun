@@ -1,0 +1,51 @@
+{
+  "runtime": "v0.1.2",
+  "runtime_commit": "8f060b54dfc8205bf08ebb4ff410b5e2cbe2756f",
+  "model": "DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf",
+  "context": 8192,
+  "checks_passed": 5,
+  "checks_total": 5,
+  "startup_seconds": 45.03077864111401,
+  "benchmarks": [
+    {
+      "label": "first",
+      "wall_seconds": 68.77226626500487,
+      "first_token_seconds": 23.16218859492801,
+      "cache_n": 0,
+      "prompt_n": 3929,
+      "prompt_ms": 21369.591,
+      "prompt_per_token_ms": 5.438938915754645,
+      "prompt_per_second": 183.8593915999609,
+      "predicted_n": 256,
+      "predicted_ms": 47385.765,
+      "predicted_per_token_ms": 185.10064453125,
+      "predicted_per_second": 5.4024663313972034
+    },
+    {
+      "label": "repeat",
+      "wall_seconds": 66.64838617295027,
+      "first_token_seconds": 22.58784930105321,
+      "cache_n": 0,
+      "prompt_n": 3929,
+      "prompt_ms": 20748.229,
+      "prompt_per_token_ms": 5.280791295495037,
+      "prompt_per_second": 189.36555982681705,
+      "predicted_n": 256,
+      "predicted_ms": 45883.528,
+      "predicted_per_token_ms": 179.23253125,
+      "predicted_per_second": 5.579344291049285
+    }
+  ],
+  "cutover_utc": "2026-11-05T23:54:45+00:00",
+  "finished_utc": "2026-11-05T23:59:24.080584+00:00",
+  "restoration": "verified",
+  "minimum_available_during_checks_gib": 12.089813232421875,
+  "minimum_available_gib_includes_qwen_shutdown": 10.626701354980469,
+  "restored_utc": "2026-11-06T00:13:18.447268+00:00",
+  "restored_model": "qwen3.8-flash-next",
+  "restored_health": {
+    "status_code": 200,
+    "body": ""
+  },
+  "restored_available_gib": 16.044876098632812
+}

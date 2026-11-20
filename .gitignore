@@ -1,5 +1,6 @@
 # Tool caches / IDE-local state
 .antigravitycli/
+.serena/
 __pycache__/
 *.egg-info/
 .pytest_cache/
@@ -27,3 +28,5 @@ clef/social-npc-eval/review.html
 clef/ensemble-typing-eval/*.json
 clef/finetune/*.json
 clef/finetune/*.pt
+# Raw held-out miss labels can name people from campaign transcripts.
+clef/eval/venn-e6.log

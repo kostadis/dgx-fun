@@ -1,0 +1,26 @@
+{
+  "repo": "ggml-org/Qwen3.8-Flash-Next-GGUF",
+  "revision": "91fb00353e766eb43944ed223665ea4fb87dad47",
+  "files": [
+    {
+      "path": "Qwen3.8-Flash-Next-IQ4_NL-00001-of-00002.gguf",
+      "size": 10945504,
+      "sha256": "d63aed7c235572b3ce9ae2fa710d6c846a883db9b54a70f52d140a943e684274"
+    },
+    {
+      "path": "Qwen3.8-Flash-Next-IQ4_NL-00002-of-00002.gguf",
+      "size": 102037973504,
+      "sha256": "0299b147e42517ff8fa3a4fa66d370c77ce01c44ed8cbc3451b7a42caad5fc10"
+    },
+    {
+      "path": "dflash-Qwen3.8-Flash-Next-Q4_0.gguf",
+      "size": 350635456,
+      "sha256": "ea8f8f0f1386758e2ac2cf732fd76a28f19a0b3019adc5b7dd9f96214aba129a"
+    },
+    {
+      "path": "mtp-Qwen3.8-Flash-Next-Q4_0.gguf",
+      "size": 2199652672,
+      "sha256": "70da35359338d15ef5af31f0e0e08998f2a2b3350678be1bbb1a57a376e350c3"
+    }
+  ]
+}

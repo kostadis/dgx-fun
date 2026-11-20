@@ -1,0 +1,109 @@
+{
+  "model": "gemini-decision-1",
+  "date": "2026-11-11",
+  "dataset": "decision-eval/v1",
+  "manifest_sha256": "c8e13f8779223f982a16461877e66bce57424775a593fdf23e097aabfb803662",
+  "concurrency": 1,
+  "request_socket_timeout_s": 60,
+  "parts": {
+    "e1_prose": {
+      "rows": 766,
+      "requests": 766,
+      "errors": 0,
+      "input_tokens": 315965,
+      "median_ms": 278.54,
+      "p95_ms": 383.11,
+      "max_ms": 7430.03,
+      "result_sha256": "b7aae545505f5e46147c73500a1ad3676cb007d4f46a0576d19f2aacdc9a6fb0"
+    },
+    "e1_rawB": {
+      "rows": 766,
+      "requests": 766,
+      "errors": 0,
+      "input_tokens": 309078,
+      "median_ms": 266.64,
+      "p95_ms": 396.92,
+      "max_ms": 4572.0,
+      "result_sha256": "f971f8365d257d751718984c8305580aecc402c4c78f65f30e19c69b413c23db"
+    },
+    "e1_rawC": {
+      "rows": 766,
+      "requests": 766,
+      "errors": 0,
+      "input_tokens": 589217,
+      "median_ms": 274.74,
+      "p95_ms": 409.16,
+      "max_ms": 1303.85,
+      "result_sha256": "5d2e74cfe21f65337e0f8d3ce9a8a9c36277e5568fde0954fc812a780be92feb"
+    },
+    "e2": {
+      "rows": 497,
+      "requests": 497,
+      "errors": 0,
+      "input_tokens": 428510,
+      "median_ms": 285.42,
+      "p95_ms": 394.08,
+      "max_ms": 9122.32,
+      "result_sha256": "0f6fe4b7db8c61da0f36a87fb2f2fe5ca50dd43513bdd5030abe69a58455dfc1"
+    },
+    "e3": {
+      "rows": 864,
+      "requests": 864,
+      "errors": 0,
+      "input_tokens": 282819,
+      "median_ms": 279.05,
+      "p95_ms": 395.41,
+      "max_ms": 2136.37,
+      "result_sha256": "84641e7922f8f8708495de483955d733ac49b2f162e644511dc830472b6055bd"
+    },
+    "e4_ent": {
+      "rows": 103,
+      "requests": 103,
+      "errors": 0,
+      "input_tokens": 59207,
+      "median_ms": 280.68,
+      "p95_ms": 312.93,
+      "max_ms": 325.97,
+      "result_sha256": "3d15c60ec63a6b1706ab0540691a863827fbac1d24b4c9aae748fc74e74c0878"
+    },
+    "e4_facts": {
+      "rows": 1691,
+      "requests": 1691,
+      "errors": 0,
+      "input_tokens": 598956,
+      "median_ms": 272.39,
+      "p95_ms": 386.99,
+      "max_ms": 3731.42,
+      "result_sha256": "a7c7453ebe2ab7fc7458e490ef88445b293c2169ebd2bc9909fb6af233aaedc7"
+    },
+    "e4_ctrl": {
+      "rows": 839,
+      "requests": 839,
+      "errors": 0,
+      "input_tokens": 297291,
+      "median_ms": 273.98,
+      "p95_ms": 370.15,
+      "max_ms": 675.52,
+      "result_sha256": "d53dc568a0c2f7921330f9583a6be80b98eb690f0be74e931980cd4ddd1ecd6f"
+    },
+    "e5": {
+      "rows": 12,
+      "requests": 24,
+      "errors": 0,
+      "input_tokens": 10610,
+      "median_ms": 271.43,
+      "p95_ms": 324.0,
+      "max_ms": 409.16,
+      "result_sha256": "a3242aaf8b7aa66e25216e3fe0899240db61d48069e8e27307b3526bfbbb951e"
+    }
+  },
+  "cost_basis_usd_per_million_input_tokens": 0.1,
+  "cost_scope": "Saved successful benchmark responses only; excludes smoke/preflight checks, abandoned E2 attempt, and unreported usage from retries.",
+  "latency_scope": "Saved successful attempts, including HTTP backoff inside post; excludes socket-timeout attempts retried by the row runner. Hosted round trip from workstation.",
+  "operational_note": "Initial E2 attempt stalled with the original 600s timeout and was stopped; E1 files were retained, E2 restarted with a 60s socket timeout and per-row checkpoints. Later socket stalls recovered on retry.",
+  "total_scored_requests": 6316,
+  "total_error_rows": 0,
+  "total_recorded_input_tokens": 2891653,
+  "recorded_input_cost_usd": 0.289165,
+  "overall_median_ms": 275.26
+}

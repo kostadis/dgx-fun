@@ -15,6 +15,7 @@ SYSTEMONE = {  # short name -> (url, served model id)
     'kai':        (f'http://{SPARK2}:8004/v1/systemone', 'Decision-2.0-Kai-0.6B'),
     'nox':        (f'http://{SPARK2}:8005/v1/systemone', 'Decision-2.0-Nox-4B'),
     'jev':        ('https://api.typesafe.ai/v1/systemone', 'jev-1.13.0'),   # hosted, TypeSafe
+    'gemini':     ('https://generativelanguage.googleapis.com/v1beta/decisions', 'gemini-decision-1'),
     # Vela 2.0 (vllm-sr + KR Labs, fine-tuned Decision 2.0), one member at a time on spark2:8006 via
     # clef/finetune/serve_vela.py; -noabs = same weights served with the [ABS] option removed from Choice
     'vela-0.8b':      (f'http://{SPARK2}:8006/v1/systemone', 'Vela-2.0-0.8B'),
@@ -34,9 +35,29 @@ def _key():
     return k.split('=', 1)[1].strip().strip('\'"') if '=' in k else k
 
 
+def gemini_key():
+    for name in ('GEMINI_API_KEY', 'GOOGLE_API_KEY'):
+        if os.environ.get(name):
+            return os.environ[name].strip()
+    path = os.path.expanduser(os.environ.get('GEMINI_API_KEY_FILE', '~/.gemini-key'))
+    try:
+        with open(path) as keyfile:
+            k = keyfile.read().strip()
+    except FileNotFoundError:
+        raise RuntimeError('Set GEMINI_API_KEY, GOOGLE_API_KEY, or GEMINI_API_KEY_FILE (default ~/.gemini-key)') from None
+    # Accept a bare key or a KEY=value file, as with ~/.jev-api.
+    k = k.split('=', 1)[1].strip().strip(chr(39) + chr(34)) if '=' in k else k
+    if not k:
+        raise RuntimeError('Gemini API key file is empty')
+    return k
+
+
 def post(url, body, to=600, tries=6):
     h = {'content-type': 'application/json'}
     if 'typesafe.ai' in url: h['authorization'] = f'Bearer {_key()}'
+    if url == SYSTEMONE['gemini'][0]:
+        h['x-goog-api-key'] = gemini_key()
+        to = min(to, 60)  # Bound hosted tail latency; run.py retries failed rows.
     for i in range(tries):
         try:
             return json.load(urllib.request.urlopen(urllib.request.Request(url, json.dumps(body).encode(), h), timeout=to))
@@ -48,6 +69,10 @@ def post(url, body, to=600, tries=6):
 
 def systemone(model, state, questions):
     url, mid = SYSTEMONE[model]
+    if model == 'gemini':
+        r = post(url, {'model': mid, 'input': state, 'questions': questions})
+        usage = r.get('usage', {})
+        return r['answers'], r.get('model', mid), {**usage, 'input_tokens': usage.get('total_input_tokens')}
     r = post(url, {'model': mid, 'state': state, 'questions': questions})
     return r['answers'], r.get('model', mid), r.get('usage', {})
 

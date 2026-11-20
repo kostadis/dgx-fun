@@ -1,0 +1,18 @@
+READY dflash 244.29 /home/kostadis/qwen38-dflash-trial/runs/20261107T015330Z-dflash
+sanity True 1.33 '323'
+sanity True 0.48 '12'
+sanity True 0.66 'a83d90f7c1426be5'
+sanity True 0.58 'f09c51e82b6734ad'
+sanity True 0.58 '3e7b0d6c91a245f8'
+benchmark prose seconds 15.88 usage {'completion_tokens': 384, 'prompt_tokens': 59, 'total_tokens': 443, 'prompt_tokens_details': {'cached_tokens': 0}} timings {'cache_n': 0, 'prompt_n': 59, 'prompt_ms': 558.711, 'prompt_per_token_ms': 9.469677966101695, 'prompt_per_second': 105.60021191635748, 'predicted_n': 384, 'predicted_ms': 15320.075, 'predicted_per_token_ms': 40.00019582245431, 'predicted_per_second': 24.999877611565218, 'draft_n': 228, 'draft_n_accepted': 179}
+benchmark code seconds 11.55 usage {'completion_tokens': 384, 'prompt_tokens': 54, 'total_tokens': 438, 'prompt_tokens_details': {'cached_tokens': 0}} timings {'cache_n': 0, 'prompt_n': 54, 'prompt_ms': 572.618, 'prompt_per_token_ms': 10.604037037037038, 'prompt_per_second': 94.30370683422456, 'predicted_n': 384, 'predicted_ms': 10973.929, 'predicted_per_token_ms': 28.652556135770237, 'predicted_per_second': 34.90090012428548, 'draft_n': 313, 'draft_n_accepted': 266}
+benchmark list seconds 7.43 usage {'completion_tokens': 384, 'prompt_tokens': 58, 'total_tokens': 442, 'prompt_tokens_details': {'cached_tokens': 0}} timings {'cache_n': 0, 'prompt_n': 58, 'prompt_ms': 522.525, 'prompt_per_token_ms': 9.009051724137931, 'prompt_per_second': 110.99947370939189, 'predicted_n': 384, 'predicted_ms': 6903.14, 'predicted_per_token_ms': 18.023864229765014, 'predicted_per_second': 55.48199804726544, 'draft_n': 321, 'draft_n_accepted': 313}
+request 32768 estimated tokens 29987 records 1396
+first token 57.1
+finished 32768 passed True seconds 59.269023853121325 answer {
+  "ORBIT": "a83d90f7c1426be5",
+  "CEDAR": "f09c51e82b6734ad",
+  "MAPLE": "3e7b0d6c91a245f8",
+  "DELTA": "c4819fa620de735b",
+  "ANCHOR": "7bd02e4f9a165c83"
+}

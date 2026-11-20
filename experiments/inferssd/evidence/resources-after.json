@@ -1,0 +1,50 @@
+{
+  "enforcement": "cgroup-v2 hard limit; zero swap",
+  "scope": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/inferssd-e2cf61f6c69b448ead85736a2120c318.scope",
+  "ancestors": [
+    {
+      "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/inferssd-e2cf61f6c69b448ead85736a2120c318.scope",
+      "memory.max": "107374182400",
+      "memory.swap.max": "0",
+      "memory.current": "557154304",
+      "memory.peak": "3795763200",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    {
+      "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice",
+      "memory.max": "max",
+      "memory.swap.max": "max",
+      "memory.current": "558915584",
+      "memory.peak": "3797524480",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    {
+      "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service",
+      "memory.max": "max",
+      "memory.swap.max": "max",
+      "memory.current": "579837952",
+      "memory.peak": "3818446848",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    {
+      "path": "/sys/fs/cgroup/user.slice/user-1000.slice",
+      "memory.max": "max",
+      "memory.swap.max": "max",
+      "memory.current": "6625361920",
+      "memory.peak": "9875378176",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    {
+      "path": "/sys/fs/cgroup/user.slice",
+      "memory.max": "max",
+      "memory.swap.max": "max",
+      "memory.current": "6944022528",
+      "memory.peak": "10194042880",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    {
+      "path": "/sys/fs/cgroup"
+    }
+  ],
+  "available_bytes": 126204993536
+}

@@ -1,0 +1,15 @@
+{
+  "pid": 2888680,
+  "launcher_pid": 2888656,
+  "run": "20261106T004136Z",
+  "context": 65536,
+  "batch": 8192,
+  "ubatch": 8192,
+  "scope": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/inferssd-893304a102244da1b1cea8a97ea3a8c6.scope",
+  "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+  "memory_max": "107374182400",
+  "health": {
+    "status": "ok"
+  },
+  "left_running": true
+}

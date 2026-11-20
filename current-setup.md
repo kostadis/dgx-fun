@@ -1,7 +1,31 @@
 # Current DGX Spark Setup
 
+<!-- hillsfar-audio-spark1-20261116 -->
+> **RESTORED after audio processing, 2026-11-16:** Spark1's retained
+> `qwen38-flash` container is running again; :8001 health and model discovery
+> (`qwen3.8-flash-next`) passed after the user-authorized Hillsfar audio queue.
+> Its image, flags and client configuration are unchanged. Spark2 was not changed.
+> The copied audio-processing environments and cached models remain available
+> on Spark1 for future one-shot work; no new standing service was added.
+> Audio queue: `spark1:/home/kostadis/audio-to-vtt-work/hillsfar-identification-20261116/`.
+<!-- /hillsfar-audio-spark1-20261116 -->
+
+
+<!-- hibana-fast-user-restart-2026-11-14 -->
+> **CURRENT verification, 2026-11-14 UTC:** at the user's request, spark2 now
+> runs **`hibana-shadow-fast`**, healthy on **127.0.0.1:30004**. The calibrated
+> checkpoint and SSD cache were reused; readiness took **66.65 seconds** and
+> all **seven API smoke checks passed**. `hibana-shadow-exact` is stopped.
+> Served model ID: **`RadixArk/Qwen3.8-Flash-Next-NVFP4`**; 262144 context,
+> four concurrent requests. Use an SSH tunnel and OpenAI-compatible base URL
+> `http://127.0.0.1:30004/v1`; any nonempty API-key placeholder works.
+> Spark1's pinned vLLM service is retained, and no application configuration
+> was changed. No LAN listener or boot startup was added.
+> [Client configuration and evidence](experiments/hibana/README.md#configure-a-client).
+<!-- /hibana-fast-user-restart-2026-11-14 -->
+
 <!-- hibana-cognee-complete -->
-> **LATEST verification, 2026-11-14 UTC: Cognee comparison completed.** Spark2
+> **PREVIOUS verification, 2026-11-14 UTC: Cognee comparison completed.** Spark2
 > again serves **`hibana-shadow-exact`**, healthy on **127.0.0.1:30004**;
 > `hibana-shadow-fast` is stopped, with its checkpoint/cache retained. Seven
 > real ToEE dossiers were ingested by the existing Cognee runtime into separate
@@ -15,7 +39,7 @@
 <!-- /hibana-cognee-complete -->
 
 <!-- hibana-shadow-live-2026-11-14 -->
-> **CURRENT snapshot: 2026-11-14 01:54 UTC:** spark1 continues serving the retained
+> **PREVIOUS snapshot: 2026-11-14 01:54 UTC:** spark1 continues serving the retained
 > `qwen38-flash` vLLM container on **192.168.1.147:8001**, image
 > `sha256:f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d`.
 > On spark2, **`clef-card-train` is stopped and retained** for this trial; :8002 is down.
@@ -36,6 +60,71 @@
 > `ssh -F ~/.ssh/config spark2 'bash ~/hibana-trial/restore-clef.sh'`.
 > [Trial scripts and evidence](experiments/hibana/). Earlier banners below are historical.
 <!-- /hibana-shadow-live-2026-11-14 -->
+
+<!-- clef-card-training-live-2026-11-12 -->
+> **PREVIOUS snapshot: 2026-11-12 14:13 PST (22:13 UTC): spark2 served stock Clef plus a completed experimental trained readout.**
+> Container **`clef-card-train`** uses the retained `clef-server` image and official Clef 27B snapshot;
+> only its final 1,024 readout weights were trainable. The backbone is frozen. The old `clef` container
+> and `qwen38-flash` are both stopped and retained. **Port 8002 is healthy** and serves stock `clef` and
+> experimental `clef-card-tuned` as separate SystemOne model IDs, sharing one backbone.
+> **The trained head was worse at catching held-out approval exceptions; `clef` remains the released head.**
+> Clef-flash is not loaded in this process. Health/model discovery and paired serving parity checks passed.
+> Code, frozen splits and outputs: `spark2:~/clef-card-training-v1/`. Spark1 Qwen and Ollama are unchanged.
+> Restore the previous stock-only service: `ssh spark2 'docker stop clef-card-train && docker start clef'`.
+<!-- /clef-card-training-live-2026-11-12 -->
+
+<!-- clef-card-filter-live-2026-11-12 -->
+> **PREVIOUS snapshot: 2026-11-12 13:30 PST (21:30 UTC), superseded by readout training: spark2 served stock Clef for the spelling-card filter experiment.**
+> Its idle `qwen38-flash` container was stopped, retained intact; `docker start clef` restarted the existing
+> `clef-server` container on **192.168.1.121:8002**, with **`CLEF_MODELS=clef-flash,clef`**, 16,384-token
+> request budget, offline cached weights, and restart policy `unless-stopped`. **Health and model discovery passed**;
+> both `clef` and `clef-flash` are loaded, and Clef 27B passed positive/negative outage checks.
+> No downloads or startup-script changes. The main comparison is Clef 27B versus Gemini on identical card inputs.
+> spark2 :8001 is down during this experiment. Restoration: `ssh spark2 'docker stop clef && docker start qwen38-flash'`,
+> then wait for Qwen readiness. Spark1 and Ollama are not changed. Earlier banners below are historical.
+<!-- /clef-card-filter-live-2026-11-12 -->
+
+<!-- qwen38-both-live-2026-11-11 -->
+> **PREVIOUS (superseded on spark2 2026-11-12; verified 2026-11-11 21:07 UTC): BOTH Sparks served `qwen3.8-flash-next` on :8001, one independent
+> server per box: `http://192.168.1.147:8001/v1` and `http://192.168.1.121:8001/v1`, 262,144 context each.**
+> Switched at the user's request for the stormgiants summary_native NPC drafting run (`--backend dgx --endpoints`
+> both URLs, `--parallel 4`). Both healthy at ~07:52 UTC after an ~810 s load. Arithmetic smoke test `323` passed on both.
+> Container `qwen38-flash` on each box, `unless-stopped`; `docker ps` shows only it running on either box.
+> - **spark1:** the Qwen3.8 DFlash 2 server on **:8002 is STOPPED** (its guard was stopped first). Its launcher and results are
+>   retained ([observations](qwen38-dflash2-observations.md)).
+> - **spark2:** DeepSeek IQ1_S on :8002 was already down (memory guard, 2026-11-09). Nothing serves on :8002 on either box.
+> - Embed: Ollama on `:11434` is up on both boxes (checked 21:07 UTC); not touched by this switch.
+> The banners below are PREVIOUS states, kept for history.
+<!-- /qwen38-both-live-2026-11-11 -->
+
+<!-- qwen38-dflash-live -->
+> **PREV (superseded 2026-11-11). Snapshot: 2026-11-07 08:19 PST (+ 2026-11-10: Venn tried on spark2:8007, now stopped) — Qwen3.8 DFlash 2 is RUNNING at 256K on spark1.**
+> API **http://192.168.1.147:8002/v1**, model **`qwen3.8-flash-next-gguf`**,
+> IQ4_NL target, Q4_0 DFlash sidecar, **262144 total context / 32000 default
+> output allowance / one sequence**. Input and output share the context.
+> All five facts recovered from 224994 input tokens with `max_tokens: 32000`;
+> total 301.98 s, first output 298.94 s, minimum available memory 36.50 GiB.
+> The answer ended naturally after 124 tokens; a full 32K completion was not tested.
+> LAN health/model/arithmetic passed. Original :8001 Qwen is stopped and
+> retained. No boot startup or client repointing.
+> **spark2 (corrected 2026-11-10):** not "untouched". It served DeepSeek-V4.1-Flash-1017 **UD-IQ1_S** via llama.cpp on
+> **192.168.1.121:8002** from 2026-11-01 until its memory guard killed it at 2026-11-09 20:30 PST (during the Venn
+> eval). **Currently DOWN; nothing serves on spark2.** Its `qwen38-flash` (:8001) is stopped. Restart and client usage:
+> [§ spark2 DeepSeek IQ1_S](#spark2-deepseek-iq1_s-llamacpp-port-8002).
+> [Results and limits](qwen38-dflash2-observations.md).
+<!-- /qwen38-dflash-live -->
+
+<!-- inferssd-trial-live -->
+> **▶ LIVE (2026-11-06 01:19 UTC): Qwen is RESTORED on spark1 at the user's request.**
+> `qwen38-flash` serves **qwen3.8-flash-next** on **192.168.1.147:8001**,
+> 262,144 context. Health HTTP 200 and arithmetic `323` passed; restart policy
+> remains `unless-stopped`. About **16.34 GiB** host memory is available.
+> InferSSD is **STOPPED**, :8002 closed. Its validated 64K launcher, build,
+> 473.07 GiB checkpoint, prompts and results are retained at `~/inferssd-trial/`.
+> spark2 is untouched. [Context report](inferssd-observations.md),
+> [restoration evidence](experiments/inferssd/evidence/qwen-return-after-context.json).
+
+<!-- /inferssd-trial-live -->
 
 > **▶ LIVE (2026-10-27 00:14 UTC): DeepSeek is STOPPED on both boxes. BOTH
 > Sparks serve `qwen3.8-flash-next` on :8001, one independent server per box
@@ -863,10 +952,100 @@ both pass on a stale IP config.)
 | box | port | service | state |
 |---|---:|---|---|
 | spark1 | 8001 | `qwen38-flash` | **UP**, pinned vLLM, `qwen3.8-flash-next`, 262144 context; unchanged |
-| spark2 | 30004, loopback only | Hibana Qwen3.8 Flash Next | **UP**, `exact`, served ID `RadixArk/Qwen3.8-Flash-Next-NVFP4`, 262144 context; health and final smoke passed |
+| spark2 | 30004, loopback only | Hibana Qwen3.8 Flash Next | **UP**, `fast`, served ID `RadixArk/Qwen3.8-Flash-Next-NVFP4`, 262144 context; restart health and seven smoke checks passed |
 | spark2 | 8001 | `qwen38-flash` | Stopped and retained |
 | spark2 | 8002 | `clef-card-train` | Stopped and retained for rollback |
 | both | 11434 | Ollama | Configuration unchanged |
+
+### Previous: 2026-11-12, Clef card-filter experiment
+
+| box | port | service | state |
+|---|---:|---|---|
+| spark1 | 8001 | `qwen38-flash` | **UP**, `qwen3.8-flash-next`, 262144 context; model discovery verified |
+| spark1 | 8002 | Qwen DFlash 2 trial | Stopped, retained |
+| spark2 | 8001 | `qwen38-flash` | **STOPPED**, container and configuration retained |
+| spark2 | 8002 | `clef-card-train` / `clef-server` | **UP**, stock `clef` plus experimental `clef-card-tuned`, sharing Clef 27B; trained head is not promoted. Old `clef` container is retained stopped |
+| both | 11434 | Ollama | Unchanged |
+
+### Previous: 2026-11-07 08:19 PST, Qwen DFlash 2 at 256K
+
+| box | port | service | state |
+|---|---:|---|---|
+| spark1 | 8001 | `qwen38-flash` | **STOPPED**, retained recovery container |
+| spark1 | 8002 | llama.cpp Qwen3.8 + DFlash 2 | **UP**, `qwen3.8-flash-next-gguf`, IQ4_NL, 262144 context / 32000 output allowance / one sequence; LAN and long-input verified |
+| spark1 | 11434 | Ollama | Configuration unchanged by these experiments |
+| spark2 | 8001 | `qwen38-flash` | **STOPPED** (container `Exited (0)` since ~2026-11-02, retained). Nothing listens on :8001 |
+| spark2 | 8002 | llama.cpp DeepSeek-V4.1-Flash-1017 **UD-IQ1_S** (1-bit), alias `DeepSeek-V4.1-Flash-1017-UD-IQ1_S` | **DOWN since 2026-11-09 20:30 PST**: `guard.sh` SIGKILLed it at MemAvailable 9.8 GiB < 10 GiB floor, during the Venn CPU eval on the same box. It had served since 2026-11-01. Restart and client usage: [§ spark2 DeepSeek IQ1_S](#spark2-deepseek-iq1_s-llamacpp-port-8002) |
+| spark2 | 8007 | Venn `venn-1` decision model | **STOPPED** 2026-11-10 after the eval (ran ~5 h, CPU only). Retained: venv + HF_HOME + reader/head in `spark2:~/venn` (venn-vdm @ 3307c63, torch 2.15.0+cpu, torchvision **from the CPU index**). Restart: `ssh spark2 'cd ~/venn && . .venv/bin/activate && HF_HOME=~/venn/hf nohup venn serve --host 0.0.0.0 --port 8007 --allowed-host 192.168.1.121 > serve.log 2>&1 &'`. Stop with `pkill -f '[v]enn serve'` (an unbracketed pattern also kills the ssh shell running it). Results: `clef-observations.md` 2026-11-10 |
+
+The tables below describe earlier deployments.
+
+### spark2 DeepSeek IQ1_S (llama.cpp, port 8002)
+
+Documented 2026-11-10 from the box. It was running but undocumented from 2026-11-01 to 2026-11-09. This is the successful
+single-Spark retry of the failed 2026-10-21 1-bit trial ([trial evidence](experiments/flash1017-iq1s/README.md)).
+
+- **What:** `unsloth/DeepSeek-V4.1-Flash-1017-GGUF` `UD-IQ1_S` (5 shards, 233 GB) on
+  `danielhanchen/llama.cpp` `deepseek41` (PR 30817), CUDA 13 / sm_121 build, all in
+  `spark2:~/unsloth-flash1017-v31/` (`llama.cpp/`, `model/UD-IQ1_S/`).
+- **Launcher:** `run-iq1s.sh`: `--n-gpu-layers all --fit off` + `MOE_ARGS` (here `--n-cpu-moe 6`: the experts of 6
+  layers stay mmap'd on CPU as reclaimable page cache), `--ctx-size 8192 --parallel 1`, `--load-mode mmap --lazy-mode on`,
+  `--flash-attn on`, `--metrics`, sampling `--temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0`, chat-template kwarg
+  `reasoning_effort: 75`. **No API key; CORS open.**
+- **Guard:** started under `guard.sh` (`FLOOR_GIB=10`), which logs MemAvailable every second to `runs/<prefix>.mem.tsv`
+  and SIGKILLs the server below the floor. It does what it was built to do (2026-10-21 lost the whole box instead), but
+  **anything else memory-hungry on spark2 kills this server.** Before the 11-09 kill, steady state was ~15.3 GB available.
+  No restart policy, no systemd unit: it does not survive a reboot or a guard kill.
+- **Measured (2026-11-01 log, single stream):** prefill **25–45 tok/s**, decode **~11.9 tok/s**. Load to `listening`
+  takes **~8 min** (mmap of 233 GB from NVMe).
+- **Restart** (the run name `ncm6` and the guard message give `--n-cpu-moe 6` / floor 10 GiB; the shell history wasn't kept). Use a new
+  log prefix, because `guard.sh` truncates `<prefix>.server.log`:
+  ```bash
+  ssh spark2 'cd ~/unsloth-flash1017-v31 && FLOOR_GIB=10 MOE_ARGS="--n-cpu-moe 6" \
+    setsid nohup ./guard.sh runs/iq1s-ncm6-r2 ./run-iq1s.sh >/dev/null 2>&1 </dev/null &'
+  # ~8 min later:
+  curl -s http://192.168.1.121:8002/health          # {"status":"ok"} when ready (503 while loading)
+  ```
+  Stop: `ssh spark2 'kill $(cat ~/unsloth-flash1017-v31/runs/iq1s-ncm6-r2.pid)'` (the guard then exits too).
+  Do not co-host other models or CPU embedding jobs: Ollama's lazy-loaded embedder, Venn and the like all eat into the ~5 GB margin above the floor.
+
+#### Using it from a client
+
+> The examples below come from the launch configuration and llama-server's standard API. They were **not**
+> re-tested on 2026-11-10 because the server was down. Re-check them after the next restart.
+
+OpenAI-compatible, base URL **`http://192.168.1.121:8002/v1`**, model id
+**`DeepSeek-V4.1-Flash-1017-UD-IQ1_S`** (llama-server serves one model, so any `model` string works,
+but use the alias so logs and clients agree). Any API key string works; none is checked.
+
+```bash
+curl -s http://192.168.1.121:8002/v1/chat/completions -H 'Content-Type: application/json' -d '{
+  "model": "DeepSeek-V4.1-Flash-1017-UD-IQ1_S",
+  "messages": [{"role": "user", "content": "What is 17 * 19?"}],
+  "max_tokens": 1024
+}' | jq -r '.choices[0].message.content'
+```
+
+```python
+from openai import OpenAI
+c = OpenAI(base_url="http://192.168.1.121:8002/v1", api_key="none", timeout=1800)
+r = c.chat.completions.create(model="DeepSeek-V4.1-Flash-1017-UD-IQ1_S", max_tokens=2048, stream=True,
+                              messages=[{"role": "user", "content": "Summarise this scene: ..."}])
+for ch in r: print(ch.choices[0].delta.content or "", end="", flush=True)
+```
+
+Things a client must respect:
+- **8,192 tokens total, prompt + output, one request at a time** (`--parallel 1`). A second request queues behind the
+  first. Long prompts are slow: at ~30 tok/s prefill, 6K tokens of input is ~3–4 min before the first token. Set client
+  timeouts to ≥ 30 min and stream.
+- **It reasons first** (`reasoning_effort: 75` is baked into the chat template). The thinking tokens count against
+  `max_tokens` and the 8K window, so leave headroom (≥ 1–2K) or the answer gets cut off. llama-server returns them
+  separately as `message.reasoning_content` (streaming: `delta.reasoning_content`); `content` is the answer.
+- Sampling defaults are DeepSeek's recommended `temperature 1.0 / top_p 1.0`. Send `temperature` per request to override.
+- This is a **1-bit** quant: treat it as a hardware experiment, not a quality baseline (no accuracy eval exists yet).
+  Prometheus metrics are at `/metrics`, slot state at `/slots`.
+- spark1's `qwen3.8-flash-next-gguf` is on the *other* box at `192.168.1.147:8002`. Same port, different host and model:
+  check the host in your client config.
 
 ### Historical: 2026-10-20
 
@@ -934,6 +1113,34 @@ pool sizes. The completed `fast` replay allocated **73.93 GiB**, with **34.51 Gi
 minimum MemAvailable. Its state pool was larger (96 versus 56 slots).
 The final running shadow is `exact`; `fast` is stopped. No memory sampler
 remains running. [Full results](hibana-observations.md).
+
+### Previous: stock + experimental Clef heads, 2026-11-12 14:13 PST
+
+The trial loads only the official 27B backbone, not Clef-flash or Qwen. It cached
+1,024-dimensional readout features for 812 development cards, trained a small
+CPU optimizer, and evaluated 306 held-out cards with both heads. GPU backbone
+parameters never required gradients. Final memory: **62 GiB MemAvailable**,
+59 GiB used, 671 MiB swap used. Both served heads share the frozen backbone.
+
+### Previous: Clef 27B + Clef-flash, 2026-11-12 13:30 PST
+
+spark2 has released Qwen's GPU reservation. After readiness and initial requests,
+it had **45 GiB MemAvailable**, 76 GiB used and 825 MiB swap used. The server
+reports **68.9 GiB total CUDA allocated** after both models load (17.8 GiB after
+Clef-flash alone). Cold load took 135.7 s for flash plus 386.7 s for Clef 27B.
+During loading, a sampled low was 15 GiB available with 13 GiB swap used; that
+temporary pressure cleared after loading. Do not co-start Qwen.
+
+### Previous: Qwen DFlash 2 at 256K, 2026-11-07 08:19 PST
+
+Original vLLM Qwen and InferSSD are stopped. Native llama.cpp uses a
+100 GiB CPU cgroup, no cgroup swap, and a separate global MemAvailable
+guard which stops it below 8 GiB. GPU unified-memory charges are not fully
+represented by the CPU cgroup. Final 256K deployment had **36.58 GiB
+MemAvailable** after validation; the 224994-token retrieval test retained
+at least **36.50 GiB**. No guard termination occurred. The previous 32K
+configuration retained 44.19 GiB during its retrieval test; historical
+measurements are in the report.
 
 ### Historical: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
 
@@ -1202,6 +1409,34 @@ Served ID `qwen3.8-flash-next`, 262144 context, FP8 hybrid trunk/NVFP4 experts,
 BF16 KV, utilization 0.80, max sequences eight, MTP-2, APC, Qwen tool and
 reasoning parsers. No container, flag or client changes were made for the
 Hibana comparison. The native DFlash trial on spark1 remains stopped.
+
+### Previous chat runtime: Qwen3.8 with DFlash 2 at 256K, 2026-11-07 08:19 PST
+
+Native llama.cpp at **`http://192.168.1.147:8002/v1`**, served ID
+**`qwen3.8-flash-next-gguf`**, IQ4_NL target, **262144 total context / 32000 default output tokens / one
+sequence**. External Q4_0 drafter uses `draft-dflash`, maximum 5 draft
+tokens, minimum probability 0.75; thinking defaults off. Batch/microbatch
+1024, Flash Attention, caching and context shifting off. Runtime, artifact
+pins and guarded launcher: [runbook](experiments/qwen38-dflash2/README.md).
+Launch: `python3 ~/qwen38-dflash-trial/run-server.py --mode dflash --context 262144 --output-tokens 32000`.
+The launcher persists when started under nohup; no automatic boot startup
+is installed. It intentionally remains running after validation.
+
+All five short correctness checks and 224994-token five-fact retrieval
+passed. The long request reserved 32000 output tokens and returned all five
+facts in 301.98 seconds. It ended naturally after 124 tokens; full 32K
+generation was not tested. With 32000 output tokens, at most 230144 tokens
+remain for input including the chat template. `-n 32000` is the server
+fallback when requests omit a limit; explicit `max_tokens` takes priority.
+
+Warm 8K comparison: 34.3 / 51.6 / 72.6 decode tokens/sec for guide,
+code and prime list; 22.3% geometric-mean improvement over MTP-2.
+Outputs differ across decoding modes; broad quality, tool calling, vision,
+thinking-on and concurrency were not validated. The original vLLM service
+had a different quantization and 262K context. [Full report](qwen38-dflash2-observations.md).
+
+Original `qwen38-flash` is stopped, retained with its previous configuration
+and `unless-stopped` policy. InferSSD is stopped and retained separately.
 
 ### Historical: DeepSeek V4.1 Flash-1017 EXL3 EAQ, 2026-10-20
 
@@ -1576,17 +1811,46 @@ on GB10 (sm_121) is mature enough to realize that.
 ### Current: 2026-11-14, Hibana shadow trial on loopback port 30004
 
 Hibana lives at `~/hibana-trial/`, pinned source and private uv environment.
-The transient `hibana-shadow-exact` service is healthy and running, after
-24 workload checks, a SIGKILL recovery and a final seven-check smoke suite.
-`fast` also passed all 24 checks, then was stopped; its calibrated checkpoint
-and SSD cache remain in `~/hibana-trial/results-fast/`. No replay or memory
+The transient `hibana-shadow-fast` service is healthy and running at the user's
+request, reusing its calibrated checkpoint and SSD cache in
+`~/hibana-trial/results-fast/`. All seven restart smoke checks passed.
+`exact` is stopped, with its checkpoint/cache retained; it previously passed
+24 workload checks and a SIGKILL recovery. No replay or memory
 sampler remains running. No boot startup. Both `clef-card-train` (:8002) and `qwen38-flash` (:8001)
 are stopped and retained. The shadow served ID is
 `RadixArk/Qwen3.8-Flash-Next-NVFP4`; input plus output must fit 262144 tokens.
 Use the [trial runbook](experiments/hibana/README.md) for launch, telemetry,
 tunneling and rollback, and [observations](hibana-observations.md) for results.
 
-**Historical, 2026-10-17:** spark2 is the headless DeepSeek TP=2 worker
+### Previous: 2026-11-12, completed readout-training trial on port 8002
+
+Container `clef-card-train` runs `python3 /trial/clef_train_and_serve.py`, mounting
+`~/clef-card-training-v1:/trial` writable and the HF cache read-only, with
+`HF_HUB_OFFLINE=1`, GPUs enabled and `unless-stopped`. It exposes separate
+`clef` and `clef-card-tuned` heads over one frozen backbone. The experimental model is limited to a single noul
+approval question. Saved weights and split hashes permit restart without
+retraining once `report.json` exists. Default `clef` remains the released head.
+The trained checkpoint is `~/clef-card-training-v1/trained_joint_head.safetensors`;
+only `residual_scorer.3.weight` changed (1,002 of 1,024 values differ after BF16
+rounding). Actual paired held-out inference and serving parity checks passed.
+On 306 held-out cards, both bulk groups together contain 3 historical exceptions
+for stock versus 4 for tuned, so no live caller has been switched to tuned.
+
+### Previous: stock Clef on port 8002
+
+The chat container `qwen38-flash` is stopped and retained. The existing `clef`
+container serves both decision models with the release's own joint schema
+head (`clef/server.py`), `HF_HUB_OFFLINE=1`, `CLEF_MAX_LENGTH=16384`, and
+`--restart unless-stopped`. It serves `POST /v1/systemone`, not chat completions.
+The retained image is `clef-server` (`sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470`).
+Clef 27B's cached snapshot is `2f3de3dd85f379784083b0814d997ab627200f0c`.
+Startup was `ssh spark2 'docker stop qwen38-flash && docker start clef'`.
+The full recreation script remains `spin-up-clef.sh`. Verified 21:30 UTC:
+`/health` reports ready with both models, `/v1/models` lists `clef-flash` and
+`clef`, and Clef's positive/negative outage checks passed. Qwen's flags and
+checkpoint are unchanged. Spark1 continues serving Qwen at :8001.
+
+**Current, 2026-10-17:** spark2 is the headless DeepSeek TP=2 worker
 (`dsv41-exl3-worker`), not an independent chat endpoint. Its model and Engram
 files live at `/home/kostadis/dsv41-model` and
 `/home/kostadis/dsv41-engram-src`. The worker communicates with spark1 over
@@ -1789,6 +2053,11 @@ source, private uv environment, launch/rollback helpers, and separate
 `experiments/hibana/`; private inputs, full answers and Cognee databases stay
 in ignored `raw/` directories on the workstation.
 
+**Added 2026-11-05:** spark1 `~/inferssd-trial/` retains the native build, private
+Python/liburing dependencies, logs, and `model/` with 473.07 GiB of verified
+DeepSeek-1017 Q8_0 GGUF shards. This is separate from the Hugging Face cache.
+No extra expert pack was created. After the trial, the root SSD had ~521 GiB free.
+
 | path | host | purpose | shared between |
 |---|---|---|---|
 | `~/.cache/huggingface` | spark1 | HF model downloads | both spark1 vLLM containers (mounted in) |
@@ -1843,6 +2112,25 @@ or dgxlib behavior registry was changed. Explicit shadow testing uses an SSH
 tunnel to spark2's loopback :30004, model `RadixArk/Qwen3.8-Flash-Next-NVFP4`.
 Clef callers on spark2:8002 are unavailable until its retained container is
 restored; the completed trial's weights and reports remain on disk.
+
+### Previous: 2026-11-12, Clef experiment on spark2
+
+The endpoint is healthy. Existing callers using model `clef` get the released
+head; experimental calls can explicitly request `clef-card-tuned` for one noul
+approval question. No clients were repointed to the trained head.
+Decision experiments use `http://192.168.1.121:8002/v1/systemone`, model `clef`
+(or `clef-flash`), through `clef/eval/tasks.py`. Existing OpenAI chat clients must
+use spark1:8001 while spark2's Qwen is stopped. No client files were repointed.
+Clef is a decision API and is not a chat-model entry in `dgxlib/models.yaml`.
+
+### Previous: 2026-11-07 08:19 PST
+
+API: **http://192.168.1.147:8002/v1**, model ID
+**`qwen3.8-flash-next-gguf`**, **262144 context / 32000 output allowance / one sequence**.
+`dgxlib/models.yaml` records thinking off, 3600-second legacy read timeout,
+1800-second stream idle timeout, and max concurrency 1. Original spark1
+:8001 is down. No client configurations have been repointed. Vision and
+tool calling parity have not been validated. spark2 is untouched.
 
 ### Historical: 2026-10-17
 
@@ -2165,6 +2453,30 @@ source pin, conflicting containers and occupied port; it creates a transient
 user service and installs no boot startup. `fast` additionally requires the
 verified pinned calibrated checkpoint. Wait for `/health` before testing.
 See [the runbook](experiments/hibana/README.md) for exact bounds and recovery.
+
+### Previous runtime note: 2026-11-12
+
+For the training trial, `docker start clef-card-train` loads the official backbone,
+resumes cached extraction if present, or serves saved heads once a completed
+report/checkpoint exists. Do not co-start the old `clef` container or Qwen.
+Stop `clef-card-train` before restoring either retained service.
+
+For the retained containers, stop spark2 Qwen before `docker start clef`; wait
+for `http://192.168.1.121:8002/health`, then check `/v1/models` and a SystemOne
+smoke request. For recreation, use the existing `spin-up-clef.sh` after stopping
+Qwen. To return the box to chat service, stop Clef and restart the retained
+`qwen38-flash`, then wait for :8001 health and confirm the served model.
+Ollama remains managed by systemd. Do not run both large services together.
+
+### Previous runtime note: 2026-11-07 08:19 PST
+
+Use the [DFlash runbook](experiments/qwen38-dflash2/README.md) and its
+`run-server.py --mode dflash --context 262144 --output-tokens 32000`; stop the retained Qwen Docker
+container before launching, and ensure no other native trial is running.
+The native trial is not configured for boot startup. To recover the previous
+Qwen service, terminate the active guard using the PID in
+`~/qwen38-dflash-trial/active.json`, wait for native server exit, then
+`docker start qwen38-flash` and check :8001 health/model output.
 
 ### Historical: DeepSeek V4.1 Flash EXL3
 

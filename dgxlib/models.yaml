@@ -30,6 +30,27 @@ default:
   max_tokens: 16384        # generous floor; reasoning models can burn a lot
 
 models:
+  "qwen3.8-flash-next-gguf":
+    # Single-spark llama.cpp IQ4_NL + DFlash 2, one sequence, 256K context.
+    # 32000 output-token allowance; long prefills need a generous idle timeout.
+    can_think: true
+    thinking_default: false
+    read_timeout: 3600
+    idle_timeout: 1800
+    max_tokens: 32000
+    max_concurrency: 1
+
+  "DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf":
+    # Retained InferSSD v0.1.2 config, single spark, loopback :8002.
+    # Stopped after context tests; Qwen returned 2026-11-06.
+    # 64K context / one sequence; routine requests use thinking off.
+    can_think: true
+    thinking_default: false
+    read_timeout: 1800
+    idle_timeout: 1200
+    max_tokens: 2048
+    max_concurrency: 1
+
   "DeepSeek-v4.1-Flash-EXL3":
     # Compatibility ID retained for Flash-1017 EAQ 2.9 bpw (2026-10-20).
     # Current vLLM image, endpoint, and request behavior are unchanged.
@@ -133,6 +154,10 @@ models:
     idle_timeout: 420
 
   "qwen3.8-flash-next":
+    # 2026-11-12: spark2's retained Qwen container is stopped for a Clef
+    # SystemOne stock/experimental-readout service on :8002. Spark1 chat remains on :8001. Qwen's
+    # capabilities below are unchanged; Clef's decision protocol is called
+    # through clef/eval/tasks.py, outside this chat-model behavior registry.
     # Matches the served vLLM --max-num-seqs on each DGX endpoint.
     max_concurrency: 8
     # Qwen3.8-Flash-Next on spark1 AND spark2 (2026-09-10), single-box on each,

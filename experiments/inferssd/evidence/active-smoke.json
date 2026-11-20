@@ -1,0 +1,109 @@
+{
+  "time": 1793924418.8218474,
+  "health": {
+    "status": "ok"
+  },
+  "models": {
+    "models": [
+      {
+        "name": "DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf",
+        "model": "DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf",
+        "modified_at": "",
+        "size": "",
+        "digest": "",
+        "type": "model",
+        "description": "",
+        "tags": [
+          ""
+        ],
+        "capabilities": [
+          "completion"
+        ],
+        "parameters": "",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "",
+          "families": [
+            ""
+          ],
+          "parameter_size": "",
+          "quantization_level": ""
+        }
+      }
+    ],
+    "object": "list",
+    "data": [
+      {
+        "id": "DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf",
+        "aliases": [],
+        "tags": [],
+        "object": "model",
+        "created": 1793924413,
+        "owned_by": "llamacpp",
+        "meta": {
+          "vocab_type": 2,
+          "n_vocab": 129280,
+          "n_ctx_train": 1048576,
+          "n_embd": 5120,
+          "n_params": 748494684784,
+          "size": 507948390368
+        }
+      }
+    ]
+  },
+  "seconds": 4.863446924136952,
+  "request": {
+    "model": "DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is 17 times 19? Answer with only the number."
+      }
+    ],
+    "max_tokens": 32,
+    "temperature": 0,
+    "chat_template_kwargs": {
+      "enable_thinking": false
+    }
+  },
+  "response": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "323"
+        }
+      }
+    ],
+    "created": 1793924418,
+    "model": "DeepSeek-V4.1-Flash-1017-Q8_0-00001-of-00010.gguf",
+    "system_fingerprint": "8f060b5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 2,
+      "prompt_tokens": 18,
+      "total_tokens": 20,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "id": "chatcmpl-qtMVr2o4gZhUIu6nmkJhJ3RTg89tugpq",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 18,
+      "prompt_ms": 3865.09,
+      "prompt_per_token_ms": 214.72722222222222,
+      "prompt_per_second": 4.657071374793342,
+      "predicted_n": 2,
+      "predicted_ms": 994.291,
+      "predicted_per_token_ms": 497.1455,
+      "predicted_per_second": 2.011483559641996
+    }
+  },
+  "launcher_pid": 2837829,
+  "run": "20261106T001817Z",
+  "left_running": true
+}

@@ -1,0 +1,176 @@
+{
+  "manifest": {
+    "source_sha256": "c4812a2898c5ed2bf4f4974c31ed6a9618a55248773ae86bd3dd36b079715397",
+    "baseline_result_sha256": "0f6fe4b7db8c61da0f36a87fb2f2fe5ca50dd43513bdd5030abe69a58455dfc1",
+    "campaign_commit": "5b15125429cb872d471acc4d91c19051d84a054a",
+    "pool_size": 1637,
+    "phonetics_sha256": "00097aa6d96c251b5afbbacfa62fbe608058bc5675379054c5d1f3742783863d",
+    "aligned_sibling_rows": 275,
+    "history_policy": "Approved rows from strictly earlier session dates only; no same-date or future rulings.",
+    "pool_policy": "Original campaign snapshot canonical names, registry aliases and inventory names; glossary wrong forms excluded.",
+    "state_policy": "Unchanged frozen E2 state and question; only options vary.",
+    "arms": {
+      "wide32": {
+        "sha256": "5aad81b34248af1042f03549b283fb38e8fe79754985f0555c3785a3d3694b90",
+        "rows": 497,
+        "name_recall": 428
+      },
+      "context8": {
+        "sha256": "19d229c2c6f25f5cb2e5ddbf87e893cde858c43d3f2b751f440e7b81087521c6",
+        "rows": 497,
+        "name_recall": 388
+      },
+      "context32": {
+        "sha256": "822c3bfb7de773e3e79d50b47f2898cb7fcf5358a879b1497d0d4a80a12c18cd",
+        "rows": 497,
+        "name_recall": 428
+      },
+      "history32": {
+        "sha256": "a6666869f8da185786aa7ee477f77e23326fc24acc4a1c50abaa0eb0669043bd",
+        "rows": 497,
+        "name_recall": 442
+      }
+    }
+  },
+  "baseline8": {
+    "rows": 497,
+    "names": 485,
+    "candidate_hits": 385,
+    "correct_decisions": 410,
+    "correct_spellings": 347,
+    "wrong_names": 53,
+    "OTHER": 61,
+    "LEAVE": 36,
+    "confident_name_suggestions": 139,
+    "confident_correct_spellings": 136,
+    "new_token_names": 461,
+    "new_token_correct_spellings": 326
+  },
+  "arms": {
+    "wide32": {
+      "rows": 497,
+      "names": 485,
+      "candidate_hits": 428,
+      "correct_decisions": 426,
+      "correct_spellings": 387,
+      "wrong_names": 49,
+      "OTHER": 35,
+      "LEAVE": 26,
+      "confident_name_suggestions": 160,
+      "confident_correct_spellings": 156,
+      "new_token_names": 461,
+      "new_token_correct_spellings": 366,
+      "new_correct_spellings": 51,
+      "lost_correct_spellings": 11,
+      "corrected_previously_missing_names": 36,
+      "dropped_original_candidates": 0,
+      "recorded_input_tokens": 702171
+    },
+    "context8": {
+      "rows": 497,
+      "names": 485,
+      "candidate_hits": 388,
+      "correct_decisions": 415,
+      "correct_spellings": 352,
+      "wrong_names": 49,
+      "OTHER": 61,
+      "LEAVE": 35,
+      "confident_name_suggestions": 142,
+      "confident_correct_spellings": 139,
+      "new_token_names": 461,
+      "new_token_correct_spellings": 331,
+      "new_correct_spellings": 5,
+      "lost_correct_spellings": 0,
+      "corrected_previously_missing_names": 4,
+      "dropped_original_candidates": 1,
+      "recorded_input_tokens": 428177
+    },
+    "context32": {
+      "rows": 497,
+      "names": 485,
+      "candidate_hits": 428,
+      "correct_decisions": 427,
+      "correct_spellings": 389,
+      "wrong_names": 49,
+      "OTHER": 33,
+      "LEAVE": 26,
+      "confident_name_suggestions": 165,
+      "confident_correct_spellings": 161,
+      "new_token_names": 461,
+      "new_token_correct_spellings": 368,
+      "new_correct_spellings": 53,
+      "lost_correct_spellings": 11,
+      "corrected_previously_missing_names": 38,
+      "dropped_original_candidates": 1,
+      "recorded_input_tokens": 701175
+    },
+    "history32": {
+      "rows": 497,
+      "names": 485,
+      "candidate_hits": 442,
+      "correct_decisions": 426,
+      "correct_spellings": 399,
+      "wrong_names": 47,
+      "OTHER": 24,
+      "LEAVE": 27,
+      "confident_name_suggestions": 172,
+      "confident_correct_spellings": 167,
+      "new_token_names": 461,
+      "new_token_correct_spellings": 378,
+      "new_correct_spellings": 63,
+      "lost_correct_spellings": 11,
+      "corrected_previously_missing_names": 48,
+      "dropped_original_candidates": 1,
+      "recorded_input_tokens": 697556
+    }
+  },
+  "prior_exact_alias_rows": 24,
+  "run": {
+    "requests": 1988,
+    "failed_rows": 0,
+    "parts": {
+      "wide32": {
+        "requests": 497,
+        "result_sha256": "cbe51158850a416f4edb3f6410512de2dd4014c8a5d4eb35fb12c2cb5ef45680",
+        "median_ms": 284.71,
+        "p95_ms": 410.21,
+        "max_ms": 3359.59,
+        "recorded_input_tokens": 702171
+      },
+      "context8": {
+        "requests": 497,
+        "result_sha256": "2cfa06e0c0860fefb14243febda98f054f202aab6027935aa8d1b13ce2c3916e",
+        "median_ms": 263.21,
+        "p95_ms": 398.02,
+        "max_ms": 768.28,
+        "recorded_input_tokens": 428177
+      },
+      "context32": {
+        "requests": 497,
+        "result_sha256": "b5ecb00cfc7997facde7282283cf952869be412cc68d6c2edad9d1e68b348cfb",
+        "median_ms": 286.06,
+        "p95_ms": 443.22,
+        "max_ms": 833.64,
+        "recorded_input_tokens": 701175
+      },
+      "history32": {
+        "requests": 497,
+        "result_sha256": "c9f53db588f3f0ce89d045bfde0725d007eb3948bd62d375a9f735a1db87c9f2",
+        "median_ms": 286.84,
+        "p95_ms": 443.06,
+        "max_ms": 1228.59,
+        "recorded_input_tokens": 697556
+      }
+    },
+    "script_sha256": "e422397d4bdbc5a90b39f5fe6a89c794c6ba2ccf110a853d318d0702a1cee997",
+    "limitations": [
+      "Retrospective experiment on the same 497 frozen examples; not a fresh-session validation.",
+      "History simulates processing session recordings in date order; actual dates when corrections entered the glossary were not reconstructed.",
+      "Only the original canonical-name snapshot is used. This does not test discovery of new names.",
+      "Confidence thresholds are descriptive on this dataset, not independently validated automation gates."
+    ],
+    "recorded_input_tokens": 2529079,
+    "recorded_input_cost_usd": 0.252908,
+    "cost_scope": "Successful experiment responses at $0.10/million input tokens; excludes API preflight and any unreported retry usage."
+  }
+}

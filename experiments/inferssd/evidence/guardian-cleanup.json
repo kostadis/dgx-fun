@@ -1,0 +1,11 @@
+{
+  "worker": {
+    "pid": 2827965,
+    "uid": 1000,
+    "gid": 1000,
+    "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/inferssd-e2cf61f6c69b448ead85736a2120c318.scope\n"
+  },
+  "worker_returncode": 0,
+  "worker_group_gone": true,
+  "cleanup_receipt_confirmed": true
+}

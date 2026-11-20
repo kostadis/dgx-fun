@@ -1,0 +1,51 @@
+{
+  "layout": "Three sections: p > 0.90; 0.80 <= p <= 0.90; all other or non-concrete proposals.",
+  "bulk_approval": "One independent approval button per score group. Exceptions become unmarked regular cards.",
+  "source_scores_sha256": "5d2e74cfe21f65337e0f8d3ce9a8a9c36277e5568fde0954fc812a780be92feb",
+  "score_override": {
+    "session": "2026-01-12-chapter_43-harvesting-horror-in-the-underdark",
+    "id": "c_entemok_moon",
+    "variant": "faithful_edit",
+    "summary_sha256": "44f784c7068e64f8a24aace2d53185f2672d2da024372d3142b606267c4f87d5"
+  },
+  "sample": {
+    "items": 24,
+    "flat_list": 13,
+    "middle_list": 4,
+    "individual_cards": 7,
+    "proposed_corrections": 22,
+    "historical_nonapprovals_in_flat_list": 1,
+    "tier_counts": {
+      "high": 13,
+      "middle": 4,
+      "cards": 7
+    },
+    "historical_nonapprovals_by_tier": {
+      "high": 1,
+      "middle": 0,
+      "cards": 1
+    },
+    "corrected_input_scores_used": 1
+  },
+  "full": {
+    "items": 766,
+    "flat_list": 210,
+    "middle_list": 173,
+    "individual_cards": 383,
+    "proposed_corrections": 643,
+    "historical_nonapprovals_in_flat_list": 2,
+    "tier_counts": {
+      "high": 210,
+      "middle": 173,
+      "cards": 383
+    },
+    "historical_nonapprovals_by_tier": {
+      "high": 2,
+      "middle": 4,
+      "cards": 98
+    },
+    "corrected_input_scores_used": 1
+  },
+  "new_api_calls": 0,
+  "status": "Historical prototype; no transcript, glossary or live skill changes."
+}
