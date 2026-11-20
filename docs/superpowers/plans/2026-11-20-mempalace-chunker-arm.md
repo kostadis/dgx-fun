@@ -76,7 +76,7 @@
 
 - [ ] **Step 1: Seed caches** so old arms cost no embeddings: `cp raw/pilot-20261120/embeddings.sqlite3 raw/mempalace-20261120/` and same for `raw/pabtso/pilot-20261120` → `raw/pabtso/mempalace-20261120/`.
 - [ ] **Step 2: Run ToEE** with the README's `run.py` command, `--output experiments/adaptive-chunking/raw/mempalace-20261120`. Expected: `{"stage": "complete"...}`; old-arm counts in results.json identical to `results.json` receipt (257 / 904 / 886 / 621 chunks; fixed 22/40 & 34/40 at 1,200/2,400).
-- [ ] **Step 3: Run Phandelver** likewise into `raw/pabtso/mempalace-20261120`. Expected: old arms reproduce 296/1,161 chunks and 28/40 & 42/46 numbers from `pabtso-results.json`. If any old-arm number differs, stop and report — do not write up.
+- [ ] **Step 3: Run Phandelver** likewise into `raw/pabtso/mempalace-20261120`. Expected: old arms reproduce 296/1,161 chunks; fixed 28/48 & 40/48, recursive-600 42/48 & 46/48 from `pabtso-results.json`. If any old-arm number differs, stop and report — do not write up.
 - [ ] **Step 4: `analyze.py`** each run into the two new results JSON files.
 - [ ] **Step 5: Write-up** — one table per module (all arms × 1,200 / 2,400 / top-5 / chunk count / mean actual tokens), a 2×2 table (boundaries × breadcrumb) for recursive-600 vs mempalace-800, and a one-paragraph verdict: does re-chunking beat mempalace's current chunker, and how much is breadcrumb.
 - [ ] **Step 6: Commit** `docs: mempalace chunker arm results`
