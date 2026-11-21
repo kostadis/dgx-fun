@@ -1,0 +1,259 @@
+{
+  "experiment": "Sonnet sequential research over the existing adaptive Phandelver Cognee index",
+  "question": "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+  "agent_model": "claude-sonnet-5-5",
+  "cognee_reader_model": "claude-sonnet-5-5",
+  "ingestion_model": "qwen3.8-flash-next",
+  "generation_provider": "anthropic",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "embedding_digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+  "top_k_per_search": 15,
+  "max_searches": 8,
+  "agent_policy_identical_to_qwen": true,
+  "initial_reader_messages_identical_to_qwen": true,
+  "sampling": {
+    "thinking": "between_tools",
+    "temperature": "provider default",
+    "seed": null,
+    "json_object_mode": "prompt instruction only",
+    "reader_max_tokens": 4096
+  },
+  "script_sha256": "1c6b96d78b04ba3d50f36598e02861dbd28642fb988f371d99cafefa604fb53f",
+  "transport_sha256": "33a4390a2f190a7f4cd39dd78b4081f6f57c05a02521438f817bbc977ceb215f",
+  "source_manifest_sha256": "b6771d67e9e7e090da15cb3317a2b250e9ea7b6c2b539fb84edadf458fb7ceb1",
+  "question_sha256": "c7dc37f685d9277e1f4b8fc4981e3aa46c17b04be48daf85c73d359140590a11",
+  "fresh_session_per_search": true,
+  "auto_feedback": false,
+  "manual_followup_queries": false,
+  "prior_answers_seeded": false,
+  "outcome": "agent_finished",
+  "searches": 3,
+  "llm_calls": 6,
+  "reader_calls": 3,
+  "agent_calls": 3,
+  "protocol_corrections": 0,
+  "client_wall_seconds_including_worker_startup": 52.98091149330139,
+  "research_seconds_excluding_worker_startup": 48.86254775800626,
+  "usage": {
+    "prompt_tokens": 56833,
+    "completion_tokens": 4799,
+    "total_tokens": 61632
+  },
+  "estimated_api_cost_usd": 0.161656,
+  "per_call_usage_and_estimated_cost": [
+    {
+      "phase": "search-01",
+      "input_tokens": 6604,
+      "output_tokens": 831,
+      "input_usd_per_million": 2.0,
+      "output_usd_per_million": 10.0,
+      "estimated_usd": 0.021518
+    },
+    {
+      "phase": "decision-01-1",
+      "input_tokens": 5472,
+      "output_tokens": 293,
+      "input_usd_per_million": 2.0,
+      "output_usd_per_million": 10.0,
+      "estimated_usd": 0.013874
+    },
+    {
+      "phase": "search-02",
+      "input_tokens": 8277,
+      "output_tokens": 911,
+      "input_usd_per_million": 2.0,
+      "output_usd_per_million": 10.0,
+      "estimated_usd": 0.025664
+    },
+    {
+      "phase": "decision-02-1",
+      "input_tokens": 9288,
+      "output_tokens": 300,
+      "input_usd_per_million": 2.0,
+      "output_usd_per_million": 10.0,
+      "estimated_usd": 0.021576
+    },
+    {
+      "phase": "search-03",
+      "input_tokens": 11233,
+      "output_tokens": 955,
+      "input_usd_per_million": 2.0,
+      "output_usd_per_million": 10.0,
+      "estimated_usd": 0.032016
+    },
+    {
+      "phase": "decision-03-1",
+      "input_tokens": 15959,
+      "output_tokens": 1509,
+      "input_usd_per_million": 2.0,
+      "output_usd_per_million": 10.0,
+      "estimated_usd": 0.047008
+    }
+  ],
+  "pricing_source": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "pricing_checked_date": "2026-11-21",
+  "cost_scope": "Estimated standard API list price from captured native usage, including all output tokens. No cache requested. Not a billing invoice. Ollama and local retrieval costs excluded.",
+  "timing_scope": "Starts after cloning/endpoint setup; includes worker startup, retrieval, reader and agent calls, protocol corrections and final graph check. Excludes ingestion, failed initial attempt and source review.",
+  "raw_sources": 24,
+  "queries": [
+    "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+    "What happens after the characters defeat Nezznar the Spider in Wave Echo Cave, and what obelisk-related clues, documents, or treasure do they find that lead to chapter 5 or the Shattered Obelisk?",
+    "What do the goblins' map and the strange non-Cragmaw goblins in Chapter 5 reveal about the mind flayers and the shattered obelisk, and how do they lead the characters to Chapter 6?"
+  ],
+  "decisions": [
+    {
+      "action": "search",
+      "query": "What happens after the characters defeat Nezznar the Spider in Wave Echo Cave, and what obelisk-related clues, documents, or treasure do they find that lead to chapter 5 or the Shattered Obelisk?",
+      "decision_summary": "Only a goblin mention of obelisk shards links Part 1 to the obelisk; the end-of-chapter conclusion and the Chapter 5/6 introduction are missing. I need the text on what the party finds in or after Wave Echo Cave and how the later chapters begin.",
+      "remaining_gaps": [
+        "End-of-chapter 4 text on what happens after Nezznar is defeated and what clues the party finds",
+        "Introduction to chapter 5 or the Part 2 hook",
+        "How the Shattered Obelisk is introduced and tied to Wave Echo Cave or the Forge of Spells"
+      ]
+    },
+    {
+      "action": "search",
+      "query": "What do the goblins' map and the strange non-Cragmaw goblins in Chapter 5 reveal about the mind flayers and the shattered obelisk, and how do they lead the characters to Chapter 6?",
+      "decision_summary": "Chapter 4's \"What's Next?\" bridges via strange goblins and Chapter 6 references the goblins' map, but the actual link in Chapter 5 and the obelisk/mind flayer setup is not yet verified in raw sources. I need Chapter 5 and the Chapter 6 intro text.",
+      "remaining_gaps": [
+        "Chapter 5 content: how goblins' map is obtained and what it shows",
+        "Chapter 6 introduction: how the obelisk/mind flayer plot is presented to characters",
+        "Whether Wave Echo Cave itself (Forge of Spells, Part 1 resolution) is used later in Part 2"
+      ]
+    },
+    {
+      "action": "finish",
+      "query": "",
+      "decision_summary": "Retrieved sources show the Part 1 -> Part 2 bridge: Chapter 4's closing 'What's Next?' text, the Chapter 5 opening, and the adventure summary. Enough evidence exists to answer.",
+      "remaining_gaps": []
+    }
+  ],
+  "audit": {
+    "queries_audited": 3,
+    "contextual_chunk_appearances_verified": 28,
+    "agent_calls_verified_against_latest_answer_and_source_union": 3,
+    "native_request_message_preservation_checks": 6,
+    "cloned_graph_counts_unchanged": true,
+    "original_adaptive_files_hash_verified": 30,
+    "historical_json_artifacts_hash_verified": 4430,
+    "api_key_absent_from_run_artifacts": true
+  },
+  "qwen_adaptive_comparison": {
+    "outcome": "agent_finished",
+    "searches": 5,
+    "llm_calls": 10,
+    "client_wall_seconds_including_worker_startup": 143.41044664382935,
+    "research_seconds_excluding_worker_startup": 139.99138074999792,
+    "usage": {
+      "prompt_tokens": 57057,
+      "completion_tokens": 4375,
+      "total_tokens": 61432
+    },
+    "source_review": {
+      "assessment": "Recovered the main return-to-Phandalin and Chapter 5 investigation, but the final answer retains material unsupported claims.",
+      "quality_verdict": "material_grounding_errors",
+      "improvements": [
+        "Correctly identifies Chapters 1-4 and 5-8 and the return to Phandalin.",
+        "Finds the crime-investigation, Ruxithid and mind-flayer link, mainly through introduction chapter summaries.",
+        "Drops the original Forge/Obelisk causal speculation."
+      ],
+      "remaining_errors": [
+        {
+          "claim": "A note on the Wave Echo Cave goblin corpse explains the missing shards.",
+          "finding": "Invented note. The retrieved S006 passage is GM narration about the scouts finding no shards, not a discoverable message.",
+          "source_label": "S006"
+        },
+        {
+          "claim": "First-half bandits were pawns or distractions in the mind-flayer conspiracy.",
+          "finding": "Unsupported hierarchy and causal link. Retrieved S012 and S021 describe fanatics operating during the first arc and searching quietly alongside local bandit struggles.",
+          "source_labels": [
+            "S012",
+            "S021"
+          ]
+        },
+        {
+          "claim": "The corpse explicitly reveals the Obelisk plot to the characters.",
+          "finding": "Fails to distinguish GM knowledge from character knowledge. The source-book qualifier limiting what characters can learn was absent from the 27 retrieved passages; the agent filled that gap with the invented note."
+        }
+      ],
+      "retrieval_limits": [
+        "A targeted query for Chapter 4 What’s Next returned no new raw sources and did not retrieve the actual section.",
+        "The final answer omitted the mine-profit stake and Nundro handoff; most of its recovered Chapter 5 bridge came from introductory summaries."
+      ],
+      "stopping_assessment": "Declared remaining_gaps empty and finished despite material grounding errors; automatic stopping did not establish correctness."
+    }
+  },
+  "limits": [
+    "Single question and one successful Haiku trial, without repeated-run timing statistics.",
+    "Graph and stored summaries were extracted by Qwen; this is a generation and research-policy test, not Haiku reingestion.",
+    "Both the reader and research-agent model changed together.",
+    "Provider tokenizer and sampling differences mean token counts are not equal units of text or compute.",
+    "Provenance auditing does not establish answer correctness."
+  ],
+  "thinking_output_tokens": 0,
+  "haiku_adaptive_comparison": {
+    "agent_model": "claude-haiku-5-5",
+    "outcome": "agent_finished",
+    "searches": 2,
+    "llm_calls": 5,
+    "client_wall_seconds_including_worker_startup": 28.721989393234253,
+    "research_seconds_excluding_worker_startup": 24.552249821994337,
+    "usage": {
+      "prompt_tokens": 28633,
+      "completion_tokens": 3418,
+      "total_tokens": 32051
+    },
+    "estimated_api_cost_usd": 0.0045723000000000005,
+    "source_review": {
+      "quality_verdict": "supported_but_incomplete",
+      "assessment": "The final answer is cautious and its substantive factual statements match the retrieved raw passages, but it does not answer the central narrative-handoff question.",
+      "supported": [
+        "Correctly distinguishes Chapters 1-4 from Chapters 5-8 and identifies the level-5 handoff.",
+        "Accurately summarizes the Rockseekers, Nezznar and Wave Echo Cave setup.",
+        "Explicitly says the narrative transition has not been verified."
+      ],
+      "avoided_qwen_errors": [
+        "Does not invent a note on the goblin corpse.",
+        "Does not claim the earlier bandits are pawns of the mind flayers.",
+        "Does not assert a Forge/Obelisk causal connection in the final answer."
+      ],
+      "missing": [
+        "Return to Phandalin and its new goblin crimes as the Chapter 5 hook.",
+        "Nundro homecoming and the mine-profit stake.",
+        "Ruxithid and the investigation leading from local crimes into the fanatics plot.",
+        "Parallel timing of the fanatics activities and the distinction between GM and character knowledge of the goblin corpse."
+      ],
+      "retrieval_coverage": "Initial search retrieved the same seven raw chunks and identical reader messages as Qwen. The only follow-up added one introduction chunk describing the two-part structure. No raw Chapter 5 passage or actual Chapter 4 ending entered the source union.",
+      "stopping_failure": "Stopped after two of eight allowed searches despite acknowledging useful unresolved gaps. A finish-with-gaps action was rejected; the next action removed the gap list and retained uncertainty in the answer, without another search.",
+      "relevance_issue": "Includes incidental streambed and rift details that do not establish the transition.",
+      "no_manual_revision": "The saved model answer is unchanged; this review was performed after the run."
+    }
+  },
+  "source_review": {
+    "quality_verdict": "core_narrative_handoff_supported",
+    "reviewer": "Codex post-run review against actual retrieved raw passages and the source corpus",
+    "assessment": "Best of these three sequential answers on the tested question: the main handoff is recovered and supported, with no material invented causal connection found in review.",
+    "supported": [
+      "Part 1 resolves the Spider and mine plot and can stand alone.",
+      "Chapter 4 explicitly offers continuation through strange goblins and the return to Phandalin; the final answer uses this actual ending.",
+      "The Chapter 5 investigation leads through the Sawplees and Ruxithid to the mind flayer fanatics and later shard hunt.",
+      "Early psionic-goblin foreshadowing, the mine-profit reward and level handoff provide continuity."
+    ],
+    "avoided_prior_errors": [
+      "No invented note on the Wave Echo Cave goblin corpse.",
+      "No claim that Nezznar or the earlier bandits were mind-flayer pawns.",
+      "No asserted Forge of Spells to Obelisk power connection.",
+      "Does not end with the main Chapter 5 handoff unresolved, unlike Haiku."
+    ],
+    "stopping_assessment": "Finished after sources supplied the Chapter 4 ending, Chapter 5 transition and later shard-hunt link. Three observed searches and three subsequent decisions; no protocol correction or reviewer-selected follow-up.",
+    "limits": [
+      "Does not explicitly state the restriction on what characters can learn from the W1 corpse; that sentence was absent from the raw source union. It presents the scouts as GM foreshadowing and does not turn that knowledge into a discoverable note.",
+      "The exact Chapter 5 sentence about background activity was not retrieved. The answer supports separate narrative arcs and prior goblin scouting without claiming that Nezznar caused the supernatural plot.",
+      "This is one reviewed question, not a general model or chunking benchmark."
+    ],
+    "all_individual_and_grouped_citations_valid": true,
+    "answer_word_count_whitespace": 584,
+    "model_answer_unchanged_after_review": true
+  },
+  "comparison_assessment": "Sonnet recovered and supported the main narrative transition, whereas Haiku stopped before retrieving it and Qwen added material inventions after recovering it. Sonnet is the strongest reviewed answer on this one question; different search counts, provider controls and tokenizers prevent a general speed or quality claim."
+}

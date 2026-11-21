@@ -1,0 +1,212 @@
+{
+  "type": "Exploratory narrative synthesis, outside the frozen 48-question benchmark",
+  "question": "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+  "settings": {
+    "search_type": "GRAPH_COMPLETION",
+    "auto_route": false,
+    "top_k": 15,
+    "fresh_session": true,
+    "answer_word_limit": 600,
+    "model": "qwen3.8-flash-next",
+    "embedding_model": "qwen3-embedding:0.6b",
+    "copied_storage": true,
+    "top_k_note": "Original comparison used 15; follow-up adaptive-topk60 changes only top_k to 60."
+  },
+  "arms": {
+    "current": {
+      "seconds": 35.071283447003225,
+      "direct_chunks_per_document": {
+        "pabtso-01": 1,
+        "pabtso-03": 1,
+        "pabtso-05": 1,
+        "pabtso-00": 1,
+        "pabtso-04": 1
+      },
+      "context_audit": {
+        "queries_audited": 1,
+        "contextual_chunk_appearances_verified": 5
+      },
+      "graph_counts_unchanged": true,
+      "saved_calls": 1,
+      "assessment": "Mostly supported outline of the shared-town/psionic-goblin transition. Calling first-half enemies distractions or minor players in the larger conspiracy overstates what is established.",
+      "prompt_tokens": 11879,
+      "completion_tokens": 777
+    },
+    "adaptive-context-8": {
+      "seconds": 27.756848445002106,
+      "direct_chunks_per_document": {
+        "pabtso-04": 6,
+        "pabtso-01": 1
+      },
+      "context_audit": {
+        "queries_audited": 1,
+        "contextual_chunk_appearances_verified": 7
+      },
+      "graph_counts_unchanged": true,
+      "saved_calls": 1,
+      "assessment": "Unsupported causal synthesis: treats Forge of Spells as primary bridge, speculates Forge/Obelisk and Drow Vault links, and skips Chapter 5. No direct raw context from introduction or Chapter 5; six of seven raw chunks are from Chapter 4.",
+      "prompt_tokens": 4215,
+      "completion_tokens": 766
+    },
+    "adaptive-topk60": {
+      "top_k": 60,
+      "retrieval_rounds": 1,
+      "seconds": 36.90095070999814,
+      "prompt_tokens": 16550,
+      "completion_tokens": 839,
+      "direct_chunks_per_document": {
+        "pabtso-04": 16,
+        "pabtso-03": 1,
+        "pabtso-00": 2,
+        "pabtso-06": 3,
+        "pabtso-01": 2,
+        "pabtso-02": 1,
+        "pabtso-07": 1
+      },
+      "context_audit": {
+        "queries_audited": 1,
+        "contextual_chunk_appearances_verified": 26
+      },
+      "graph_counts_unchanged": true,
+      "assessment": "Substantially repaired core transition: psionic goblin scouting, Nundro return to Phandalin, mine-profit stake. No longer claims Forge powers or causes obelisk plot. Still incorrectly labels second half as chapters 5-7 and explicitly lacks Chapter 5 details.",
+      "transition_in_prompt": {
+        "chapter4_whats_next": true,
+        "mine_profit_share": true,
+        "nundro_escort": true
+      },
+      "question_and_model_unchanged": true
+    },
+    "adaptive-iterative": {
+      "method": "Gap-driven retrieval loop over Cognee; final synthesis from accumulated actually retrieved raw source chunks",
+      "starting_point": "adaptive-topk60",
+      "additional_retrieval_rounds": 2,
+      "follow_up_searches": 3,
+      "autonomously_planned_searches": 2,
+      "reviewer_directed_searches": 1,
+      "follow_up_queries": [
+        "Chapter 5 Paths of Peril Indigo Sanctum",
+        "Chapter 6 The Shattered Obelisk Drow Vault",
+        "Which source passages establish the timing of the psionic goblins' activities relative to Nezznar's defeat, especially in the opening of Chapter 5, and what can characters actually learn from the W1 goblin corpse at that time?"
+      ],
+      "follow_up_top_k": 15,
+      "initial_raw_sources": 26,
+      "final_raw_sources": 49,
+      "incremental_seconds": 145.09747246699408,
+      "seconds_including_seed": 181.99842317699222,
+      "new_llm_calls": 8,
+      "graph_counts_unchanged": true,
+      "uses_raw_source_union_for_synthesis": true,
+      "review": {
+        "reviewer": "Codex",
+        "independent_human": false,
+        "core_transition_recovered": true,
+        "parallel_plot_vs_nezznar_causality_corrected": true,
+        "gm_vs_player_knowledge_distinction_corrected": true,
+        "cave_shard_absence_preserved": true,
+        "remaining_precision_note": "Rescuing the Rockseeker brothers is broad shorthand: Gundren is normally rescued before Chapter 4 and Nundro in Wave Echo Cave. The answer does not explicitly claim that Tharden survived.",
+        "source_qualifiers_in_final_input": {
+          "player_knowledge_limit": true,
+          "exact_chapter5_background_sentence": false,
+          "intro_first_four_chapters_plot_evidence": true
+        },
+        "context_audit": {
+          "queries_audited": 4,
+          "contextual_chunk_appearances_verified": 51
+        },
+        "final_raw_chunks_verified_in_actual_synthesis_input": 49,
+        "cited_chunk_ids_retrieved": true,
+        "automatic_selfcheck_required_reviewer_correction": true
+      },
+      "failed_wrapper_attempt_excluded": true,
+      "final_reader_instructions_explicitly_check_causality_and_player_knowledge": true
+    },
+    "stock-iterative": {
+      "method": "Gap-driven retrieval loop over Cognee; final synthesis from accumulated actually retrieved raw source chunks",
+      "starting_point": "current (stock top_k15)",
+      "additional_retrieval_rounds": 1,
+      "autonomously_planned_followups": 0,
+      "reviewer_directed_searches": 1,
+      "initial_raw_sources": 5,
+      "final_raw_sources": 12,
+      "incremental_seconds": 83.61820006099879,
+      "seconds_including_seed": 118.68948350800201,
+      "new_llm_calls": 4,
+      "graph_counts_unchanged": true,
+      "review": {
+        "core_transition_recovered": true,
+        "remaining_overstatement": "The final stock answer still calls the Spider interference in the mind flayer plot and says clues directly trigger events; the source establishes a parallel plot and narrative transition, not that causal mechanism.",
+        "automatic_check_qualification": "Planner proposed no follow-up searches and marked sufficient, but incorrectly populated unsupported_claims with statements it itself described as supported. Do not treat this self-check as an independent quality verdict.",
+        "context_audit": {
+          "queries_audited": 2,
+          "contextual_chunk_appearances_verified": 13
+        },
+        "final_raw_source_chunks_verified": 12,
+        "citations_refer_to_retrieved_chunks": true,
+        "reviewer": "Codex",
+        "independent_human": false
+      }
+    }
+  },
+  "verified_connections": [
+    "Early psionic goblin clues foreshadow the later shard hunt.",
+    "A psionic goblin corpse in W1 links the cave to the scouts; the source explicitly says they found no obelisk shards.",
+    "Chapter 4 closing gives return-to-Phandalin motives including escorting Nundro and a ten-percent mine-profit stake.",
+    "Chapter 5 opens with new goblin crimes; investigation leads to Ruxithid and the broader mind flayer scheme.",
+    "The transition passages do not establish the Forge as the source of the obelisk ritual or Nezznar as an agent of the mind flayers."
+  ],
+  "interpretation": "The original one-pass budget under-retrieved this narrative question. A wider budget and continued gap-directed searches recovered the actual transition. Independent source review was needed after automatic sufficiency checks. Final context assembly and grounding instructions also changed, so this is not an isolated ablation of retrieval rounds alone.",
+  "relative_performance": {
+    "scope": "Single narrative query, observed sequential prototype times. Iterative rows include their original seed query, the same gap-check procedure, and the same reviewer-directed final validation. Stock seed top_k15, adaptive seed top_k60. Excludes prior indexing, storage-copy/setup, failed wrapper attempt, and manual review.",
+    "rows": [
+      {
+        "configuration": "current",
+        "seconds": 35.071283447003225,
+        "model_calls": 1,
+        "prompt_tokens": 11879,
+        "completion_tokens": 777,
+        "total_tokens": 12656
+      },
+      {
+        "configuration": "adaptive-context-8",
+        "seconds": 27.756848445002106,
+        "model_calls": 1,
+        "prompt_tokens": 4215,
+        "completion_tokens": 766,
+        "total_tokens": 4981
+      },
+      {
+        "configuration": "adaptive-topk60",
+        "seconds": 36.90095070999814,
+        "model_calls": 1,
+        "prompt_tokens": 16550,
+        "completion_tokens": 839,
+        "total_tokens": 17389
+      },
+      {
+        "configuration": "stock-iterative",
+        "seconds": 118.68948350800201,
+        "model_calls": 5,
+        "followup_searches": 1,
+        "raw_sources": 12,
+        "prompt_tokens": 78271,
+        "completion_tokens": 2854,
+        "total_tokens": 81125
+      },
+      {
+        "configuration": "adaptive-iterative",
+        "seconds": 181.99842317699222,
+        "model_calls": 9,
+        "followup_searches": 3,
+        "raw_sources": 49,
+        "prompt_tokens": 96752,
+        "completion_tokens": 4950,
+        "total_tokens": 101702
+      }
+    ],
+    "continued_comparison": {
+      "adaptive_latency_vs_stock": 1.5333997402113722,
+      "adaptive_total_tokens_vs_stock": 1.2536456086286594,
+      "quality_qualification": "Both recover the main transition; stock final retains causal overstatement, while adaptive final distinguishes the already-running plot and GM/player knowledge more clearly. Same procedure does not guarantee identical answer quality."
+    }
+  }
+}

@@ -146,10 +146,20 @@ consistent with the earlier ToEE result. Adaptive selection added no observed
 benefit over a static candidate. Try the simpler setting in an isolated index
 and match the actual application's retrieval budget before choosing a policy.
 
-For Cognee, full ingestion and graph-backed recall remain untested. Moving
+This vector pilot did not test full Cognee ingestion or graph-backed recall. Moving
 from 296 to 1,161 chunks could multiply graph-extraction work; a vector-retrieval
 gain does not establish a graph-quality or end-to-end latency gain. Existing
 Cognee datasets, indexes and serving configuration were preserved.
+
+The subsequent [full Cognee comparison](phandelver-cognee-chunking-results.md)
+completed both full-book indexes and 48 independent recall questions. Its raw
+adaptive integration produced 43/47 complete correct answers versus 46/47 for
+the current chunker; it also exposed lost heading context in generated item
+summaries. That follow-up reports its own cost and latency measurements.
+Its completed heading-preserving rerun improved to 45/47, with 6.16-second p95
+queries; stock remained ahead at 46/47. The original effect-attribution failure
+was repaired, while a new retrieval miss and a separate graph-rarity error
+remain. The report records the VM recovery and timing limits.
 
 These are 48 targeted questions on one JSON representation, not a random
 sample of D&D queries. The answer review is small and includes an ambiguous

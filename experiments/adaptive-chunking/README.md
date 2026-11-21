@@ -177,3 +177,20 @@ Use fresh output filenames/directories for changed inputs. The ToEE receipts,
 private source, questions and answers remain separate. Its original runner,
 renderer and reader scripts are retained under that run's ignored
 `code-snapshot/`; the runner snapshot matches the recorded code hash.
+
+## Full Cognee follow-up
+
+The [Cognee runbook](cognee/README.md) and
+[full Phandelver results](../../phandelver-cognee-chunking-results.md) compare
+the stock Cognee chunker with frozen adaptive boundaries using actual graph
+ingestion and 48 independent recall questions. The raw-chunk integration
+regressed complete correct answers from 46/47 to 43/47, with faster queries
+and substantially longer ingestion. A focused replay traced an item-rule
+misattribution to missing parent-heading breadcrumbs.
+
+The completed heading-preserving follow-up reached **45/47**, with **6.16 s p95**
+queries versus 14.04 s for stock Cognee. It repaired the item effect swap and
+recovered two other misses, while introducing one new retrieval miss. The
+eight-call run recovered from a client VM crash; its ingestion timing is not a
+continuous benchmark. A separate item-rarity error remains in the graph. See
+the report and [corrected metrics](cognee/context-results.json) for the limits.

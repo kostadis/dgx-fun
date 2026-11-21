@@ -1,0 +1,2691 @@
+{
+  "status": "complete",
+  "scope": {
+    "module": "Phandelver and Below: The Shattered Obelisk",
+    "sections": 13,
+    "queries_per_arm": 48,
+    "correctness_queries": 47,
+    "excluded_case": "q37",
+    "inputs": "Expanded 5etools text; maps/images represented by captions."
+  },
+  "configuration": {
+    "llm_model": "qwen3.8-flash-next",
+    "llm_backend": "vLLM on Spark 1 through Hibana Capture harness",
+    "embedding_endpoint": "http://192.168.56.1:11434",
+    "embedding_model": "qwen3-embedding:0.6b",
+    "embedding_dimensions": 1024,
+    "cognee_source_head": "b32d8afc59e1064d9291b9828a8a147be9cc8bab",
+    "adaptive_policy": "Frozen four-metric selection; raw chunks without earlier retrieval breadcrumbs."
+  },
+  "review_method": "Codex review against frozen source evidence and captured prompts; not independent human adjudication.",
+  "current": {
+    "arm": "current",
+    "complete": true,
+    "documents": 13,
+    "questions": 48,
+    "session_isolation_complete": true,
+    "unique_question_sessions": 48,
+    "queries_with_captured_history_audit": 48,
+    "planned_chunks": 78,
+    "effective_chunk_budget": 4096,
+    "embedding_tokenizer": "cognee.infrastructure.llm.tokenizer.TikToken.adapter",
+    "graph": {
+      "nodes": 1410,
+      "edges": 5287,
+      "document_chunks": 78
+    },
+    "ingestion_seconds": 3891.1126555070223,
+    "recall_seconds": 458.53549152999767,
+    "recall_p50_seconds": 9.87177250750392,
+    "recall_p95_seconds": 14.03855797449578,
+    "elapsed_seconds_including_pilot": 4716.7615921497345,
+    "archived_default_session_pilot_calls": 22,
+    "llm_calls": 206,
+    "llm_usage": {
+      "prompt_tokens": 1225496,
+      "total_tokens": 1513455,
+      "completion_tokens": 287959
+    },
+    "schema_validation_retries": 1,
+    "calls_with_explicit_output_token_limit": 0,
+    "largest_completion_tokens": 13289,
+    "longest_upstream_seconds": 285.3441892950068,
+    "http_statuses": {
+      "200": 206
+    },
+    "finish_reasons": {
+      "stop": 206
+    },
+    "embedding_requests_including_pilot": 561,
+    "embedding_inputs": 7956,
+    "embedding_failed_requests": 0,
+    "fact_check_eligible": 12,
+    "fact_check_passed": 12,
+    "fact_checks": [
+      {
+        "id": "q01",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q02",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q03",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q04",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q05",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q06",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q07",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q08",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q09",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q10",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q11",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q12",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q13",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q14",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q15",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q16",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q17",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q18",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q19",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q20",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q21",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q22",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q23",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q24",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q25",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q26",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q27",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q28",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q29",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q30",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q31",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q32",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q33",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q34",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q35",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q36",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q37",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q38",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q39",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q40",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q41",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q42",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q43",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q44",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q45",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q46",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q47",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q48",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      }
+    ],
+    "retrieval_provenance": [
+      {
+        "id": "q01",
+        "raw_chunks_in_graph_context": 12,
+        "source_lineage_chunks": 12,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q02",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q03",
+        "raw_chunks_in_graph_context": 2,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q04",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 6,
+        "raw_chunk_evidence_coverage": [
+          0.0
+        ],
+        "source_lineage_evidence_coverage": [
+          0.0
+        ],
+        "raw_chunk_complete": false,
+        "source_lineage_complete": false
+      },
+      {
+        "id": "q05",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q06",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q07",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 4,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q08",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q09",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 6,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q10",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q11",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q12",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q13",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 11,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q14",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q15",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q16",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q17",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q18",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q19",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q20",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 6,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q21",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q22",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q23",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q24",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q25",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q26",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q27",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          0.9487908961593172
+        ],
+        "source_lineage_evidence_coverage": [
+          0.9487908961593172
+        ],
+        "raw_chunk_complete": false,
+        "source_lineage_complete": false
+      },
+      {
+        "id": "q28",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q29",
+        "raw_chunks_in_graph_context": 11,
+        "source_lineage_chunks": 11,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q30",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q31",
+        "raw_chunks_in_graph_context": 10,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q32",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q33",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q34",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q35",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 11,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q36",
+        "raw_chunks_in_graph_context": 10,
+        "source_lineage_chunks": 12,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q37",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q38",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q39",
+        "raw_chunks_in_graph_context": 10,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q40",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q41",
+        "raw_chunks_in_graph_context": 3,
+        "source_lineage_chunks": 4,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q42",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q43",
+        "raw_chunks_in_graph_context": 2,
+        "source_lineage_chunks": 2,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q44",
+        "raw_chunks_in_graph_context": 3,
+        "source_lineage_chunks": 3,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q45",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 4,
+        "raw_chunk_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q46",
+        "raw_chunks_in_graph_context": 2,
+        "source_lineage_chunks": 2,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q47",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 4,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q48",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 6,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      }
+    ],
+    "raw_chunk_evidence_complete": 46,
+    "source_lineage_evidence_complete": 46,
+    "limitations": [
+      "Fact checks are lexical spot checks, not answer correctness or grounding judgments.",
+      "Embedding request totals include archived default-session pilot requests where present.",
+      "Source lineage is provenance, not proof that the answer used or preserved a fact.",
+      "Whole-configuration comparison: chunk sizes and chunk counts differ."
+    ],
+    "remember_prompt_tokens_p50": 2901.0,
+    "remember_prompt_tokens_p95": 3703.5000000000005,
+    "recall_prompt_tokens_p50": 17084.5,
+    "recall_prompt_tokens_p95": 25220.55
+  },
+  "adaptive": {
+    "arm": "adaptive",
+    "complete": true,
+    "documents": 13,
+    "questions": 48,
+    "session_isolation_complete": true,
+    "unique_question_sessions": 48,
+    "queries_with_captured_history_audit": 48,
+    "planned_chunks": 759,
+    "effective_chunk_budget": 4096,
+    "embedding_tokenizer": "cognee.infrastructure.llm.tokenizer.TikToken.adapter",
+    "graph": {
+      "nodes": 4702,
+      "edges": 19124,
+      "document_chunks": 759
+    },
+    "ingestion_seconds": 13816.735547075019,
+    "recall_seconds": 240.74270405196876,
+    "recall_p50_seconds": 4.836031031001767,
+    "recall_p95_seconds": 6.647150041193526,
+    "elapsed_seconds_including_pilot": 14064.570024490356,
+    "archived_default_session_pilot_calls": 0,
+    "llm_calls": 1568,
+    "llm_usage": {
+      "prompt_tokens": 1786326,
+      "total_tokens": 2877998,
+      "completion_tokens": 1091672
+    },
+    "schema_validation_retries": 1,
+    "calls_with_explicit_output_token_limit": 0,
+    "largest_completion_tokens": 12448,
+    "longest_upstream_seconds": 268.2051121240074,
+    "http_statuses": {
+      "200": 1568
+    },
+    "finish_reasons": {
+      "stop": 1568
+    },
+    "embedding_requests_including_pilot": 1861,
+    "embedding_inputs": 31395,
+    "embedding_failed_requests": 0,
+    "fact_check_eligible": 12,
+    "fact_check_passed": 11,
+    "fact_checks": [
+      {
+        "id": "q01",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q02",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q03",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q04",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q05",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q06",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q07",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q08",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q09",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q10",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q11",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q12",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q13",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q14",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q15",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q16",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q17",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q18",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q19",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q20",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q21",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q22",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q23",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q24",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q25",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q26",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q27",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q28",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q29",
+        "eligible": true,
+        "matches": [
+          false,
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        "passed": false
+      },
+      {
+        "id": "q30",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q31",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q32",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q33",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q34",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q35",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q36",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q37",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q38",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q39",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q40",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q41",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q42",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q43",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q44",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q45",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q46",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      },
+      {
+        "id": "q47",
+        "eligible": true,
+        "matches": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "passed": true
+      },
+      {
+        "id": "q48",
+        "eligible": false,
+        "matches": [],
+        "passed": false
+      }
+    ],
+    "retrieval_provenance": [
+      {
+        "id": "q01",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q02",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q03",
+        "raw_chunks_in_graph_context": 3,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q04",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          0.0
+        ],
+        "source_lineage_evidence_coverage": [
+          0.0
+        ],
+        "raw_chunk_complete": false,
+        "source_lineage_complete": false
+      },
+      {
+        "id": "q05",
+        "raw_chunks_in_graph_context": 10,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q06",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q07",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q08",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q09",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q10",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q11",
+        "raw_chunks_in_graph_context": 10,
+        "source_lineage_chunks": 12,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q12",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q13",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q14",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q15",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 6,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q16",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q17",
+        "raw_chunks_in_graph_context": 2,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q18",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q19",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q20",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q21",
+        "raw_chunks_in_graph_context": 11,
+        "source_lineage_chunks": 11,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q22",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q23",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 12,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q24",
+        "raw_chunks_in_graph_context": 11,
+        "source_lineage_chunks": 11,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q25",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q26",
+        "raw_chunks_in_graph_context": 10,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          0.0
+        ],
+        "source_lineage_evidence_coverage": [
+          0.0
+        ],
+        "raw_chunk_complete": false,
+        "source_lineage_complete": false
+      },
+      {
+        "id": "q27",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q28",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q29",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          0.0
+        ],
+        "source_lineage_evidence_coverage": [
+          0.0
+        ],
+        "raw_chunk_complete": false,
+        "source_lineage_complete": false
+      },
+      {
+        "id": "q30",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q31",
+        "raw_chunks_in_graph_context": 11,
+        "source_lineage_chunks": 11,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q32",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q33",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q34",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q35",
+        "raw_chunks_in_graph_context": 13,
+        "source_lineage_chunks": 13,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q36",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 9,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q37",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q38",
+        "raw_chunks_in_graph_context": 6,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q39",
+        "raw_chunks_in_graph_context": 10,
+        "source_lineage_chunks": 12,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q40",
+        "raw_chunks_in_graph_context": 9,
+        "source_lineage_chunks": 10,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q41",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q42",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q43",
+        "raw_chunks_in_graph_context": 8,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q44",
+        "raw_chunks_in_graph_context": 4,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q45",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 5,
+        "raw_chunk_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0,
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q46",
+        "raw_chunks_in_graph_context": 7,
+        "source_lineage_chunks": 7,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q47",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 6,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      },
+      {
+        "id": "q48",
+        "raw_chunks_in_graph_context": 5,
+        "source_lineage_chunks": 8,
+        "raw_chunk_evidence_coverage": [
+          1.0
+        ],
+        "source_lineage_evidence_coverage": [
+          1.0
+        ],
+        "raw_chunk_complete": true,
+        "source_lineage_complete": true
+      }
+    ],
+    "raw_chunk_evidence_complete": 45,
+    "source_lineage_evidence_complete": 45,
+    "limitations": [
+      "Fact checks are lexical spot checks, not answer correctness or grounding judgments.",
+      "Embedding request totals include archived default-session pilot requests where present.",
+      "Source lineage is provenance, not proof that the answer used or preserved a fact.",
+      "Whole-configuration comparison: chunk sizes and chunk counts differ."
+    ],
+    "remember_prompt_tokens_p50": 1208.0,
+    "remember_prompt_tokens_p95": 1549.1499999999999,
+    "recall_prompt_tokens_p50": 3635.5,
+    "recall_prompt_tokens_p95": 5289.599999999999
+  },
+  "reviewed_quality": {
+    "counts": {
+      "current": {
+        "correctness": {
+          "correct_and_complete": 46,
+          "incorrect": 1,
+          "source_ambiguous": 1
+        },
+        "grounding": {
+          "supported": 46,
+          "unsupported": 1,
+          "unassessed": 1
+        },
+        "adjudicable_questions": 47,
+        "grounded_complete": 46
+      },
+      "adaptive": {
+        "correctness": {
+          "correct_and_complete": 43,
+          "abstained": 3,
+          "source_ambiguous": 1,
+          "incorrect": 1
+        },
+        "grounding": {
+          "supported": 47,
+          "unassessed": 1
+        },
+        "adjudicable_questions": 47,
+        "grounded_complete": 43
+      }
+    },
+    "labels": [
+      {
+        "id": "q01",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q02",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q03",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q04",
+        "current": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "adaptive": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q05",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q06",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q07",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q08",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q09",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q10",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q11",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q12",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q13",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q14",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q15",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q16",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q17",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q18",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q19",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q20",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q21",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q22",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q23",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q24",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q25",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q26",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q27",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q28",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q29",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q30",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q31",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q32",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q33",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q34",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q35",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q36",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q37",
+        "current": {
+          "correctness": "source_ambiguous",
+          "grounding": "unassessed"
+        },
+        "adaptive": {
+          "correctness": "source_ambiguous",
+          "grounding": "unassessed"
+        }
+      },
+      {
+        "id": "q38",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q39",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q40",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q41",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q42",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q43",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q44",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q45",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q46",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "incorrect",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q47",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      },
+      {
+        "id": "q48",
+        "current": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "adaptive": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        }
+      }
+    ],
+    "current_only_complete": [
+      "q26",
+      "q29",
+      "q46"
+    ],
+    "adaptive_only_complete": []
+  },
+  "captured_prompt_audit": {
+    "current": {
+      "raw_chunks_marked_used_as_context": 321,
+      "full_chunk_text_matches_in_captured_prompt": 321
+    },
+    "adaptive": {
+      "raw_chunks_marked_used_as_context": 329,
+      "full_chunk_text_matches_in_captured_prompt": 329
+    }
+  },
+  "backend_end_check": {
+    "container_unchanged": true,
+    "embedding_digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+    "embedding_digest_unchanged": true
+  },
+  "heading_diagnostic": {
+    "kind": "post-trial summary-only replay",
+    "calls": 2,
+    "raw_control_attributed_careful_effect_to": "Distant",
+    "with_frozen_breadcrumb_attributed_careful_effect_to": "Careful",
+    "frozen_breadcrumb_existed_before_trial": true,
+    "both_finish_reason_stop": true,
+    "both_max_tokens": 2048,
+    "full_reingestion_or_recall_retest": false,
+    "included_in_primary_metrics": false
+  },
+  "execution_audit": {
+    "controller_marked_complete": true,
+    "both_arm_summaries_passed": true,
+    "outer_exec_session_exit_code_on_collection": 143,
+    "note": "The long-lived outer tool session returned 143 when collected after completion. Both arm summaries, all source/query checkpoints and controller outputs independently validated complete; cause of outer-session status is unestablished."
+  }
+}
