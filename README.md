@@ -7,6 +7,7 @@ This repository contains experiments, reports, and scripts related to running LL
 ### LLM Observations & Reports
 - **[Hibana on DGX Spark Results](hibana-spark-results.md):** Shadow comparison against pinned vLLM, including real Cognee ingestion, long-context replays, quality findings and crash recovery.
 - **[Phandelver and Below Chunking Results](phandelver-and-below-chunking-results.md):** A 48-question comparison of fixed, recursive and adaptive chunking, including context-budget sensitivity and answer-grounding checks.
+- **[Phandelver in Cognee: Chunking and Sequential Retrieval](phandelver-cognee-agent-results.md):** A linked write-up of the full Cognee trial and Qwen, Haiku and Sonnet research-agent results, including quality, timing and costs.
 - **[Temple of Elemental Evil Chunking Pilot](adaptive-chunking-toee-results.md):** The initial 40-question trial, with retrieval measurements, answer checks and limitations.
 - **Model Comparisons:** Insights on various models including Gemma 4, Qwen, and Llama.
 - **Hardware Calibration:** Reports on DGX Spark calibration and LLM serving learnings.
