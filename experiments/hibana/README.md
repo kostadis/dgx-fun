@@ -4,7 +4,23 @@ The trial compares the retained Qwen3.8 Flash Next vLLM service on spark1
 with Hibana on spark2. Application traffic continues to use vLLM. Hibana is
 loopback-only, under a transient user service, with no boot startup.
 
-**Current state, 2026-11-14 UTC:** at the user's request, `fast` is now healthy
+**Latest experiment, 2026-11-21:** Hibana fast replayed the original 48
+Phandelver factual questions on the existing adaptive Cognee index. It took
+**3.41 s p50 / 4.32 s p95**, versus Qwen vLLM's **4.68 / 6.16 s** and Inkling
+vLLM's **12.10 / 18.60 s**. Complete answers scored **44/47** versus Qwen's
+45/47, with one new Agatha knowledge contradiction. The general module question
+took **14.87 s** in one pass, or **84.51 s** through a five-search agent; both
+retained grounding failures. All 48 factual reader messages matched Qwen's
+exactly. These trials reused the Qwen-ingested graph, summaries and embeddings.
+See the [full follow-up](../../phandelver-cognee-chunking-results.md#hibana-fast-original-questions-and-module-synthesis-2026-11-21),
+[factual receipt](../adaptive-chunking/cognee/hibana-fast-question-results.json),
+[one-pass receipt](../adaptive-chunking/cognee/hibana-fast-onepass-results.json)
+and [agent receipt](../adaptive-chunking/cognee/hibana-fast-sequential-results.json).
+Hibana is now stopped; Clef and Inkling are restored and healthy. The temporary
+SSH tunnel is closed. The [operations receipt](../adaptive-chunking/cognee/hibana-fast-operations.json)
+records unchanged container IDs/images, reloads and a corrected readiness probe.
+
+**Historical verification, 2026-11-14 UTC:** at the user's request, `fast` became healthy
 on spark2 under `hibana-shadow-fast`; `exact` is stopped. Restart readiness
 took 66.65 seconds, and all seven streaming/chat, structured-output and
 tool-call smoke checks passed. The calibrated checkpoint and fast SSD cache

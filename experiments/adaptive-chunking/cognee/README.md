@@ -80,6 +80,75 @@ $0.161656 API charge. Source review found the main handoff supported without
 Qwen's invented links. This is the strongest reviewed answer on this one
 question; the report records the remaining source-coverage limits.
 
+The [Inkling 2 Mini follow-up](inkling-sequential-results.json) used the original
+mixed-precision model on Spark 2 through a separate OpenAI-compatible endpoint.
+Its same-policy agent stopped at the action-schema guard after two searches,
+six calls, 30,429 tokens and 137.94 seconds until failure. It proposed a new
+query inside an `args` array and omitted required control fields in all three
+attempts. Basic text and JSON generation passed; no final narrative answer
+was produced. The [installation and client guide](../../inkling/README.md)
+records the pinned checkpoint/image and shared-host configuration.
+
+An opt-in [schema-guided Inkling rerun](inkling-schema-sequential-results.json)
+resolved that action-format failure. Add `--action-format json_schema` on an
+OpenAI-compatible backend; the default remains `json_object`. The server
+enforces required field names/types while the existing semantic validator
+remains unchanged. This affects agent decisions, not Cognee reader calls.
+The fresh run finished after seven searches and fourteen calls, in 499.32
+seconds and 104,978 tokens, with zero protocol corrections. It recovered the
+main handoff, with remaining geography/GM-wording caveats recorded in the
+source review. An exact replay of the failed prompt also passed after changing
+only `response_format`. This is a separate decoding-constraint diagnostic;
+the original failure and its cost are preserved.
+
+The [original 48-question Inkling replay](inkling-question-results.json) then
+completed without an agent. All reader messages and raw source sets matched
+the Qwen baseline. Inkling took 12.10 s p50 and 18.60 s p95, versus Qwen's
+4.68 s and 6.16 s; the query sums were 636.25 s versus 226.79 s. It scored
+44/47 under strict review, or 45/47 if one misleading Ruxithid sentence is
+accepted as awkward wording, versus Qwen's 45/47. Both existing retrieval
+misses remained. The report records this scoring sensitivity and the unequal
+serving configurations; this trial shows no factual accuracy gain.
+
+The [Hibana fast factual replay](hibana-fast-question-results.json) used all 48
+identical Qwen reader messages, reducing p50/p95 to **3.41/4.32 s** and the
+query sum to **168.99 s**. Complete answers scored **44/47** versus Qwen's
+45/47; an added Agatha knowledge contradiction caused the new miss. Strict
+review of additional assertions leaves 42/47 fully grounded complete answers.
+Its [one-pass module answer](hibana-fast-onepass-results.json) took **14.87 s**
+but invented a transition. The [five-search agent](hibana-fast-sequential-results.json)
+took **84.51 s**, recovered the broad chapter structure, and still confused
+GM shard-scout information with a party-discovered reason to move on. These
+reuse the Qwen-ingested index; Hibana fast changes calibrated weights and
+decoding policy as well as engine. Full quality notes and timing limits are
+in the report.
+
+## Factual questions with a different reader model
+
+`questions.py` replays the original 48 frozen factual questions against an
+isolated copy of an existing index. It uses one `GRAPH_COMPLETION` recall per
+question, `top_k=15`, the original 120-word instruction, and a fresh session
+for every question. Questions run sequentially. It performs no ingestion or
+agent decisions and requires the frozen question file to match the index's
+recorded hash. The original graph, summaries and embeddings retain their
+ingestion identity.
+
+```bash
+trial=experiments/adaptive-chunking/raw/pabtso/cognee-20261120
+/home/kostadis/cognee-local/.venv/bin/python \
+  experiments/adaptive-chunking/cognee/questions.py \
+  --source "$trial/adaptive-context-8" \
+  --output "$trial/inkling-questions-new/adaptive" \
+  --cases "$trial/frozen/cases.json" \
+  --backend http://192.168.1.121:8004 --model inkling-2-mini \
+  --reasoning-effort none
+```
+
+Use a new output directory for each run. The runner saves full answers,
+individual timings, actual model requests and embedding captures under ignored
+`raw/`, and checks that cloned graph counts remain unchanged. It does not need
+the agent action-schema workaround: these calls generate ordinary answers.
+
 ## Backends and isolation
 
 - LLM: running Spark 1 vLLM, `qwen3.8-flash-next`, port 8001.

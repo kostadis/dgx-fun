@@ -1,0 +1,241 @@
+{
+  "experiment": "Inkling 2 Mini sequential research over the existing adaptive Phandelver Cognee index",
+  "question": "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+  "agent_model": "inkling-2-mini",
+  "cognee_reader_model": "inkling-2-mini",
+  "generation_provider": "openai",
+  "generation_backend": "http://192.168.1.121:8004",
+  "ingestion_model": "qwen3.8-flash-next",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "embedding_digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+  "agent_policy_identical_to_qwen": true,
+  "initial_reader_messages_identical_to_qwen": true,
+  "top_k_per_search": 15,
+  "max_searches": 8,
+  "max_protocol_attempts": 3,
+  "manual_followup_queries": false,
+  "prior_answers_seeded": false,
+  "fresh_session_per_search": true,
+  "auto_feedback": false,
+  "sampling": {
+    "thinking": "none",
+    "reasoning_effort": "none",
+    "temperature": 0,
+    "seed": 604
+  },
+  "script_sha256": "34402de055db13d2e9b9046b0e4ff42c365f25307300df50c35640b7ba804fd4",
+  "question_sha256": "c7dc37f685d9277e1f4b8fc4981e3aa46c17b04be48daf85c73d359140590a11",
+  "source_manifest_sha256": "b6771d67e9e7e090da15cb3317a2b250e9ea7b6c2b539fb84edadf458fb7ceb1",
+  "outcome": "action_schema_guard",
+  "final_answer_produced": false,
+  "searches": 2,
+  "llm_calls": 6,
+  "reader_calls": 2,
+  "agent_calls": 4,
+  "invalid_actions": [
+    {
+      "action": {
+        "action": "search",
+        "args": [
+          {
+            "query": "Phandelver and Below Chapter 5 Paths of Peril Indigo Sanctum transition from Wave Echo Cave end of chapter 4 map Gwyn Oresong"
+          }
+        ]
+      },
+      "error": "remaining_gaps must be a list of strings"
+    },
+    {
+      "action": {
+        "action": "search",
+        "args": [
+          {
+            "query": "Phandelver and Below Chapter 5 Paths of Peril Indigo Sanctum end of chapter 4 map Gwyn Oresong transition"
+          }
+        ]
+      },
+      "error": "remaining_gaps must be a list of strings"
+    },
+    {
+      "action": {
+        "action": "search",
+        "args": [
+          {
+            "query": "Phandelver and Below Chapter 5 Paths of Peril Indigo Sanctum end of chapter 4 map Gwyn Oresong transition"
+          }
+        ]
+      },
+      "error": "remaining_gaps must be a list of strings"
+    }
+  ],
+  "protocol_corrections": 3,
+  "client_wall_seconds_until_failure": 137.94187569618225,
+  "usage": {
+    "prompt_tokens": 26982,
+    "completion_tokens": 3447,
+    "total_tokens": 30429
+  },
+  "reasoning_output_tokens": 1946,
+  "nonreasoning_output_tokens": 1501,
+  "per_call_usage": [
+    {
+      "phase": "search-01",
+      "seconds": 45.36380735698913,
+      "usage": {
+        "prompt_tokens": 4757,
+        "total_tokens": 6024,
+        "completion_tokens": 1267,
+        "completion_tokens_details": {
+          "reasoning_tokens": 719
+        }
+      }
+    },
+    {
+      "phase": "decision-01-1",
+      "seconds": 11.437951664993307,
+      "usage": {
+        "prompt_tokens": 3919,
+        "total_tokens": 4115,
+        "completion_tokens": 196,
+        "completion_tokens_details": {
+          "reasoning_tokens": 47
+        }
+      }
+    },
+    {
+      "phase": "search-02",
+      "seconds": 45.13734131399542,
+      "usage": {
+        "prompt_tokens": 2172,
+        "total_tokens": 3620,
+        "completion_tokens": 1448,
+        "completion_tokens_details": {
+          "reasoning_tokens": 830
+        }
+      }
+    },
+    {
+      "phase": "decision-02-1",
+      "seconds": 8.636795269994764,
+      "usage": {
+        "prompt_tokens": 5301,
+        "total_tokens": 5432,
+        "completion_tokens": 131,
+        "completion_tokens_details": {
+          "reasoning_tokens": 65
+        }
+      }
+    },
+    {
+      "phase": "decision-02-2",
+      "seconds": 12.72110449099273,
+      "usage": {
+        "prompt_tokens": 5380,
+        "total_tokens": 5692,
+        "completion_tokens": 312,
+        "completion_tokens_details": {
+          "reasoning_tokens": 252
+        }
+      }
+    },
+    {
+      "phase": "decision-02-3",
+      "seconds": 4.574187660007738,
+      "usage": {
+        "prompt_tokens": 5453,
+        "total_tokens": 5546,
+        "completion_tokens": 93,
+        "completion_tokens_details": {
+          "reasoning_tokens": 33
+        }
+      }
+    }
+  ],
+  "accumulated_raw_sources": 9,
+  "queries": [
+    "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+    "Phandelver and Below: The Shattered Obelisk Chapter 5 Chapter 6 Drow Vault Shattered Obelisk"
+  ],
+  "decisions": [
+    {
+      "action": "search",
+      "query": "Phandelver and Below: The Shattered Obelisk Chapter 5 Chapter 6 Drow Vault Shattered Obelisk",
+      "decision_summary": "The first search established the first arc (Chapters 1-4, Wave Echo Cave) but no evidence links it to the second part. I need Chapter 5/6 content to find the hand-off.",
+      "remaining_gaps": [
+        "Chapter 5 content",
+        "Chapter 6 Drow Vault content and how it connects to Wave Echo Cave outcomes"
+      ]
+    }
+  ],
+  "audit": {
+    "queries_audited": 2,
+    "contextual_chunk_appearances_verified": 9,
+    "agent_calls_verified_against_latest_answer_and_source_union": 4,
+    "model_and_reasoning_option_verified_in_all_calls": true,
+    "all_calls_http_200_natural_stop": true,
+    "original_adaptive_files_hash_verified": 30,
+    "historical_json_artifacts_hash_verified": 4430,
+    "cloned_graph_counts_unchanged": null
+  },
+  "installation": {
+    "stage": "ready-and-smoke-passed",
+    "started_unix": 1795305538.3443592,
+    "host": "spark2",
+    "endpoint": "http://192.168.1.121:8004",
+    "model": "thinkingmachines/Inkling-2-Mini",
+    "model_revision": "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+    "image": "vllm/vllm-openai@sha256:ecdf0ccc663d86332459f5a50a38c30861a5079bc3924aa08fdc657ef10dd648",
+    "existing_clef_container": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+    "existing_clef_image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+    "existing_clef_started_at": "2026-11-16T16:37:30.622950237Z",
+    "max_model_len": 65536,
+    "gpu_memory_utilization": 0.26,
+    "max_num_seqs": 1,
+    "enforce_eager": true,
+    "speculative_decoding": false,
+    "ready_checked_unix": 1795306238.467736,
+    "container_id": "b84da56b404df66147bfde69d3fcf6a7b3fb30726673bb06a8a61079912f5ba9",
+    "image_id": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+    "container_started_at": "2026-11-22T00:05:16.14990143Z",
+    "vllm_version": "0.1.dev25855+g7cb5dae22",
+    "torch_version": "2.14.0+cu130",
+    "cuda_version": "13.0",
+    "weights_sha256_verified": true,
+    "model_weight_memory_gib": 17.64,
+    "available_kv_cache_memory_gib": 12.92,
+    "smoke_reasoning_tokens": 93,
+    "reasoning_effort": "none",
+    "clef_identity_unchanged_at_ready": true,
+    "clef_health_at_ready": true,
+    "host_mem_available_gib_at_ready": 23,
+    "server_healthy_after_trial": true,
+    "clef_healthy_after_trial": true,
+    "qwen_healthy_after_trial": true,
+    "clef_container_identity_unchanged_after_trial": true,
+    "host_mem_available_gib_after_trial": 21,
+    "host_swap_used_gib_after_trial": 2.2
+  },
+  "excluded_smoke_calls": 2,
+  "excluded_smoke_usage": {
+    "prompt_tokens": 66,
+    "completion_tokens": 121,
+    "total_tokens": 187
+  },
+  "excluded_smoke_seconds": 10.831463032998727,
+  "cost_scope": "Local inference and embeddings; hardware and electricity costs unpriced.",
+  "timing_scope": "Time until protocol guard stopped the run, including worker startup after storage cloning. Excludes installation/download, kernel preparation, smoke calls and post-run audit. No final answer was produced.",
+  "source_review": {
+    "quality_verdict": "not_completed",
+    "assessment": "Inkling proposed a new follow-up in a nested args array but omitted required top-level query, decision_summary and remaining_gaps fields. All three attempts after the second search failed the same action contract.",
+    "narrative_answer_quality": "unassessed; no final answer",
+    "native_tool_calling": "unassessed; this test uses a custom JSON action contract",
+    "proposed_followup": "The model did select a new Chapter 5 question, but nested it in args and omitted the required control metadata. It was not executed after the protocol guard exhausted its attempts.",
+    "interpretation": "Compliance with the tested JSON action schema failed. Basic text and JSON generation passed. Final narrative-answer quality and native tool-call behavior remain unassessed."
+  },
+  "limits": [
+    "One question and one bounded agent run; no repeated-run latency statistics.",
+    "Time until protocol failure is not latency to a successful answer.",
+    "The server used eager execution and shared Spark 2 with Clef; other model tests used different runtimes or cloud hosts.",
+    "Reasoning effort none still emitted reasoning tokens, included in total usage.",
+    "This tests text retrieval and the custom action schema; image input, native tool calls and speculative decoding were not tested."
+  ]
+}

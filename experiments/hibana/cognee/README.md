@@ -3,7 +3,15 @@
 **Completed:** all three arms ingested the seven files and answered ten
 source-grounded questions with their own reader and again with the same vLLM
 reader. The existing Cognee database and configuration remain untouched.
-Hibana exact is restored; fast is stopped and retained.
+The latest [Phandelver follow-up](../../../phandelver-cognee-chunking-results.md#hibana-fast-original-questions-and-module-synthesis-2026-11-21)
+reused the corrected adaptive index for 48 factual questions and the general
+module question. Hibana fast took **3.41 s p50 / 4.32 s p95**, versus pinned
+Qwen vLLM's 4.68 / 6.16 s, scoring **44/47** versus 45/47. Its one-pass module
+answer took **14.87 s**; the five-search agent took **84.51 s**. Both narrative
+answers retained grounding failures. The receipts distinguish this reader-only
+trial from the earlier ToEE ingestion experiment below.
+
+Historical ToEE completion: Hibana exact was restored; fast was stopped and retained.
 
 | Measurement | Pinned vLLM | Hibana exact | Hibana fast |
 |---|---:|---:|---:|
