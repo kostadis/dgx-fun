@@ -1,0 +1,380 @@
+{
+  "experiment": "Inkling 2 Mini with schema-guided sequential research over the adaptive Phandelver Cognee index",
+  "question": "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+  "agent_model": "inkling-2-mini",
+  "cognee_reader_model": "inkling-2-mini",
+  "ingestion_model": "qwen3.8-flash-next",
+  "generation_provider": "openai",
+  "action_response_format": "json_schema",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "embedding_digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+  "top_k_per_search": 15,
+  "max_searches": 8,
+  "generation_backend": "http://192.168.1.121:8004",
+  "agent_policy_identical_to_qwen": true,
+  "initial_reader_messages_identical_to_qwen": true,
+  "action_schema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": [
+          "search",
+          "finish"
+        ]
+      },
+      "query": {
+        "type": "string"
+      },
+      "decision_summary": {
+        "type": "string"
+      },
+      "remaining_gaps": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "answer": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "query",
+      "decision_summary",
+      "remaining_gaps",
+      "answer"
+    ],
+    "additionalProperties": false
+  },
+  "sampling": {
+    "thinking": "none",
+    "reasoning_effort": "none",
+    "temperature": 0,
+    "seed": 604
+  },
+  "script_sha256": "c1d116a75a3ec01e2e5cd75f884b559fdff1e3afeb9431a7f40aef3e422c0ee5",
+  "transport_sha256": null,
+  "source_manifest_sha256": "b6771d67e9e7e090da15cb3317a2b250e9ea7b6c2b539fb84edadf458fb7ceb1",
+  "question_sha256": "c7dc37f685d9277e1f4b8fc4981e3aa46c17b04be48daf85c73d359140590a11",
+  "fresh_session_per_search": true,
+  "auto_feedback": false,
+  "manual_followup_queries": false,
+  "prior_answers_seeded": false,
+  "outcome": "agent_finished",
+  "autonomous_finish": true,
+  "searches": 7,
+  "llm_calls": 14,
+  "reader_calls": 7,
+  "agent_calls": 7,
+  "protocol_corrections": 0,
+  "client_wall_seconds_including_worker_startup": 499.3174977302551,
+  "research_seconds_excluding_worker_startup": 494.63964185699297,
+  "usage": {
+    "prompt_tokens": 90787,
+    "completion_tokens": 14191,
+    "total_tokens": 104978
+  },
+  "estimated_api_cost_usd": null,
+  "cost_scope": "Local inference and embeddings; hardware and electricity costs unpriced.",
+  "timing_scope": "Starts after cloning/endpoint setup; includes worker startup, retrieval, reader and agent calls, protocol corrections and final graph check. Excludes ingestion, installation/download, kernel preparation, smoke calls and source review.",
+  "raw_sources": 31,
+  "queries": [
+    "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+    "Phandelver and Below: The Shattered Obelisk Chapter 6 The Shattered Obelisk Drow Vault what happens after Wave Echo Cave",
+    "Phandelver and Below Chapter 5 Paths of Peril transition from Wave Echo Cave map Gwyn Oresong obelisk fragments what characters carry forward",
+    "Phandelver and Below Chapter 5 Paths of Peril end map Return to Phandalin Gwyn Oresong obelisk fragments transition to Chapter 6",
+    "Phandelver and Below Chapter 5 \"Return to Phandalin\" Gwyn Oresong map end of chapter transition Chapter 6",
+    "Phandelver and Below Nezznar the Spider Sawplee goblins mind flayers relationship first part second part",
+    "Phandelver and Below Chapter 4 Wave Echo Cave ending Forge of Spells treasure Gundren Nundro what characters gain after defeating Nezznar"
+  ],
+  "decisions": [
+    {
+      "action": "search",
+      "query": "Phandelver and Below: The Shattered Obelisk Chapter 6 The Shattered Obelisk Drow Vault what happens after Wave Echo Cave",
+      "decision_summary": "Need to find how the adventure's second part (Drow Vault / Shattered Obelisk) connects to Wave Echo Cave and what the party carries forward.",
+      "remaining_gaps": [
+        "What the adventurers gain or carry from Wave Echo Cave into the second part",
+        "How Chapter 6/Drow Vault connects to the first part"
+      ]
+    },
+    {
+      "action": "search",
+      "query": "Phandelver and Below Chapter 5 Paths of Peril transition from Wave Echo Cave map Gwyn Oresong obelisk fragments what characters carry forward",
+      "decision_summary": "Need the explicit handoff from Chapter 4/Wave Echo Cave into Chapter 5 and the second half, including the map and any items/knowledge passed on.",
+      "remaining_gaps": [
+        "Exact contents/events of Chapter 5 and how it connects to Wave Echo Cave",
+        "Whether Forge of Spells or obelisk shards from Wave Echo Cave are carried into the second half"
+      ]
+    },
+    {
+      "action": "search",
+      "query": "Phandelver and Below Chapter 5 Paths of Peril end map Return to Phandalin Gwyn Oresong obelisk fragments transition to Chapter 6",
+      "decision_summary": "Need the explicit handoff from Chapter 5 into Chapter 6: what the characters carry forward (map, fragments, clues) and how Gwyn Oresong/Zorzula's Rest connect to the Drow Vault.",
+      "remaining_gaps": [
+        "Exact contents/sequence of Chapter 5's ending and the map handed to Chapter 6",
+        "Whether obelisk fragments or other items from Wave Echo Cave carry into the Obelisk half"
+      ]
+    },
+    {
+      "action": "search",
+      "query": "Phandelver and Below Chapter 5 \"Return to Phandalin\" Gwyn Oresong map end of chapter transition Chapter 6",
+      "decision_summary": "Need the exact end-of-Chapter-5 handoff: the map, Gwyn Oresong's guidance, and what the party carries into Chapter 6.",
+      "remaining_gaps": [
+        "Exact Return to Phandalin section text and Gwyn Oresong's location details",
+        "Exact map markings and what the party carries forward"
+      ]
+    },
+    {
+      "action": "search",
+      "query": "Phandelver and Below Nezznar the Spider Sawplee goblins mind flayers relationship first part second part",
+      "decision_summary": "Need to determine whether the first part's Spider/Wave Echo Cave antagonist is explicitly linked to the second part's Sawplee goblins/mind flayers, or only thematically/sequentially.",
+      "remaining_gaps": [
+        "Explicit relationship between Nezznar/Spider and Sawplee goblins or mind flayers",
+        "Any carry-forward items from Wave Echo Cave into Chapter 5"
+      ]
+    },
+    {
+      "action": "search",
+      "query": "Phandelver and Below Chapter 4 Wave Echo Cave ending Forge of Spells treasure Gundren Nundro what characters gain after defeating Nezznar",
+      "decision_summary": "Need the explicit end-of-Chapter-4 outcome and any carry-forward items/characters before answering how the first half feeds the second.",
+      "remaining_gaps": [
+        "Exact Chapter 4 ending and treasure/character outcomes",
+        "Any explicit link from Wave Echo Cave to Chapter 5/Obelisk plot"
+      ]
+    },
+    {
+      "action": "finish",
+      "query": "",
+      "decision_summary": "The retrieved sources explicitly define the two halves and give the Chapter 4 ending handoff: defeat Nezznar, reclaim Wave Echo Cave, return to Phandalin, and find a new goblin threat. They also describe Chapter 5/6 as the mind-flayer/obelisk plot. No further search is needed for the core connection.",
+      "remaining_gaps": []
+    }
+  ],
+  "audit": {
+    "queries_audited": 7,
+    "contextual_chunk_appearances_verified": 38,
+    "agent_calls_verified_against_latest_answer_and_source_union": 7,
+    "local_request_model_and_reasoning_checks": 14,
+    "cloned_graph_counts_unchanged": true,
+    "original_adaptive_files_hash_verified": 30,
+    "historical_json_artifacts_hash_verified": 4430
+  },
+  "qwen_adaptive_comparison": {
+    "outcome": "agent_finished",
+    "searches": 5,
+    "llm_calls": 10,
+    "client_wall_seconds_including_worker_startup": 143.41044664382935,
+    "research_seconds_excluding_worker_startup": 139.99138074999792,
+    "usage": {
+      "prompt_tokens": 57057,
+      "completion_tokens": 4375,
+      "total_tokens": 61432
+    },
+    "source_review": {
+      "assessment": "Recovered the main return-to-Phandalin and Chapter 5 investigation, but the final answer retains material unsupported claims.",
+      "quality_verdict": "material_grounding_errors",
+      "improvements": [
+        "Correctly identifies Chapters 1-4 and 5-8 and the return to Phandalin.",
+        "Finds the crime-investigation, Ruxithid and mind-flayer link, mainly through introduction chapter summaries.",
+        "Drops the original Forge/Obelisk causal speculation."
+      ],
+      "remaining_errors": [
+        {
+          "claim": "A note on the Wave Echo Cave goblin corpse explains the missing shards.",
+          "finding": "Invented note. The retrieved S006 passage is GM narration about the scouts finding no shards, not a discoverable message.",
+          "source_label": "S006"
+        },
+        {
+          "claim": "First-half bandits were pawns or distractions in the mind-flayer conspiracy.",
+          "finding": "Unsupported hierarchy and causal link. Retrieved S012 and S021 describe fanatics operating during the first arc and searching quietly alongside local bandit struggles.",
+          "source_labels": [
+            "S012",
+            "S021"
+          ]
+        },
+        {
+          "claim": "The corpse explicitly reveals the Obelisk plot to the characters.",
+          "finding": "Fails to distinguish GM knowledge from character knowledge. The source-book qualifier limiting what characters can learn was absent from the 27 retrieved passages; the agent filled that gap with the invented note."
+        }
+      ],
+      "retrieval_limits": [
+        "A targeted query for Chapter 4 What’s Next returned no new raw sources and did not retrieve the actual section.",
+        "The final answer omitted the mine-profit stake and Nundro handoff; most of its recovered Chapter 5 bridge came from introductory summaries."
+      ],
+      "stopping_assessment": "Declared remaining_gaps empty and finished despite material grounding errors; automatic stopping did not establish correctness."
+    }
+  },
+  "limits": [
+    "Single question and one successful Inkling trial, without repeated-run timing statistics.",
+    "Graph and stored summaries were extracted by Qwen; this is a generation and research-policy test, not Inkling reingestion.",
+    "Both the reader and research-agent model changed together.",
+    "Different models, tokenizers, runtimes and shared-device activity limit speed comparisons.",
+    "Provenance auditing does not establish answer correctness.",
+    "Prefix-cache state and server load were not reset or matched; elapsed time is not an isolated performance effect of the format change."
+  ],
+  "baseline_format_failure": {
+    "outcome": "action_schema_guard",
+    "final_answer_produced": false,
+    "searches": 2,
+    "llm_calls": 6,
+    "client_wall_seconds_until_failure": 137.94187569618225,
+    "usage": {
+      "prompt_tokens": 26982,
+      "completion_tokens": 3447,
+      "total_tokens": 30429
+    },
+    "source_review": {
+      "quality_verdict": "not_completed",
+      "assessment": "Inkling proposed a new follow-up in a nested args array but omitted required top-level query, decision_summary and remaining_gaps fields. All three attempts after the second search failed the same action contract.",
+      "narrative_answer_quality": "unassessed; no final answer",
+      "native_tool_calling": "unassessed; this test uses a custom JSON action contract",
+      "proposed_followup": "The model did select a new Chapter 5 question, but nested it in args and omitted the required control metadata. It was not executed after the protocol guard exhausted its attempts.",
+      "interpretation": "Compliance with the tested JSON action schema failed. Basic text and JSON generation passed. Final narrative-answer quality and native tool-call behavior remain unassessed."
+    }
+  },
+  "thinking_output_tokens": 8589,
+  "haiku_adaptive_comparison": {
+    "agent_model": "claude-haiku-5-5",
+    "outcome": "agent_finished",
+    "searches": 2,
+    "llm_calls": 5,
+    "client_wall_seconds_including_worker_startup": 28.721989393234253,
+    "usage": {
+      "prompt_tokens": 28633,
+      "completion_tokens": 3418,
+      "total_tokens": 32051
+    },
+    "source_review": {
+      "quality_verdict": "supported_but_incomplete",
+      "assessment": "The final answer is cautious and its substantive factual statements match the retrieved raw passages, but it does not answer the central narrative-handoff question.",
+      "supported": [
+        "Correctly distinguishes Chapters 1-4 from Chapters 5-8 and identifies the level-5 handoff.",
+        "Accurately summarizes the Rockseekers, Nezznar and Wave Echo Cave setup.",
+        "Explicitly says the narrative transition has not been verified."
+      ],
+      "avoided_qwen_errors": [
+        "Does not invent a note on the goblin corpse.",
+        "Does not claim the earlier bandits are pawns of the mind flayers.",
+        "Does not assert a Forge/Obelisk causal connection in the final answer."
+      ],
+      "missing": [
+        "Return to Phandalin and its new goblin crimes as the Chapter 5 hook.",
+        "Nundro homecoming and the mine-profit stake.",
+        "Ruxithid and the investigation leading from local crimes into the fanatics plot.",
+        "Parallel timing of the fanatics activities and the distinction between GM and character knowledge of the goblin corpse."
+      ],
+      "retrieval_coverage": "Initial search retrieved the same seven raw chunks and identical reader messages as Qwen. The only follow-up added one introduction chunk describing the two-part structure. No raw Chapter 5 passage or actual Chapter 4 ending entered the source union.",
+      "stopping_failure": "Stopped after two of eight allowed searches despite acknowledging useful unresolved gaps. A finish-with-gaps action was rejected; the next action removed the gap list and retained uncertainty in the answer, without another search.",
+      "relevance_issue": "Includes incidental streambed and rift details that do not establish the transition.",
+      "no_manual_revision": "The saved model answer is unchanged; this review was performed after the run."
+    }
+  },
+  "sonnet_adaptive_comparison": {
+    "agent_model": "claude-sonnet-5-5",
+    "outcome": "agent_finished",
+    "searches": 3,
+    "llm_calls": 6,
+    "client_wall_seconds_including_worker_startup": 52.98091149330139,
+    "usage": {
+      "prompt_tokens": 56833,
+      "completion_tokens": 4799,
+      "total_tokens": 61632
+    },
+    "source_review": {
+      "quality_verdict": "core_narrative_handoff_supported",
+      "reviewer": "Codex post-run review against actual retrieved raw passages and the source corpus",
+      "assessment": "Best of these three sequential answers on the tested question: the main handoff is recovered and supported, with no material invented causal connection found in review.",
+      "supported": [
+        "Part 1 resolves the Spider and mine plot and can stand alone.",
+        "Chapter 4 explicitly offers continuation through strange goblins and the return to Phandalin; the final answer uses this actual ending.",
+        "The Chapter 5 investigation leads through the Sawplees and Ruxithid to the mind flayer fanatics and later shard hunt.",
+        "Early psionic-goblin foreshadowing, the mine-profit reward and level handoff provide continuity."
+      ],
+      "avoided_prior_errors": [
+        "No invented note on the Wave Echo Cave goblin corpse.",
+        "No claim that Nezznar or the earlier bandits were mind-flayer pawns.",
+        "No asserted Forge of Spells to Obelisk power connection.",
+        "Does not end with the main Chapter 5 handoff unresolved, unlike Haiku."
+      ],
+      "stopping_assessment": "Finished after sources supplied the Chapter 4 ending, Chapter 5 transition and later shard-hunt link. Three observed searches and three subsequent decisions; no protocol correction or reviewer-selected follow-up.",
+      "limits": [
+        "Does not explicitly state the restriction on what characters can learn from the W1 corpse; that sentence was absent from the raw source union. It presents the scouts as GM foreshadowing and does not turn that knowledge into a discoverable note.",
+        "The exact Chapter 5 sentence about background activity was not retrieved. The answer supports separate narrative arcs and prior goblin scouting without claiming that Nezznar caused the supernatural plot.",
+        "This is one reviewed question, not a general model or chunking benchmark."
+      ],
+      "all_individual_and_grouped_citations_valid": true,
+      "answer_word_count_whitespace": 584,
+      "model_answer_unchanged_after_review": true
+    }
+  },
+  "installation": {
+    "stage": "ready-and-smoke-passed",
+    "started_unix": 1795305538.3443592,
+    "host": "spark2",
+    "endpoint": "http://192.168.1.121:8004",
+    "model": "thinkingmachines/Inkling-2-Mini",
+    "model_revision": "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+    "image": "vllm/vllm-openai@sha256:ecdf0ccc663d86332459f5a50a38c30861a5079bc3924aa08fdc657ef10dd648",
+    "existing_clef_container": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+    "existing_clef_image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+    "existing_clef_started_at": "2026-11-16T16:37:30.622950237Z",
+    "max_model_len": 65536,
+    "gpu_memory_utilization": 0.26,
+    "max_num_seqs": 1,
+    "enforce_eager": true,
+    "speculative_decoding": false,
+    "ready_checked_unix": 1795306238.467736,
+    "container_id": "b84da56b404df66147bfde69d3fcf6a7b3fb30726673bb06a8a61079912f5ba9",
+    "image_id": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+    "container_started_at": "2026-11-22T00:05:16.14990143Z",
+    "vllm_version": "0.1.dev25855+g7cb5dae22",
+    "torch_version": "2.14.0+cu130",
+    "cuda_version": "13.0",
+    "weights_sha256_verified": true,
+    "model_weight_memory_gib": 17.64,
+    "available_kv_cache_memory_gib": 12.92,
+    "smoke_reasoning_tokens": 93,
+    "reasoning_effort": "none",
+    "clef_identity_unchanged_at_ready": true,
+    "clef_health_at_ready": true,
+    "host_mem_available_gib_at_ready": 23
+  },
+  "excluded_format_probe_usage": {
+    "prompt_tokens": 5301,
+    "total_tokens": 5497,
+    "completion_tokens": 196,
+    "completion_tokens_details": {
+      "reasoning_tokens": 45
+    }
+  },
+  "excluded_format_probe_seconds": 7.375526460004039,
+  "exact_failure_replay_changed_only_response_format": true,
+  "source_review": {
+    "quality_verdict": "core_handoff_recovered_with_caveats",
+    "reviewer": "Codex post-run review against retrieved raw passages and source corpus",
+    "assessment": "Schema guidance resolves the action-format failure. The final answer recovers the main Chapter 4-to-5 narrative handoff and avoids the unsupported Forge/Obelisk and Nezznar/mind-flayer causal links.",
+    "supported": [
+      "Correctly identifies Chapters 1-4 and Chapters 5-8 and the level handoff.",
+      "Uses the actual Chapter 4 ending: Nundro homecoming, return to Phandalin, strange goblins and the mine-profit stake.",
+      "Links Chapter 5 crimes and investigation through Ruxithid to the mind flayer fanatics and later shard hunt.",
+      "Qualifies the lack of an explicit Nezznar-to-mind-flayer connection."
+    ],
+    "caveats": [
+      {
+        "issue": "Geography is overgeneralized as the Chapter 6 dungeons being beneath Phandalin.",
+        "assessment": "The caption in retrieved S015 uses this broad framing, while the full Chapter 6 map text more specifically places the locations in the Starmetal Hills northeast of town. A precise geographical answer needs that distinction."
+      },
+      {
+        "issue": "The phrase goblin-body note is ambiguous.",
+        "assessment": "Retrieved S006 is GM narration, not a physical message on the corpse. The final answer does not explicitly invent a player-readable note, but its wording should say GM narration. The sentence limiting what characters can learn was absent from the retrieved union."
+      }
+    ],
+    "stopping_assessment": "Finished autonomously after search 7 retrieved the actual Chapter 4 ending; did not hit the search cap.",
+    "all_cited_source_labels_valid": true,
+    "answer_word_count_whitespace": 431,
+    "model_answer_unchanged_after_review": true
+  },
+  "comparison_assessment": "The opt-in schema-guided mode removed the observed format failure without changing retrieval policy or weakening the validator. It changes the decoding constraint and subsequent query path; this is a separate diagnostic, not a replacement for the failed plain-JSON result. Grounding and stopping quality still require review.",
+  "workaround_trial_and_probe_total_tokens": 110475
+}

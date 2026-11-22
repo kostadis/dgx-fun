@@ -1,0 +1,195 @@
+{
+  "before": {
+    "started_unix": 1795309578.3767424,
+    "services": [
+      {
+        "name": "clef-card-train",
+        "id": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+        "image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+        "running": true,
+        "started": "2026-11-16T16:37:30.622950237Z"
+      },
+      {
+        "name": "inkling2mini",
+        "id": "b84da56b404df66147bfde69d3fcf6a7b3fb30726673bb06a8a61079912f5ba9",
+        "image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+        "running": true,
+        "started": "2026-11-22T00:05:16.14990143Z"
+      }
+    ]
+  },
+  "restoration": {
+    "started_unix": 1795309996.56,
+    "finished_unix": 1795310647.6525483,
+    "passed": true,
+    "errors": [],
+    "services": [
+      {
+        "name": "clef-card-train",
+        "id": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+        "image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+        "started": "2026-11-22T01:13:19.868943944Z",
+        "health": 200,
+        "health_host": "192.168.1.121"
+      },
+      {
+        "name": "inkling2mini",
+        "id": "b84da56b404df66147bfde69d3fcf6a7b3fb30726673bb06a8a61079912f5ba9",
+        "image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+        "started": "2026-11-22T01:19:20.706874903Z",
+        "health": 200,
+        "health_host": "192.168.1.121"
+      }
+    ],
+    "readiness_probe_correction": {
+      "original_host": "127.0.0.1",
+      "configured_inkling_bind": "192.168.1.121",
+      "terminated_helper_pid": 2663099,
+      "reason": "Both services restored successfully; original helper polled an address where Inkling is not bound. Reverified actual published endpoints and model identity before ending the stale poll."
+    }
+  },
+  "server_requests_completed": 60,
+  "expected_requests_including_one_smoke": 60,
+  "speculation_after": {
+    "rounds": 1593,
+    "proposed": 9604,
+    "accepted": 6470,
+    "emitted": 7891,
+    "accept_rate": 0.6736776343190337,
+    "tokens_per_round": 4.953546767106089,
+    "state_strategy": "reconstruct",
+    "verify_buffer_bytes": 107993088,
+    "verify_depth": 8,
+    "verify_depths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "round_ms": 40.96399302031946,
+    "relaxed_accepts": 801
+  },
+  "cache_after": {
+    "hits": 3,
+    "misses": 65,
+    "evictions": 37,
+    "snapshot_evictions": 2,
+    "cached_tokens": 248342,
+    "flush_pending": false,
+    "locks": {
+      "total": 0
+    },
+    "snapshots": {
+      "spare": 34,
+      "not_spare": 60
+    },
+    "evicted": {
+      "flush": {
+        "not_spare": 3,
+        "spare": 8
+      },
+      "slots": {
+        "spare": 26
+      },
+      "superseded": {
+        "spare": 2
+      }
+    },
+    "pruned": 5,
+    "full_reprefills": 1,
+    "branching_resumes": 3,
+    "evictable": {
+      "kv_tokens": 248342,
+      "kv_tokens_protected": 0,
+      "snapshots": 94,
+      "snapshots_protected": 0
+    },
+    "ssd": {
+      "nodes": 344,
+      "demotions": 14,
+      "promotions": 2,
+      "evictions": 67,
+      "prefixes": 313,
+      "used_gib": 39.904,
+      "budget_gib": 40.0,
+      "block_tokens": 256,
+      "queued_blocks": 0,
+      "staged_mib": 0.0,
+      "backed_blocks": 641,
+      "tails": 58,
+      "tails_written_through": 58,
+      "tails_through_dropped": 0,
+      "queued_tails": 0,
+      "forced_gathers": 0,
+      "evict_dropped": 0,
+      "restores": 0,
+      "restore_fails": 0,
+      "restored_tokens": 0,
+      "restored_kv_tokens": 0,
+      "waited_for_writes": 0,
+      "deleted": 447,
+      "evict_ms_total": 0.5,
+      "evict_ms_max": 0.1,
+      "settle_ms_total": 0.0,
+      "settle_ms_max": 0.0,
+      "room_waits": 0,
+      "room_wait_writes": 0,
+      "room_wait_ms_total": 0.0,
+      "room_wait_ms_max": 0.0,
+      "step_ms_total": 649.8,
+      "step_ms_max": 74.1,
+      "restore_ms_avg": 0.0,
+      "async_restores": 0,
+      "restore_wait_steps": 0,
+      "restore_blocked_ms_total": 0.0,
+      "restore_gib": 0.0,
+      "restore_read_gbps": 0.0,
+      "restore_scatter_ms_avg": 0.0,
+      "restore_e2e_gbps": 0.0,
+      "store": {
+        "dir": "/home/kostadis/hibana-trial/results-fast/ssd/flashnext/v2/e0",
+        "writes": 699,
+        "reads": 0,
+        "deletes": 447,
+        "write_gib": 8.642,
+        "read_gib": 0.0,
+        "write_errors": 0,
+        "read_errors": 0,
+        "last_error": null,
+        "pending": 0,
+        "writers": 4,
+        "direct_writes": true,
+        "write_ms_avg": 12.18,
+        "read_ms_avg": 0.0
+      }
+    },
+    "draft_resumes": {
+      "hits": 3,
+      "fallbacks": 0
+    }
+  },
+  "smoke_excluded_usage": {
+    "prompt_tokens": 27,
+    "completion_tokens": 4,
+    "total_tokens": 31,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "reasoning_tokens": 0
+  },
+  "qwen_after": {
+    "id": "d3101a551c95e378fa98b60d69c3dd586ce2ee854c37bf24c98a2ddfa3b0f2b5",
+    "image": "sha256:f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d",
+    "started": "2026-11-16T22:36:25.732245423Z",
+    "running": true
+  },
+  "hibana_fast_final_state": "stopped",
+  "temporary_ssh_tunnel": "closed",
+  "model_switching_excluded_from_query_timings": true,
+  "restoration_and_readiness_verification_seconds": 651.0925483703613,
+  "restoration_timing_note": "Includes reloads and correction of a localhost readiness probe; exact first-available time was not measured."
+}

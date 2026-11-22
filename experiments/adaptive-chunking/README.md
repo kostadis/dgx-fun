@@ -194,3 +194,12 @@ recovered two other misses, while introducing one new retrieval miss. The
 eight-call run recovered from a client VM crash; its ingestion timing is not a
 continuous benchmark. A separate item-rarity error remains in the graph. See
 the report and [corrected metrics](cognee/context-results.json) for the limits.
+
+Later reader swaps reused the corrected index. The
+[Hibana fast replay](cognee/hibana-fast-question-results.json) took 3.41 s p50 /
+4.32 s p95 and scored 44/47, versus pinned Qwen's 4.68 / 6.16 s and 45/47.
+The [Inkling replay](cognee/inkling-question-results.json) took 12.10 / 18.60 s,
+scoring 44/47 strictly or 45/47 with lenient wording. All 48 reader messages
+matched across these factual runs. The full report also records Hibana fast's
+one-pass and agent answers to the general module question, including their
+remaining grounding errors.

@@ -1,7 +1,14 @@
 # Phandelver adaptive chunking in Cognee
 
-For a combined account of the factual benchmark and Qwen/Haiku/Sonnet narrative
+For a combined account of the factual benchmark and all model/engine narrative
 experiments, see the [linked write-up](phandelver-cognee-agent-results.md).
+
+The later reader-only comparison found **3.41 s median and 44/47 complete
+factual answers with Hibana fast**, versus **4.68 s and 45/47 with pinned Qwen
+vLLM**, and **12.10 s with Inkling vLLM** (44/47 strict, 45/47 lenient).
+Hibana fast also ran the general module question in one pass and through an
+agent. Both were faster than the corresponding Qwen runs but retained grounding
+failures. See the [Hibana fast follow-up](#hibana-fast-original-questions-and-module-synthesis-2026-11-21).
 
 The heading-loss defect is repaired in the experimental Cognee adapter. The
 full corrected follow-up, completed on **2026-11-21**, produced **45/47 complete
@@ -523,6 +530,348 @@ The [Sonnet receipt](experiments/adaptive-chunking/cognee/sonnet-sequential-resu
 contains metrics, decisions and source review. Full answers, native captures,
 evidence and readable traces are saved privately under
 `raw/pabtso/cognee-20261120/sonnet-sequential-20261121/`.
+
+### Inkling 2 Mini on Spark 2 (2026-11-21)
+
+The user requested another local-model comparison after the Qwen, Haiku and
+Sonnet experiments. The original `thinkingmachines/Inkling-2-Mini` checkpoint
+was installed from revision `b85c3cfa615fc413cc9af3379f491b963f3b586a`, using
+the official ARM64 vLLM image pinned by digest. Both the 19.5 GB main weights
+and bundled 636 MB draft passed SHA-256 checks. The draft was downloaded but
+speculative decoding was not enabled.
+
+Inkling runs in its own container on Spark 2, alongside Clef, with a separate
+OpenAI-compatible endpoint at `http://192.168.1.121:8004/v1` and served name
+`inkling-2-mini`. The runtime reported vLLM `0.1.dev25855+g7cb5dae22`, PyTorch
+`2.14.0+cu130`, and CUDA 13.0 on the GB10. The source checkpoint's native
+mixed precision was retained. Text-only operation, a 65,536-token context,
+one active request, eager execution and GPU-memory utilization 0.26 kept the
+installation within the shared host's available memory. Model loading reported
+17.64 GiB of weight memory and 12.92 GiB available for KV cache. These settings
+differ from a dedicated-host performance configuration.
+
+Plain-text and JSON smoke requests passed. The same adaptive index, original
+question, `top_k=15`, eight-search cap, agent policy and Ollama embeddings were
+then reused with Inkling as both reader and agent. The original reader messages
+were exactly identical to Qwen's first turn. No previous answers or manually
+selected follow-ups were supplied.
+
+| Measurement | Inkling same-policy trial |
+|---|---:|
+| Completed searches | 2 |
+| Model calls | 6: two readers and four agent calls |
+| Client time until guard failure | 137.94 s |
+| Input tokens | 26,982 |
+| Output tokens, including reasoning | 3,447 |
+| Reasoning tokens within output | 1,946 |
+| Total tokens | 30,429 |
+| Accumulated raw passages | 9 |
+| Final answer | None |
+
+The first decision selected a Chapter 5/6 follow-up and met the action contract.
+After reading the second response, all three permitted attempts returned a
+shape equivalent to:
+
+```json
+{"action": "search", "args": [{"query": "a new Chapter 5 question"}]}
+```
+
+The required top-level query, decision summary and gap list were missing. The
+guard rejected the actions, and the run stopped. The model was choosing a new
+question, but could not express it in the specified control schema despite
+feedback. All six HTTP calls succeeded and ended naturally; this was not an
+API transport, truncation or model-server crash. No final narrative answer
+exists to grade. Native tool calling was not exercised by this custom JSON
+contract, so its behavior remains unassessed.
+
+`reasoning_effort="none"` was verified in all captured requests. It reduced the
+requested effort without guaranteeing zero reasoning: native usage recorded
+1,946 reasoning tokens, already included in the output and total counts.
+The two excluded smoke calls took 10.83 seconds and 187 tokens. Installation,
+download, initial kernel preparation, and source review are excluded from the
+137.94-second guard-failure time. Local hardware and electricity were unpriced.
+This time cannot be compared as latency to a successful answer.
+
+Both searches passed the actual-request source audit, verifying nine raw-chunk
+appearances. All four agent calls received the latest response and accumulated
+raw source union. Thirty protected adaptive artifacts and 4,430 historical
+JSON artifacts remained byte-identical. The failed worker stopped before its
+final copied-graph count check, so that field remains unverified. All 26 relevant
+local checks passed after adding the local endpoint and reasoning-effort options.
+
+Inkling remained healthy after the trial. Clef's original container ID, image
+and start time were unchanged, and the Clef and Spark 1 Qwen health endpoints
+both returned HTTP 200. Shared-host available memory was about 54 GiB before
+installation and 21 GiB afterward; swap use rose from roughly 0.65 to 2.2 GiB
+across installation/testing. Those observations do not isolate model footprint
+or effects of other concurrent activity.
+
+The [Inkling receipt](experiments/adaptive-chunking/cognee/inkling-sequential-results.json)
+contains the rejected actions, request audit and usage. The
+[installation/client guide](experiments/inkling/README.md) provides the pinned
+launcher and OpenAI example. Full observations, captures and a readable trace
+are private under `raw/pabtso/cognee-20261120/inkling-sequential-20261121/`.
+This is a completed negative experiment for the existing action protocol;
+the factual scores and earlier model answers are unchanged.
+
+### Inkling schema-guided workaround (2026-11-21)
+
+The format failure was addressed with an opt-in `--action-format json_schema`
+mode. The server now receives the existing five-field action contract as a
+JSON schema with required fields and `additionalProperties:false`. Reader calls,
+retrieval policy, reasoning effort, model weights and the semantic validator
+are unchanged. No server restart was needed. The default remains plain
+`json_object`, preserving the original comparison mode.
+
+First, the exact previously failed decision context was replayed with only
+`response_format` changed. The constrained response supplied a top-level query,
+decision summary and gap list, and passed the original validator. This diagnostic
+took 7.38 seconds and 5,497 tokens, including 45 reasoning tokens. It was not
+used to seed the fresh research run.
+
+| Measurement | Plain JSON baseline | Schema-guided fresh run |
+|---|---:|---:|
+| Outcome | Action-schema guard; no final answer | Agent finished autonomously |
+| Searches | 2 | 7 |
+| Model calls | 6 | 14 |
+| Client time | 137.94 s until failure | 499.32 s to completion |
+| Input tokens | 26,982 | 90,787 |
+| Output tokens | 3,447 | 14,191 |
+| Reasoning tokens within output | 1,946 | 8,589 |
+| Total tokens | 30,429 | 104,978 |
+| Raw source union | 9 | 31 |
+| Invalid action attempts | 3 | 0 |
+
+The schema-guided agent continued past the original failing decision, spent
+several searches on Chapter 5/6 map details, then examined the Spider's relation
+to the later plot and the actual Chapter 4 ending. Search 7 retrieved that
+ending; the agent chose to finish before the eight-search cap. Its final answer
+recovered Nundro's homecoming, the mine-profit stake, the return to Phandalin,
+and the goblin crimes and investigation that lead into the mind flayer plot.
+It qualified the lack of an explicit Nezznar-to-mind-flayer link and did not
+claim a Forge/Obelisk power connection. The answer is 431 words and was not
+revised after the run.
+
+This fixes control-format interoperability. Grounding still required review.
+The answer broadly locates the Chapter 6 dungeons beneath Phandalin, echoing
+a retrieved caption, while the full map description more precisely places
+them in the Starmetal Hills northeast of town. Its phrase "goblin-body note"
+is ambiguous: the retrieved passage is GM narration, not a physical message.
+Unlike Qwen's earlier claim, it does not explicitly assert that the corpse has
+a player-readable note. The character-knowledge restriction remained outside
+the retrieved union. These qualifications are recorded in the source assessment.
+
+All seven reader responses passed the request audit, with 38 contextual chunk
+appearances verified. All seven agent calls received the latest response and
+full accumulated source union; all fourteen calls requested the pinned model
+and lowest reasoning effort, and all agent requests used the schema. They
+returned HTTP 200 and ended naturally. Copied graph counts and 30 protected
+adaptive artifacts stayed unchanged, as did 4,430 historical JSON artifacts.
+
+The 499.32-second client time includes worker startup; the research loop alone
+took 494.64 seconds. The exact-context diagnostic, earlier smoke calls,
+installation and review are excluded. The new run plus its format diagnostic
+used 110,475 tokens. Local hardware/electricity remained unpriced. The failed
+baseline is preserved, and cache state and server load were not reset or matched.
+This is a changed-decoding-constraint diagnostic, with a different search path
+and amount of work, rather than a speed comparison at equal quality.
+
+The [schema-guided receipt](experiments/adaptive-chunking/cognee/inkling-schema-sequential-results.json)
+contains the before/after metrics, replay check, schema and source review. The
+[workaround guide](experiments/inkling/README.md#schema-guided-action-workaround)
+shows the opt-in flag, following
+[vLLM's structured-output interface](https://docs.vllm.ai/en/latest/features/structured_outputs/).
+Full answers and traces remain private under
+`raw/pabtso/cognee-20261120/inkling-schema-sequential-20261121/`.
+
+### Inkling original 48 factual questions (2026-11-21)
+
+The user also requested the original question benchmark, independent of the
+agent flow. Inkling answered all 48 frozen factual questions against a fresh
+copy of the corrected adaptive index. Each question made exactly one Cognee
+`GRAPH_COMPLETION` recall, with `top_k=15`, the original 120-word instruction,
+temperature 0, seed 604 and a fresh UUID session. Questions ran sequentially.
+There were no agent decisions, follow-up searches, ingestion calls or output
+schemas. The original Qwen graph, summaries and Ollama embeddings were reused.
+
+All 48 actual reader message lists and all 48 retrieved raw-chunk sets were
+identical to the corresponding Qwen baseline. This compares answer generation
+over the same retrieved evidence, rather than independently rebuilt indexes.
+
+| Measurement | Qwen reader, corrected adaptive | Inkling reader, same index |
+|---|---:|---:|
+| Completed questions / reader calls | 48 / 48 | 48 / 48 |
+| Complete correct answers, strict source review | 45/47 | 44/47 |
+| Complete correct answers, lenient q20 wording | 45/47 | 45/47 |
+| Recall p50 | 4.68 s | 12.10 s |
+| Recall p95 | 6.16 s | 18.60 s |
+| Sum of all 48 query times | 226.79 s | 636.25 s |
+| Input tokens | 186,523 | 204,946 |
+| Output tokens | 2,808 | 14,674 |
+| Reasoning tokens within output | Thinking disabled | 11,497 |
+| Total model tokens | 189,331 | 219,620 |
+
+Inkling was **2.59 times slower at the median**, **3.02 times slower at p95**,
+and **2.81 times slower over the full question set**. Its query sum was
+10 minutes 36 seconds, versus 3 minutes 47 seconds for Qwen. Including worker
+startup and the final graph check, Inkling took 641.08 seconds. Installation,
+index cloning, earlier agent tests and source review are outside these times.
+All measured answers stayed within the requested word limit.
+
+The two existing retrieval misses remained: q04 lacked the flood timing and
+q22 lacked Ruxithid's rudimentary clairvoyance. Inkling additionally conflated
+the flood warning/command location with the release point and used general
+telepathy background as a substitute for the missing clairvoyance explanation.
+All six adjacent-item questions, including Careful Mind Crystal, were answered
+correctly. No new complete answer was recovered relative to Qwen.
+
+The one-point scoring sensitivity is q20. The source says Ruxithid does not
+know that his supposed gods are mind flayers. Inkling's sentence describes
+him as misunderstanding his gods as being mind flayers, which can be read as
+reversing his belief. The strict review counts this misleading wording as
+incorrect; interpreting it as an awkward statement of the intended source
+fact gives 45/47. Both interpretations are recorded, with the unchanged answer
+preserved. Neither produces a factual accuracy gain over Qwen. The predeclared
+q37 ambiguity remains excluded; q38 retains the original condition-and-round
+rubric. This is Codex source review, not blinded human adjudication.
+
+Despite `reasoning_effort:"none"`, Inkling reported 11,497 reasoning tokens:
+78.35% of its output. Its input tokenizer counted 9.88% more tokens for the
+same messages, while total output was 5.23 times Qwen's. Captured upstream
+model time was 565.80 seconds, 88.93% of Inkling's query sum. These observations
+suggest generation work is a substantial contributor to the latency; they do
+not isolate tokenizer speed from model computation or server configuration.
+
+Both models used vLLM. Qwen was the retained Spark 1
+`RadixArk/Qwen3.8-Flash-Next-NVFP4` checkpoint at revision
+`7b719225242aacd3dbd3f9407468c2ee9a9d2594`, with FP8 hybrid side layers,
+MTP-2 speculation and prefix caching. Inkling used the separate Spark 2
+configuration documented above, with eager execution and no speculative
+decoding, beside Clef. Thus these are deployed-configuration measurements,
+with different runtimes, tokenizers and shared-device conditions, rather than
+a controlled intrinsic model-speed benchmark. Hibana supplied the capture
+harness; its inference engine was stopped. The earlier Hibana `fast` profile
+used a separate W3-calibrated checkpoint,
+`yemara/Qwen3.8-Flash-Next-NVFP4-sharar-w3-qad`; that copy was not used here.
+
+All 48 reader calls returned HTTP 200 and stopped naturally. The audit verified
+329 contextual chunk appearances, 48 unique sessions and unchanged cloned
+graph counts. All 30 protected adaptive artifacts and 4,430 historical JSON
+artifacts retained their hashes. Qwen, Inkling and Clef remained healthy with
+unchanged container identities and start times.
+
+The [factual-question receipt](experiments/adaptive-chunking/cognee/inkling-question-results.json)
+contains per-question timings, token usage, labels, prompt-equality checks,
+model identity and the scoring sensitivity. The
+[question-only runner](experiments/adaptive-chunking/cognee/questions.py) and
+[run instructions](experiments/adaptive-chunking/cognee/README.md#factual-questions-with-a-different-reader-model)
+make this separate from the agent protocol. Full answers, prompts and review
+notes remain under ignored
+`raw/pabtso/cognee-20261120/inkling-questions-20261121/`.
+
+### Hibana fast: original questions and module synthesis (2026-11-21)
+
+Three fresh trials used independent copies of the corrected adaptive index:
+48 single-recall factual questions, one single-recall Wave Echo Cave answer,
+and the same sequential research agent. No documents were reingested. Graph
+extraction, summaries and Ollama embeddings remained from Qwen. The live server
+verified the pinned Hibana `fast` profile and W3 checkpoint
+`yemara/Qwen3.8-Flash-Next-NVFP4-sharar-w3-qad` at
+`5c4c62a62853caebea8cedda7fbed952efa1effe`. It used eight MTP draft tokens,
+FP8 KV, expert sharing and relaxed acceptance. Weights, precision and decoding
+policy change along with the engine; this does not isolate an engine-only gain.
+
+| Factual benchmark | Qwen vLLM | Inkling vLLM | Qwen Hibana fast |
+|---|---:|---:|---:|
+| Complete correct answers | 45/47 | 44/47 strict; 45/47 lenient | 44/47 |
+| Query p50 | 4.68 s | 12.10 s | **3.41 s** |
+| Query p95 | 6.16 s | 18.60 s | **4.32 s** |
+| Query sum, all 48 | 226.79 s | 636.25 s | **168.99 s** |
+| Input tokens | 186,523 | 204,946 | 186,523 |
+| Output tokens, including reported reasoning | 2,808 | 14,674 | 3,033 |
+| Total tokens | 189,331 | 219,620 | 189,556 |
+
+Hibana fast was **1.37 times faster at the median**, **1.43 times faster at
+p95**, and **1.34 times faster over all 48 queries** than pinned Qwen vLLM.
+The query sum was 2 minutes 49 seconds; worker startup and the final graph
+check bring it to 173.82 seconds. All 48 actual reader messages matched Qwen's
+exactly, and both counted the same input tokens. Tokenizer input length does
+not explain this speed difference. Questions ran sequentially at `top_k=15`
+with the unchanged 120-word instruction, temperature 0, seed 604 and fresh sessions.
+
+The existing q04 flood-timing and q22 clairvoyance retrieval misses remained
+clean abstentions. All six item questions passed. The new incorrect answer was
+q09: after naming the historical spellbook recipient correctly, Hibana fast
+claimed Agatha knew the book's location while also admitting she did not know
+what happened afterward. A supplied graph node already conflated Agatha with
+Old Owl Well; the raw passage explicitly limited her knowledge.
+
+Two otherwise complete answers added unsupported qualifications. Q20 extended
+Ruxithid's ignorance of his supposed gods' identity into ignorance of his own
+words; q31 compressed the sinkhole route and named Illithinoch stronghold into
+a precise location/name claim about the suspected elder brain. Requested facts
+were correct in both, so they retain complete-answer credit. Strict review of
+all extra assertions leaves **42/47 fully grounded complete answers**. The
+predeclared q37 exclusion and q38 condition-and-round rubric remain unchanged.
+These are Codex source judgments, not blinded human scores.
+
+| General module question | Qwen vLLM | Hibana fast |
+|---|---:|---:|
+| One-pass query time | 27.76 s | **14.87 s** |
+| One-pass calls / tokens | 1 / 4,981 | 1 / 5,023 |
+| Agent client time | 143.41 s | **84.51 s** |
+| Agent searches / model calls | 5 / 10 | 5 / 10 |
+| Agent total tokens | 61,432 | 60,389 |
+| Agent raw source union | 27 | 24 |
+
+The one-pass answer received the same seven raw passages and identical reader
+messages as Qwen. It still missed the actual transition, guessed that the
+second part began at Chapter 6, and treated Nezznar, the Forge and deeper Drow
+Vault content as the bridge. Its missing-evidence paragraph did not retract
+those claims. Faster generation did not repair missing retrieval.
+
+The agent used the unchanged policy, `top_k=15`, eight-search cap and plain
+`json_object` actions. Five searches and ten calls completed with zero protocol
+corrections. Its final 432-word answer recovered the chapter ranges, level
+progression and broad introduction summary about psionic-goblin crimes. It
+did not invent a physical corpse message or Forge-to-Obelisk power link.
+
+However, it made the absence of shards in Wave Echo Cave into a discovery
+prompting the party to investigate elsewhere. Retrieved source S009 contained
+the full W1 restriction that characters cannot learn anything further then;
+the shard-scout explanation is GM narration. The distinction was available
+and still lost. The agent never retrieved the actual Chapter 4 ending, Nundro
+homecoming, mine-profit stake or precise return-to-Phandalin hook. It stopped
+after identifying that gap, with three searches unused. This is a broader but
+still flawed answer; Sonnet remains the strongest reviewed handoff.
+
+The agent research loop took 75.42 seconds, or 84.51 seconds including worker
+startup and final checks. Its 1.70-times shorter client time than Qwen does not
+establish equal-quality speed: query paths and source unions differed. The
+one-pass 1.87-times speedup likewise compares two flawed answers. Timings
+exclude model switching, source review, cloning, prior ingestion and the
+separate arithmetic smoke request. Cache state and host conditions were not matched.
+
+Audits verified all 48 factual prompts and 329 source appearances, the one-pass
+reader's seven appearances, and the agent's 36 appearances and five
+latest-answer/source-union inputs. All measured calls returned HTTP 200 and
+stopped naturally. Cloned graph counts and protected original artifacts stayed
+unchanged. Full answers, captures and review notes remain under ignored
+`raw/pabtso/cognee-20261120/hibana-fast-20261121/`.
+
+Separate receipts preserve the [48-question results](experiments/adaptive-chunking/cognee/hibana-fast-question-results.json),
+[one-pass module answer](experiments/adaptive-chunking/cognee/hibana-fast-onepass-results.json)
+and [sequential agent](experiments/adaptive-chunking/cognee/hibana-fast-sequential-results.json).
+
+Spark 2's Clef and Inkling containers were temporarily stopped for Hibana's
+memory requirement, then restored with their original IDs and images. Both
+are healthy; Hibana is stopped and the tunnel closed. Spark 1's Qwen container,
+image and start time stayed unchanged. Restoration plus readiness verification
+took 651.09 seconds, including correction of a probe that used localhost for
+Inkling even though its published endpoint binds to the Spark's LAN address.
+This operational time is excluded from query timings; exact first-available
+time was not measured. The [operations receipt](experiments/adaptive-chunking/cognee/hibana-fast-operations.json)
+also reconciles all 60 server requests with 59 measured calls and one smoke.
 
 ## Original raw-chunk comparison (2026-11-20)
 

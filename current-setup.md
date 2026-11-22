@@ -1,5 +1,19 @@
 # Current DGX Spark Setup
 
+<!-- cognee-model-comparison-20261121 -->
+> **CURRENT verification, 2026-11-21:** the Phandelver Cognee trials are complete.
+> Spark1 still serves the unchanged pinned Qwen vLLM container at
+> **192.168.1.147:8001**. Spark2 again serves **Clef and clef-card-tuned at
+> :8002** and **Inkling 2 Mini at :8004**, with the same retained container
+> IDs and images. Both passed health checks after temporary model switching.
+> **Hibana fast is stopped**, its calibrated checkpoint/cache retained, and the
+> temporary SSH tunnel is closed. No application clients were repointed.
+> Factual-query p50: **3.41 s Hibana fast / 4.68 s Qwen vLLM / 12.10 s Inkling**;
+> complete answers: **44/47 / 45/47 / 44/47 strict (45/47 lenient)**.
+> [Results](phandelver-cognee-agent-results.md),
+> [restoration and model-identity receipt](experiments/adaptive-chunking/cognee/hibana-fast-operations.json).
+<!-- /cognee-model-comparison-20261121 -->
+
 <!-- hillsfar-audio-spark1-20261116 -->
 > **RESTORED after audio processing, 2026-11-16:** Spark1's retained
 > `qwen38-flash` container is running again; :8001 health and model discovery
@@ -12,7 +26,7 @@
 
 
 <!-- hibana-fast-user-restart-2026-11-14 -->
-> **CURRENT verification, 2026-11-14 UTC:** at the user's request, spark2 now
+> **Historical verification, 2026-11-14 UTC:** at the user's request, spark2 then
 > runs **`hibana-shadow-fast`**, healthy on **127.0.0.1:30004**. The calibrated
 > checkpoint and SSD cache were reused; readiness took **66.65 seconds** and
 > all **seven API smoke checks passed**. `hibana-shadow-exact` is stopped.

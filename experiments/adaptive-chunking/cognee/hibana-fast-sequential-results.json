@@ -1,0 +1,126 @@
+{
+  "engine": "hibana",
+  "profile": "fast",
+  "served_model": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+  "base_checkpoint_revision": "7b719225242aacd3dbd3f9407468c2ee9a9d2594",
+  "w3_target_identity": "01bd50a3a264642aaa0baed5170b0c3bc9f19fdb7e613aa0d85e940b93db6225",
+  "calibrated_checkpoint": "yemara/Qwen3.8-Flash-Next-NVFP4-sharar-w3-qad",
+  "calibrated_revision": "5c4c62a62853caebea8cedda7fbed952efa1effe",
+  "engine_commit": "d474b74d5a892b2cd1cc8fc50cb17946e2a539bb",
+  "ingestion_model": "qwen3.8-flash-next",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "top_k": 15,
+  "source_manifest_sha256": "b6771d67e9e7e090da15cb3317a2b250e9ea7b6c2b539fb84edadf458fb7ceb1",
+  "original_protected_files_verified": 30,
+  "historical_json_hashes_verified": 4430,
+  "limits": [
+    "Single pass per question, not repeated timing runs.",
+    "Same Qwen-ingested graph, summaries and embeddings; no Hibana reingestion.",
+    "Hibana fast changes quantization, expert policy and speculative acceptance as well as engine.",
+    "Baseline and new runs occurred at different times; caches and device load were not matched.",
+    "Source review is Codex assessment, not blinded human adjudication."
+  ],
+  "experiment": "Sequential Wave Echo Cave research with Hibana fast",
+  "question": "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+  "action_response_format": "json_object",
+  "outcome": "agent_finished",
+  "searches": 5,
+  "llm_calls": 10,
+  "reader_calls": 5,
+  "agent_calls": 5,
+  "protocol_corrections": 0,
+  "research_seconds": 75.42055827600416,
+  "client_wall_seconds_including_startup": 84.51088404655457,
+  "usage": {
+    "prompt_tokens": 56283,
+    "completion_tokens": 4106,
+    "total_tokens": 60389
+  },
+  "raw_sources": 24,
+  "queries": [
+    "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+    "What is the significance of the obelisk shards in Wave Echo Cave and how do they connect to the Shattered Obelisk plot in the second part?",
+    "What is the Shattered Obelisk and how does the first part of the adventure introduce it?",
+    "What is the specific connection between the Drow Vault and the Shattered Obelisk plot in the second part of the adventure?",
+    "What is the specific connection between the Forge of Spells and the Shattered Obelisk, and how does the first part's conclusion set up the second part?"
+  ],
+  "decisions": [
+    {
+      "action": "search",
+      "query": "What is the significance of the obelisk shards in Wave Echo Cave and how do they connect to the Shattered Obelisk plot in the second part?",
+      "decision_summary": "The first search established the narrative and mechanical link between the first and second parts, but missed the specific role of the 'Shattered Obelisk' artifact. The raw source [S006] mentions 'obelisk shards' in the context of goblin scouts, which is a critical clue linking the first part's cave exploration to the second part's title and plot. I need to investigate how these shards and the obelisk itself are introduced and used in the second part.",
+      "remaining_gaps": [
+        "The specific role of the 'Shattered Obelisk' artifact and its connection to the first part's events.",
+        "The significance of the 'obelisk shards' mentioned in the first part.",
+        "How the second part's plot (Shattered Obelisk) directly continues from the first part's conclusion."
+      ]
+    },
+    {
+      "action": "search",
+      "query": "What is the Shattered Obelisk and how does the first part of the adventure introduce it?",
+      "decision_summary": "The current evidence confirms the first part sets up the cave and Nezznar, but lacks explicit details on how the Shattered Obelisk artifact is introduced or its direct connection to the first part's events. I need to find the specific definition or introduction of the Shattered Obelisk in the source material.",
+      "remaining_gaps": [
+        "Definition and origin of the Shattered Obelisk",
+        "Specific narrative links between the first part's events and the second part's Obelisk plot",
+        "Details on how the party transitions from the cave to the second part"
+      ]
+    },
+    {
+      "action": "search",
+      "query": "What is the specific connection between the Drow Vault and the Shattered Obelisk plot in the second part of the adventure?",
+      "decision_summary": "The first part (Wave Echo Cave) establishes the setting and Nezznar's defeat, but the second part (Shattered Obelisk) introduces a new threat (Ilvaash/mind flayers) and a new artifact (the obelisk). The current evidence shows the obelisk is absent in Wave Echo Cave, but doesn't explain how the second part begins or how the Drow Vault connects to the obelisk shards. I need to clarify the transition and the role of the Drow Vault.",
+      "remaining_gaps": [
+        "The specific connection between the Drow Vault and the Shattered Obelisk plot.",
+        "How the second part begins immediately after the first part concludes (the transition mechanism)."
+      ]
+    },
+    {
+      "action": "search",
+      "query": "What is the specific connection between the Forge of Spells and the Shattered Obelisk, and how does the first part's conclusion set up the second part?",
+      "decision_summary": "The current evidence shows that the first part (Wave Echo Cave) ends with the defeat of Nezznar, while the second part (Shattered Obelisk) begins with a new plot involving psionic goblins and the obelisk. The connection between the two is not explicitly detailed in the provided sources; specifically, how the first part's conclusion (e.g., Nezznar's defeat, the state of the mine) directly triggers or leads to the second part's inciting incident (the psionic goblins' vandalism) needs clarification.",
+      "remaining_gaps": [
+        "The specific narrative bridge or transition event between the end of Chapter 4 and the beginning of Chapter 5.",
+        "The relationship between the Forge of Spells and the Shattered Obelisk, if any.",
+        "Whether the first part's events have any mechanical or narrative consequences for the second part beyond the characters' level."
+      ]
+    },
+    {
+      "action": "finish",
+      "query": "",
+      "decision_summary": "The evidence establishes that the first part (Chapters 1-4) concludes with the defeat of Nezznar and the securing of Wave Echo Cave, while the second part (Chapters 5-8) begins with a new threat involving psionic goblins and the Shattered Obelisk. The connection is primarily narrative and mechanical: the first part levels the party to 4th level and resolves the immediate physical threat, while the second part introduces the obelisk as a new, deeper mystery that was previously absent from Wave Echo Cave.",
+      "remaining_gaps": []
+    }
+  ],
+  "answer_words": 432,
+  "initial_reader_messages_identical_to_qwen": true,
+  "audit": {
+    "queries_audited": 5,
+    "contextual_chunk_appearances_verified": 36,
+    "agent_latest_answer_and_source_union_checks": 5,
+    "graph_counts_unchanged": true
+  },
+  "source_review": {
+    "outcome": "broad_structure_recovered_with_grounding_failures",
+    "main_handoff_fully_recovered": false,
+    "supported": [
+      "Correct final chapter ranges: first part Chapters 1-4, continuation Chapters 5-8.",
+      "Correct final level progression: start Chapter 4 at level 4 and gain a level after Nezznar.",
+      "Uses the introduction's psionic goblin vandalism and shard investigation as the broad continuation.",
+      "Does not invent a physical corpse message or explicit Forge-to-Obelisk power mechanism."
+    ],
+    "failures": [
+      "Makes the absence of shards in Wave Echo Cave a discovery that prompts the party to investigate elsewhere. The retrieved complete W1 passage explicitly says characters cannot learn anything further at that point; shard-scout narration is GM information.",
+      "Never retrieves the actual Chapter 4 What's Next ending or its return-to-Phandalin, Nundro homecoming and mine-profit stake.",
+      "After identifying the missing specific Chapter 4-to-5 transition, stops after search five without resolving it, with three searches unused.",
+      "One stopping-decision summary says the first part levels the party to fourth level; the final answer instead gives the correct fourth-plus-one progression."
+    ],
+    "source_checks": {
+      "full_W1_player_knowledge_restriction_received": true,
+      "W1_source_label": "S009",
+      "chapter4_actual_ending_received": false,
+      "introduction_continuation_summary_received": true,
+      "introduction_source_label": "S010"
+    },
+    "assessment": "More useful than its one-pass answer, but faster completion still leaves an unsupported transition mechanism. Sonnet's earlier answer remains the strongest reviewed handoff."
+  }
+}

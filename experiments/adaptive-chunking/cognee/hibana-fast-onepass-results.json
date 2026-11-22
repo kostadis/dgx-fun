@@ -1,0 +1,50 @@
+{
+  "engine": "hibana",
+  "profile": "fast",
+  "served_model": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+  "base_checkpoint_revision": "7b719225242aacd3dbd3f9407468c2ee9a9d2594",
+  "w3_target_identity": "01bd50a3a264642aaa0baed5170b0c3bc9f19fdb7e613aa0d85e940b93db6225",
+  "calibrated_checkpoint": "yemara/Qwen3.8-Flash-Next-NVFP4-sharar-w3-qad",
+  "calibrated_revision": "5c4c62a62853caebea8cedda7fbed952efa1effe",
+  "engine_commit": "d474b74d5a892b2cd1cc8fc50cb17946e2a539bb",
+  "ingestion_model": "qwen3.8-flash-next",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "top_k": 15,
+  "source_manifest_sha256": "b6771d67e9e7e090da15cb3317a2b250e9ea7b6c2b539fb84edadf458fb7ceb1",
+  "original_protected_files_verified": 30,
+  "historical_json_hashes_verified": 4430,
+  "limits": [
+    "Single pass per question, not repeated timing runs.",
+    "Same Qwen-ingested graph, summaries and embeddings; no Hibana reingestion.",
+    "Hibana fast changes quantization, expert policy and speculative acceptance as well as engine.",
+    "Baseline and new runs occurred at different times; caches and device load were not matched.",
+    "Source review is Codex assessment, not blinded human adjudication."
+  ],
+  "experiment": "One-pass Wave Echo Cave transition question, Hibana fast",
+  "question": "How does the first part of Phandelver and Below: The Shattered Obelisk, culminating in Wave Echo Cave, feed into the second part of the adventure?",
+  "seconds": 14.867907573003322,
+  "llm_calls": 1,
+  "usage": {
+    "prompt_tokens": 4215,
+    "completion_tokens": 808,
+    "total_tokens": 5023
+  },
+  "answer_words_excluding_references": 603,
+  "reader_messages_identical_to_qwen": true,
+  "qwen_seconds": 27.756848445002106,
+  "audit": {
+    "queries_audited": 1,
+    "contextual_chunk_appearances_verified": 7
+  },
+  "source_review": {
+    "outcome": "unsupported_transition",
+    "main_handoff_recovered": false,
+    "findings": [
+      "Guesses that the second part begins at Chapter 6 and that Nezznar's exploration drives deeper Drow Vault content.",
+      "Treats the Forge of Spells and deeper Wave Echo Cave content as the narrative bridge without evidence for that connection.",
+      "Missing-evidence caveats do not retract the invented transition presented earlier.",
+      "The seven raw passages do not include the actual Chapter 4 ending, introduction or Chapter 5 handoff."
+    ],
+    "assessment": "Faster single answer, but it did not answer the narrative question correctly; no follow-up retrieval occurred."
+  }
+}

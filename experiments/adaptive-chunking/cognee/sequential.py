@@ -51,6 +51,26 @@ for key claims, and clearly qualify interpretation. If important evidence is
 missing and a useful new search is possible, choose search instead of finish.
 """
 
+ACTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "action": {"type": "string", "enum": ["search", "finish"]},
+        "query": {"type": "string"},
+        "decision_summary": {"type": "string"},
+        "remaining_gaps": {"type": "array", "items": {"type": "string"}},
+        "answer": {"type": "string"},
+    },
+    "required": ["action", "query", "decision_summary", "remaining_gaps", "answer"],
+    "additionalProperties": False,
+}
+
+
+def action_response_format(mode):
+    if mode == "json_schema":
+        return {"type": "json_schema", "json_schema": {
+            "name": "research_action", "strict": True, "schema": ACTION_SCHEMA}}
+    return {"type": "json_object"}
+
 
 def parse_action(text):
     """Accept plain JSON or one complete JSON fence, without surrounding prose."""
@@ -100,10 +120,13 @@ async def execute(a, capture, embedding, manifest, state):
     assert Path(get_base_config().system_root_directory).resolve() == a.output / "system"
     endpoint = capture.base + "/native/v1"
     model = "openai/" + capture.model
+    reader_args = {"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}}
+    if a.reasoning_effort is not None:
+        reader_args["extra_body"]["reasoning_effort"] = a.reasoning_effort
     reader = LLMConfig(
         llm_provider="custom", llm_model=model, llm_endpoint=endpoint,
         llm_api_key="local-shadow-test", llm_temperature=0, llm_seed=604,
-        llm_args={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
+        llm_args=reader_args,
         auto_rate_limit=False, llm_query_model=model, llm_query_provider="custom",
         llm_query_endpoint=endpoint, llm_query_api_key="local-shadow-test")
     chunks = {c["id"]: {**c, "doc_id": doc["doc_id"]}
@@ -119,7 +142,9 @@ async def execute(a, capture, embedding, manifest, state):
         capture.phase = phase
         body = {"model": capture.model, "temperature": 0, "seed": 604,
                 "max_tokens": 2800, "chat_template_kwargs": {"enable_thinking": False},
-                "response_format": {"type": "json_object"}, "messages": messages}
+                "response_format": action_response_format(a.action_format), "messages": messages}
+        if a.reasoning_effort is not None:
+            body["reasoning_effort"] = a.reasoning_effort
         result = await asyncio.to_thread(R.request, capture.base + "/native/v1/chat/completions", body)
         if result["choices"][0]["finish_reason"] != "stop":
             raise RuntimeError("Truncated research-agent action")
@@ -211,6 +236,8 @@ async def execute(a, capture, embedding, manifest, state):
                     "unresolved uncertainty inside the answer; do not invent facts.\nQUESTION:\n"
                     + question + "\nSOURCES:\n" + evidence()}]
         action = validate_action(parse_action(await driver(messages, "budget-answer")), set(), set(labels.values()))
+        if action["action"] != "finish":
+            raise ValueError("Search budget exhausted; final action must finish")
         answer, stop_reason = action["answer"], "search_budget_exhausted"
     graph = await get_graph_engine()
     nodes, edges = await graph.get_graph_data()
@@ -224,6 +251,7 @@ async def execute(a, capture, embedding, manifest, state):
         "method": "Sequential research agent; one query per action; replan after every observed response",
         "agent_model": capture.model, "cognee_reader_model": capture.model,
         "generation_provider": a.provider, "generation_backend": capture.backend,
+        "action_response_format": a.action_format,
         "ingestion_model": manifest["model"],
         "top_k_per_search": a.top_k, "max_searches": a.max_searches,
         "source_manifest": manifest, "seeded_from_prior_probes": False,
@@ -244,10 +272,16 @@ def main():
     p.add_argument("--question-file", type=Path, required=True)
     p.add_argument("--top-k", type=int, default=15)
     p.add_argument("--max-searches", type=int, default=8)
-    p.add_argument("--provider", choices=("qwen", "anthropic"), default="qwen")
+    p.add_argument("--provider", choices=("qwen", "openai", "anthropic"), default="qwen")
     p.add_argument("--model", help="Generation model override; ingestion identity stays unchanged")
+    p.add_argument("--backend", help="OpenAI-compatible server override; stored index stays unchanged")
+    p.add_argument("--reasoning-effort", choices=("none", "minimal", "low", "medium", "high", "xhigh", "max"))
+    p.add_argument("--action-format", choices=("json_object", "json_schema"), default="json_object",
+                   help="Opt-in schema-guided agent actions; search readers stay unchanged")
     p.add_argument("--api-key-file", type=Path, default=Path("~/.anthropic-key"))
     a = p.parse_args()
+    if a.provider == "anthropic" and a.action_format == "json_schema":
+        p.error("Schema-guided actions require an OpenAI-compatible backend in this harness")
     for name in ("source", "output", "question_file"):
         setattr(a, name, getattr(a, name).resolve())
     if not a.output.is_relative_to(HERE.parent / "raw") or a.top_k <= 0 or a.max_searches <= 0:
@@ -262,7 +296,7 @@ def main():
         from anthropic_capture import AnthropicCapture
         capture = AnthropicCapture(a.output, a.model or "claude-haiku-5-5", a.api_key_file)
     else:
-        capture = R.harness.Capture(a.output, manifest["backend"], a.model or manifest["model"])
+        capture = R.harness.Capture(a.output, a.backend or manifest["backend"], a.model or manifest["model"])
     capture.limit = threading.BoundedSemaphore(8)
     embedding = R.Embeddings(a.output, manifest["embedding_endpoint"], manifest["embedding_model"])
     assert embedding.identity == manifest["embedding_digest"]
@@ -282,10 +316,13 @@ def main():
     R.save(a.output / "protocol.json", {"top_k": a.top_k, "max_searches": a.max_searches,
            "agent_model": capture.model, "cognee_reader_model": capture.model,
            "generation_provider": a.provider, "generation_backend": capture.backend,
+           "action_response_format": a.action_format,
+           "action_schema": ACTION_SCHEMA if a.action_format == "json_schema" else None,
            "sampling": ({"thinking": capture.thinking_mode, "temperature": "provider default", "seed": None,
                          "json_object_mode": "prompt instruction only", "reader_max_tokens": 4096}
                         if a.provider == "anthropic" else
-                        {"thinking": "disabled", "temperature": 0, "seed": 604}),
+                        {"thinking": a.reasoning_effort or "disabled", "reasoning_effort": a.reasoning_effort,
+                         "temperature": 0, "seed": 604}),
            "transport_sha256": R.digest(Path(__file__).with_name("anthropic_capture.py").read_bytes())
                                    if a.provider == "anthropic" else None,
            "policy": POLICY,
