@@ -1,7 +1,85 @@
 # Current DGX Spark Setup
 
+<!-- inkling-native-selected-20261122 -->
+**Current services — verified November 22, 2026, 09:05 Pacific.**
+
+| Host | Service | OpenAI-compatible base URL | Status |
+|---|---|---|---|
+| Spark 1 (`192.168.1.147`) | Qwen `qwen3.8-flash-next`, pinned vLLM | `http://192.168.1.147:8001/v1` | Healthy |
+| Spark 2 (`192.168.1.121`) | Inkling `inkling-2-mini`, **native vLLM** | `http://192.168.1.121:8004/v1` | **Running and healthy** |
+| Spark 2 (`192.168.1.121`) | Clef and `clef-card-tuned` | `http://192.168.1.121:8002/v1` | Healthy; no restart during the Inkling switch |
+| Spark 2 | Unsloth GGUF / DSpark | — | Stopped; installation and checkpoints retained |
+| Spark 2 | Hibana exact and fast shadow services | — | Stopped |
+
+Native Inkling is the selected backend at the user's request. Its retained
+container is **`inkling2mini`**, using checkpoint revision
+`b85c3cfa615fc413cc9af3379f491b963f3b586a` and image
+`sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de`.
+The serving settings match the paired native experiment: **65,536-token
+context, one active request, eager execution, prefix caching and no speculative
+decoding**. The 12 GiB host-headroom guard `inkling-native-thinking-memory`
+is active. Native Inkling and its guard have no boot autostart.
+
+For the measured **thinking-disabled** behavior, clients must pass
+`reasoning_effort="none"` and native `bad_words:["<|content_thinking|>"]`
+with `chat_template_kwargs:{"enable_thinking":false}`. These are per-request
+controls; effort alone still permits thinking. The live arithmetic and JSON
+checks passed with **zero reasoning tokens**. Clef's container identity, image
+and start time were unchanged; Spark 1 Qwen passed model discovery.
+
+[Native client and restart guide](experiments/inkling/NATIVE.md) ·
+[Cognee request options](experiments/inkling/no-thinking-options.json) ·
+[Verified activation receipt](experiments/inkling/native-active-20261122.json) ·
+[Separate paired native benchmark](experiments/inkling/native-thinking/RESULTS.md).
+
+The snapshots below describe earlier configurations.
+<!-- /inkling-native-selected-20261122 -->
+
+<!-- cognee-inkling-native-paired-20261122 -->
+> **PREVIOUS verification, 2026-11-22 08:52 Pacific:** DSpark draft three is
+> restored at **192.168.1.121:8004/v1**, model **`inkling-2-mini`**. Clef at
+> **:8002** and Spark 1 Qwen at **192.168.1.147:8001** passed model discovery.
+> Both Hibana shadow units are inactive. The original native Inkling container
+> is stopped and retained. The paired native experiment held its checkpoint,
+> process and factual input constant: thinking off reduced p50 **10.38 → 4.51 s**
+> and the 48-query sum **564.26 → 222.25 s**. Both scored **44/47 complete**;
+> fully grounded complete answers fell **44/47 → 43/47**. Clef's identity,
+> image and start time stayed unchanged during the test. That restored DSpark
+> service retains its original launch command and needs its different
+> [per-request no-thinking controls](experiments/inkling/dspark/THINKING.md).
+> [Completed native results](experiments/inkling/native-thinking/RESULTS.md).
+<!-- /cognee-inkling-native-paired-20261122 -->
+
+<!-- cognee-inkling-no-thinking-20261122 -->
+> **PREVIOUS verification, 2026-11-22 UTC:** Inkling DSpark draft three remains
+> healthy at **192.168.1.121:8004/v1**, model **`inkling-2-mini`**, alongside
+> healthy Clef at **:8002**. No Inkling or Clef restart was needed for the
+> Cognee follow-up. **Hibana is stopped**; Spark1 Qwen remains healthy.
+> Cognee's 48 factual questions completed with **10.35 s p50 / 15.13 s p95**
+> and **44/47 strict**. The **221.57 s** module agent gave an incomplete
+> transition answer. All 63 responses contained zero thinking text, using
+> [per-request controls](experiments/inkling/dspark/THINKING.md); the service's
+> global defaults were not changed. [Separate Cognee results](experiments/inkling/dspark/COGNEE.md).
+<!-- /cognee-inkling-no-thinking-20261122 -->
+
+<!-- inkling-unsloth-dspark-20261121 -->
+> **PREVIOUS runtime verification, 2026-11-21 20:25 Pacific:** Spark2 serves **Unsloth
+> Inkling Mini with DSpark draft three** at **192.168.1.121:8004/v1**,
+> model **`inkling-2-mini`**, 65,536 context tokens and one active request.
+> It runs as native user unit `inkling-gguf-active`, with a 12 GiB host-headroom
+> guard. Chat, model discovery and active speculation were verified.
+> **Clef and clef-card-tuned remain healthy at :8002**, with the same container
+> identity and start time throughout this comparison. **Hibana is stopped**;
+> the original Inkling vLLM container is stopped and retained for rollback.
+> Spark1's pinned Qwen service at **192.168.1.147:8001** remains unchanged and
+> was not restarted. The new Inkling units have no boot autostart.
+> [Client configuration and restart instructions](experiments/inkling/dspark/README.md),
+> [separate DSpark results](experiments/inkling/dspark/RESULTS.md),
+> [operations receipt](experiments/inkling/dspark/operations-20261121.json).
+<!-- /inkling-unsloth-dspark-20261121 -->
+
 <!-- cognee-model-comparison-20261121 -->
-> **CURRENT verification, 2026-11-21:** the Phandelver Cognee trials are complete.
+> **PREVIOUS verification, 2026-11-21:** the Phandelver Cognee trials are complete.
 > Spark1 still serves the unchanged pinned Qwen vLLM container at
 > **192.168.1.147:8001**. Spark2 again serves **Clef and clef-card-tuned at
 > :8002** and **Inkling 2 Mini at :8004**, with the same retained container

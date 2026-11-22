@@ -16,7 +16,7 @@ This repository contains experiments, reports, and scripts related to running LL
 ### Scripts
 - **vLLM Spin-up Scripts:** Shell scripts for quickly deploying different models (Gemma 4, Llama 70B, etc.) using vLLM.
 - **Testing:** Scripts for testing tool calls and general functionality.
-- **[Inkling 2 Mini on Spark 2](experiments/inkling/README.md):** Pinned native installation, OpenAI-compatible client setup, and adaptive Cognee agent and factual-question trials.
+- **[Inkling 2 Mini on Spark 2](experiments/inkling/README.md):** The selected [native vLLM service](experiments/inkling/NATIVE.md), no-thinking client controls, and separate native/Unsloth DSpark measurements. The [paired native test](experiments/inkling/native-thinking/RESULTS.md) cut factual median latency from 10.38 to 4.51 seconds with 44/47 complete answers in both arms and one additional unsupported claim without thinking.
 - **[D&D Chunking Experiments](experiments/adaptive-chunking/README.md):** Frozen-source preparation, local reference expansion, retrieval comparisons, answer checks and aggregate result exports.
 
 ### Library

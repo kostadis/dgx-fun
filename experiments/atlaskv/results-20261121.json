@@ -1,0 +1,1989 @@
+{
+  "experiment": "AtlasKV standalone Phandelver fact-memory trial",
+  "scope": "Local controls for the released Llama/MiniLM bundle; separate from prior whole-system and paper-reported results.",
+  "complete": true,
+  "protocol": {
+    "facts": 21091,
+    "facts_sha256": "6ef0f39b5660c0c7f31c87a2d284db38f5b7d0d64f1cce971b5e5be060fe7415",
+    "cases_sha256": "ae50b07a96eed29bddd5b521be9bf1c71adb6bc4b6bdbb7dbcf0564447163446",
+    "runner_sha256": "cdf87403191be8f80a981d36861d225092e10ebd0335de51322099f03c5cf730",
+    "seed": 604,
+    "do_sample": false,
+    "top_k_text_retrieval": 15,
+    "hierarchy_top_k": [
+      128,
+      64,
+      16
+    ],
+    "kb_scale_factor": 100,
+    "kb_layer_frequency": 3,
+    "same_checkpoint_for_all_arms": true,
+    "runtime": {
+      "torch": "2.13.0+cu130",
+      "cuda": "13.0"
+    },
+    "attention_configuration": {
+      "loaded_outer": "eager",
+      "loaded_inner": "sdpa",
+      "effective_outer": "eager",
+      "effective_inner": "eager"
+    }
+  },
+  "assets": {
+    "model": {
+      "repo": "HaoyuHuang2/AtlasKV_all-MiniLM-L6-v2_train_atlas_wiki_qkv_llama3_step_3000",
+      "revision": "0a4572b85ffd818f5c3b22a407e428bb2d542c27"
+    },
+    "encoder": {
+      "repo": "HaoyuHuang2/AtlasKV_all-MiniLM-L6-v2_train_atlas_wiki_qkv_llama3_step_3000_encoder",
+      "revision": "30ef42250325b656ec977792cd6bf87ad19375e7"
+    },
+    "sentence_encoder": {
+      "repo": "sentence-transformers/all-MiniLM-L6-v2",
+      "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    },
+    "tokenizer": {
+      "repo": "unsloth/Meta-Llama-3.1-8B-Instruct",
+      "revision": "a2856192dd7c25b842431f39c179a6c2c2f627d1"
+    }
+  },
+  "elapsed_worker_seconds": 1152.1066908836365,
+  "arms": {
+    "rag": {
+      "factual_questions": 48,
+      "factual_seconds": {
+        "sum": 225.28292076475918,
+        "p50": 3.9563265159958974,
+        "p95": 9.022029642702543,
+        "min": 1.6140054480638355,
+        "max": 10.213068427052349
+      },
+      "factual_ttft_seconds": {
+        "sum": 7.90522474097088,
+        "p50": 0.16331171058118343,
+        "p95": 0.2020973647944629,
+        "min": 0.1360311780590564,
+        "max": 0.2364002380054444
+      },
+      "factual_inter_token_seconds": {
+        "sum": 217.35892325709574,
+        "p50": 0.08354129502549767,
+        "p95": 0.08461467702873052,
+        "min": 0.0824865831527859,
+        "max": 0.08732400299049914
+      },
+      "factual_output_tokens": 2647,
+      "factual_text_prompt_tokens": 18866,
+      "factual_finish_reasons": {
+        "stop": 48
+      },
+      "narrative": {
+        "seconds": 35.35671533597633,
+        "ttft_first_generated_token_seconds": 0.19046641793102026,
+        "prompt_tokens": 472,
+        "output_tokens": 414,
+        "finish_reason": "stop"
+      },
+      "setup_seconds": 0.00016446411609649658,
+      "worker_cuda_peak_allocated_bytes": 17895823360,
+      "worker_cuda_peak_reserved_bytes": 19581108224,
+      "host_min_available_bytes": 39102681088,
+      "host_max_swap_used_bytes": 2315493376,
+      "worker_max_process_rss_bytes": 2468769792,
+      "worker_max_cgroup_bytes": 6122180608,
+      "per_question": [
+        {
+          "id": "q01",
+          "seconds": 4.387788794003427,
+          "ttft_first_generated_token_seconds": 0.2364002380054444,
+          "prompt_tokens": 369,
+          "output_tokens": 51,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q02",
+          "seconds": 7.113493595039472,
+          "ttft_first_generated_token_seconds": 0.14872757508419454,
+          "prompt_tokens": 348,
+          "output_tokens": 85,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q03",
+          "seconds": 5.942425702931359,
+          "ttft_first_generated_token_seconds": 0.1407643361017108,
+          "prompt_tokens": 329,
+          "output_tokens": 71,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q04",
+          "seconds": 2.5152162010781467,
+          "ttft_first_generated_token_seconds": 0.18029392696917057,
+          "prompt_tokens": 439,
+          "output_tokens": 29,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q05",
+          "seconds": 3.5103472059126943,
+          "ttft_first_generated_token_seconds": 0.17573497095145285,
+          "prompt_tokens": 436,
+          "output_tokens": 41,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q06",
+          "seconds": 7.864106855820864,
+          "ttft_first_generated_token_seconds": 0.13766447082161903,
+          "prompt_tokens": 297,
+          "output_tokens": 94,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q07",
+          "seconds": 2.314203917980194,
+          "ttft_first_generated_token_seconds": 0.1499135580379516,
+          "prompt_tokens": 369,
+          "output_tokens": 27,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q08",
+          "seconds": 3.6403311449103057,
+          "ttft_first_generated_token_seconds": 0.20004405500367284,
+          "prompt_tokens": 491,
+          "output_tokens": 42,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q09",
+          "seconds": 9.443815334932879,
+          "ttft_first_generated_token_seconds": 0.16859653289429843,
+          "prompt_tokens": 422,
+          "output_tokens": 112,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q10",
+          "seconds": 3.917943626176566,
+          "ttft_first_generated_token_seconds": 0.16327770217321813,
+          "prompt_tokens": 408,
+          "output_tokens": 46,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q11",
+          "seconds": 2.8953985599800944,
+          "ttft_first_generated_token_seconds": 0.14811460697092116,
+          "prompt_tokens": 358,
+          "output_tokens": 34,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q12",
+          "seconds": 7.9417975100222975,
+          "ttft_first_generated_token_seconds": 0.16554717812687159,
+          "prompt_tokens": 411,
+          "output_tokens": 94,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q13",
+          "seconds": 6.964599220082164,
+          "ttft_first_generated_token_seconds": 0.13946877513080835,
+          "prompt_tokens": 319,
+          "output_tokens": 83,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q14",
+          "seconds": 3.5926100600045174,
+          "ttft_first_generated_token_seconds": 0.1653792718425393,
+          "prompt_tokens": 409,
+          "output_tokens": 42,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q15",
+          "seconds": 2.5207390980795026,
+          "ttft_first_generated_token_seconds": 0.17589833913370967,
+          "prompt_tokens": 438,
+          "output_tokens": 29,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q16",
+          "seconds": 10.213068427052349,
+          "ttft_first_generated_token_seconds": 0.16265227203257382,
+          "prompt_tokens": 404,
+          "output_tokens": 121,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q17",
+          "seconds": 7.5674938801676035,
+          "ttft_first_generated_token_seconds": 0.17746746097691357,
+          "prompt_tokens": 438,
+          "output_tokens": 89,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q18",
+          "seconds": 2.8005447569303215,
+          "ttft_first_generated_token_seconds": 0.1360311780590564,
+          "prompt_tokens": 301,
+          "output_tokens": 33,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q19",
+          "seconds": 6.245886428980157,
+          "ttft_first_generated_token_seconds": 0.14807296893559396,
+          "prompt_tokens": 353,
+          "output_tokens": 74,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q20",
+          "seconds": 3.20762277697213,
+          "ttft_first_generated_token_seconds": 0.1845779570285231,
+          "prompt_tokens": 460,
+          "output_tokens": 37,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q21",
+          "seconds": 6.39372408320196,
+          "ttft_first_generated_token_seconds": 0.13960238615982234,
+          "prompt_tokens": 315,
+          "output_tokens": 76,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q22",
+          "seconds": 3.4785938530694693,
+          "ttft_first_generated_token_seconds": 0.14104758901521564,
+          "prompt_tokens": 328,
+          "output_tokens": 41,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q23",
+          "seconds": 8.238713357131928,
+          "ttft_first_generated_token_seconds": 0.20320299314334989,
+          "prompt_tokens": 508,
+          "output_tokens": 96,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q24",
+          "seconds": 6.030446869088337,
+          "ttft_first_generated_token_seconds": 0.16431282996200025,
+          "prompt_tokens": 405,
+          "output_tokens": 71,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q25",
+          "seconds": 2.822770636063069,
+          "ttft_first_generated_token_seconds": 0.14850421389564872,
+          "prompt_tokens": 366,
+          "output_tokens": 33,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q26",
+          "seconds": 2.2389223310165107,
+          "ttft_first_generated_token_seconds": 0.14933431195095181,
+          "prompt_tokens": 359,
+          "output_tokens": 26,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q27",
+          "seconds": 6.005552146118134,
+          "ttft_first_generated_token_seconds": 0.15842233411967754,
+          "prompt_tokens": 348,
+          "output_tokens": 71,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q28",
+          "seconds": 3.538250324781984,
+          "ttft_first_generated_token_seconds": 0.18119106185622513,
+          "prompt_tokens": 445,
+          "output_tokens": 41,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q29",
+          "seconds": 2.682566045084968,
+          "ttft_first_generated_token_seconds": 0.16851130221039057,
+          "prompt_tokens": 419,
+          "output_tokens": 31,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q30",
+          "seconds": 9.74211748689413,
+          "ttft_first_generated_token_seconds": 0.22800717898644507,
+          "prompt_tokens": 448,
+          "output_tokens": 114,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q31",
+          "seconds": 3.6828779871575534,
+          "ttft_first_generated_token_seconds": 0.16334571898914874,
+          "prompt_tokens": 404,
+          "output_tokens": 43,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q32",
+          "seconds": 3.813735182862729,
+          "ttft_first_generated_token_seconds": 0.14063262194395065,
+          "prompt_tokens": 324,
+          "output_tokens": 45,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q33",
+          "seconds": 4.237801555078477,
+          "ttft_first_generated_token_seconds": 0.1457988431211561,
+          "prompt_tokens": 339,
+          "output_tokens": 50,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q34",
+          "seconds": 4.435432146070525,
+          "ttft_first_generated_token_seconds": 0.1642065360210836,
+          "prompt_tokens": 407,
+          "output_tokens": 52,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q35",
+          "seconds": 3.994709405815229,
+          "ttft_first_generated_token_seconds": 0.14979229192249477,
+          "prompt_tokens": 361,
+          "output_tokens": 47,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q36",
+          "seconds": 2.274317178176716,
+          "ttft_first_generated_token_seconds": 0.17696544714272022,
+          "prompt_tokens": 433,
+          "output_tokens": 26,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q37",
+          "seconds": 5.577563787810504,
+          "ttft_first_generated_token_seconds": 0.18715951987542212,
+          "prompt_tokens": 474,
+          "output_tokens": 65,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q38",
+          "seconds": 2.679356823908165,
+          "ttft_first_generated_token_seconds": 0.16190529707819223,
+          "prompt_tokens": 400,
+          "output_tokens": 31,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q39",
+          "seconds": 4.950663136085495,
+          "ttft_first_generated_token_seconds": 0.17021679016761482,
+          "prompt_tokens": 428,
+          "output_tokens": 58,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q40",
+          "seconds": 4.747341001173481,
+          "ttft_first_generated_token_seconds": 0.1490681441500783,
+          "prompt_tokens": 363,
+          "output_tokens": 56,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q41",
+          "seconds": 3.126244734041393,
+          "ttft_first_generated_token_seconds": 0.18409778201021254,
+          "prompt_tokens": 460,
+          "output_tokens": 36,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q42",
+          "seconds": 6.377890078118071,
+          "ttft_first_generated_token_seconds": 0.17324281111359596,
+          "prompt_tokens": 425,
+          "output_tokens": 75,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q43",
+          "seconds": 4.989427695050836,
+          "ttft_first_generated_token_seconds": 0.14408515486866236,
+          "prompt_tokens": 346,
+          "output_tokens": 59,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q44",
+          "seconds": 2.0047861088532954,
+          "ttft_first_generated_token_seconds": 0.1612955799791962,
+          "prompt_tokens": 396,
+          "output_tokens": 23,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q45",
+          "seconds": 3.285407394869253,
+          "ttft_first_generated_token_seconds": 0.1754465908743441,
+          "prompt_tokens": 433,
+          "output_tokens": 38,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q46",
+          "seconds": 1.6140054480638355,
+          "ttft_first_generated_token_seconds": 0.18289483315311372,
+          "prompt_tokens": 462,
+          "output_tokens": 18,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q47",
+          "seconds": 4.901522048050538,
+          "ttft_first_generated_token_seconds": 0.1431936149019748,
+          "prompt_tokens": 334,
+          "output_tokens": 58,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q48",
+          "seconds": 2.818748824065551,
+          "ttft_first_generated_token_seconds": 0.1451135880779475,
+          "prompt_tokens": 337,
+          "output_tokens": 33,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "narrative",
+          "seconds": 35.35671533597633,
+          "ttft_first_generated_token_seconds": 0.19046641793102026,
+          "prompt_tokens": 472,
+          "output_tokens": 414,
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    "atlas": {
+      "factual_questions": 48,
+      "factual_seconds": {
+        "sum": 289.0204826274421,
+        "p50": 5.703696646960452,
+        "p95": 10.074961709661874,
+        "min": 2.7331895120441914,
+        "max": 13.515879396116361
+      },
+      "factual_ttft_seconds": {
+        "sum": 12.444450479000807,
+        "p50": 0.2543009885121137,
+        "p95": 0.27517316200537606,
+        "min": 0.2423651679418981,
+        "max": 0.31410764204338193
+      },
+      "factual_inter_token_seconds": {
+        "sum": 276.5600479186978,
+        "p50": 0.13775168743450195,
+        "p95": 0.13849131588358432,
+        "min": 0.13748183101415634,
+        "max": 0.1439510048367083
+      },
+      "factual_output_tokens": 2054,
+      "factual_text_prompt_tokens": 3102,
+      "factual_finish_reasons": {
+        "stop": 48
+      },
+      "narrative": {
+        "seconds": 7.6928483250085264,
+        "ttft_first_generated_token_seconds": 0.34202011302113533,
+        "prompt_tokens": 90,
+        "output_tokens": 54,
+        "finish_reason": "stop"
+      },
+      "setup_seconds": 0.6136450730264187,
+      "worker_cuda_peak_allocated_bytes": 21735341056,
+      "worker_cuda_peak_reserved_bytes": 24863834112,
+      "host_min_available_bytes": 33835290624,
+      "host_max_swap_used_bytes": 2319835136,
+      "worker_max_process_rss_bytes": 2335723520,
+      "worker_max_cgroup_bytes": 5993050112,
+      "per_question": [
+        {
+          "id": "q01",
+          "seconds": 5.548023273004219,
+          "ttft_first_generated_token_seconds": 0.31410764204338193,
+          "prompt_tokens": 64,
+          "output_tokens": 39,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q02",
+          "seconds": 8.44243947090581,
+          "ttft_first_generated_token_seconds": 0.29535116301849484,
+          "prompt_tokens": 72,
+          "output_tokens": 60,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q03",
+          "seconds": 8.543635465903208,
+          "ttft_first_generated_token_seconds": 0.2651509610004723,
+          "prompt_tokens": 67,
+          "output_tokens": 61,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q04",
+          "seconds": 6.621191099053249,
+          "ttft_first_generated_token_seconds": 0.2735986930783838,
+          "prompt_tokens": 72,
+          "output_tokens": 47,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q05",
+          "seconds": 6.175318177090958,
+          "ttft_first_generated_token_seconds": 0.24917322397232056,
+          "prompt_tokens": 61,
+          "output_tokens": 44,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q06",
+          "seconds": 7.02303353510797,
+          "ttft_first_generated_token_seconds": 0.26879987795837224,
+          "prompt_tokens": 69,
+          "output_tokens": 50,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q07",
+          "seconds": 3.5564851940143853,
+          "ttft_first_generated_token_seconds": 0.24738379404880106,
+          "prompt_tokens": 60,
+          "output_tokens": 25,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q08",
+          "seconds": 8.101818752009422,
+          "ttft_first_generated_token_seconds": 0.24478849209845066,
+          "prompt_tokens": 59,
+          "output_tokens": 58,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q09",
+          "seconds": 5.642104480881244,
+          "ttft_first_generated_token_seconds": 0.265117626870051,
+          "prompt_tokens": 68,
+          "output_tokens": 40,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q10",
+          "seconds": 2.7331895120441914,
+          "ttft_first_generated_token_seconds": 0.2499895899090916,
+          "prompt_tokens": 62,
+          "output_tokens": 19,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q11",
+          "seconds": 3.7143032129388303,
+          "ttft_first_generated_token_seconds": 0.2637057991232723,
+          "prompt_tokens": 65,
+          "output_tokens": 26,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q12",
+          "seconds": 8.67330636200495,
+          "ttft_first_generated_token_seconds": 0.2634048529434949,
+          "prompt_tokens": 65,
+          "output_tokens": 62,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q13",
+          "seconds": 4.939961180090904,
+          "ttft_first_generated_token_seconds": 0.2521590651012957,
+          "prompt_tokens": 63,
+          "output_tokens": 35,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q14",
+          "seconds": 3.1381716639734805,
+          "ttft_first_generated_token_seconds": 0.24663650803267956,
+          "prompt_tokens": 61,
+          "output_tokens": 22,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q15",
+          "seconds": 5.206221760017797,
+          "ttft_first_generated_token_seconds": 0.24644100200384855,
+          "prompt_tokens": 61,
+          "output_tokens": 37,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q16",
+          "seconds": 7.023998094955459,
+          "ttft_first_generated_token_seconds": 0.270374451065436,
+          "prompt_tokens": 70,
+          "output_tokens": 50,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q17",
+          "seconds": 3.988149879965931,
+          "ttft_first_generated_token_seconds": 0.26328376098535955,
+          "prompt_tokens": 67,
+          "output_tokens": 28,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q18",
+          "seconds": 7.703713939059526,
+          "ttft_first_generated_token_seconds": 0.2622493579983711,
+          "prompt_tokens": 65,
+          "output_tokens": 55,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q19",
+          "seconds": 5.7652888130396605,
+          "ttft_first_generated_token_seconds": 0.24907668610103428,
+          "prompt_tokens": 62,
+          "output_tokens": 41,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q20",
+          "seconds": 6.455721693113446,
+          "ttft_first_generated_token_seconds": 0.2545280901249498,
+          "prompt_tokens": 64,
+          "output_tokens": 46,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q21",
+          "seconds": 10.451779145048931,
+          "ttft_first_generated_token_seconds": 0.2512817610986531,
+          "prompt_tokens": 63,
+          "output_tokens": 75,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q22",
+          "seconds": 2.8598213959485292,
+          "ttft_first_generated_token_seconds": 0.24328151787631214,
+          "prompt_tokens": 59,
+          "output_tokens": 20,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q23",
+          "seconds": 6.053660942940041,
+          "ttft_first_generated_token_seconds": 0.265088320011273,
+          "prompt_tokens": 68,
+          "output_tokens": 43,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q24",
+          "seconds": 4.001897205831483,
+          "ttft_first_generated_token_seconds": 0.2760209529660642,
+          "prompt_tokens": 72,
+          "output_tokens": 28,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q25",
+          "seconds": 6.037205981090665,
+          "ttft_first_generated_token_seconds": 0.24600584316067398,
+          "prompt_tokens": 60,
+          "output_tokens": 43,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q26",
+          "seconds": 2.9998056520707905,
+          "ttft_first_generated_token_seconds": 0.24596070521511137,
+          "prompt_tokens": 60,
+          "output_tokens": 21,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q27",
+          "seconds": 11.720672124065459,
+          "ttft_first_generated_token_seconds": 0.2711397889070213,
+          "prompt_tokens": 71,
+          "output_tokens": 84,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q28",
+          "seconds": 13.515879396116361,
+          "ttft_first_generated_token_seconds": 0.26587199908681214,
+          "prompt_tokens": 68,
+          "output_tokens": 97,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q29",
+          "seconds": 4.109925231896341,
+          "ttft_first_generated_token_seconds": 0.25153884408064187,
+          "prompt_tokens": 63,
+          "output_tokens": 29,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q30",
+          "seconds": 3.5561115317977965,
+          "ttft_first_generated_token_seconds": 0.25049799284897745,
+          "prompt_tokens": 62,
+          "output_tokens": 25,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q31",
+          "seconds": 5.212922845967114,
+          "ttft_first_generated_token_seconds": 0.25263767689466476,
+          "prompt_tokens": 64,
+          "output_tokens": 37,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q32",
+          "seconds": 6.740324455779046,
+          "ttft_first_generated_token_seconds": 0.2635972697753459,
+          "prompt_tokens": 65,
+          "output_tokens": 48,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q33",
+          "seconds": 4.130246638087556,
+          "ttft_first_generated_token_seconds": 0.2663047011010349,
+          "prompt_tokens": 68,
+          "output_tokens": 29,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q34",
+          "seconds": 6.336018223082647,
+          "ttft_first_generated_token_seconds": 0.26808862411417067,
+          "prompt_tokens": 69,
+          "output_tokens": 45,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q35",
+          "seconds": 3.284952129004523,
+          "ttft_first_generated_token_seconds": 0.25407388689927757,
+          "prompt_tokens": 64,
+          "output_tokens": 23,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q36",
+          "seconds": 5.353461005957797,
+          "ttft_first_generated_token_seconds": 0.25370676605962217,
+          "prompt_tokens": 64,
+          "output_tokens": 38,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q37",
+          "seconds": 7.004169909050688,
+          "ttft_first_generated_token_seconds": 0.2506051571108401,
+          "prompt_tokens": 62,
+          "output_tokens": 50,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q38",
+          "seconds": 4.9536849178839475,
+          "ttft_first_generated_token_seconds": 0.26584039186127484,
+          "prompt_tokens": 65,
+          "output_tokens": 35,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q39",
+          "seconds": 7.2985424778889865,
+          "ttft_first_generated_token_seconds": 0.2626334559172392,
+          "prompt_tokens": 66,
+          "output_tokens": 52,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q40",
+          "seconds": 3.5591366479638964,
+          "ttft_first_generated_token_seconds": 0.2540156599134207,
+          "prompt_tokens": 64,
+          "output_tokens": 25,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q41",
+          "seconds": 3.962096436880529,
+          "ttft_first_generated_token_seconds": 0.2423651679418981,
+          "prompt_tokens": 58,
+          "output_tokens": 28,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q42",
+          "seconds": 9.375157901085913,
+          "ttft_first_generated_token_seconds": 0.27180522005073726,
+          "prompt_tokens": 71,
+          "output_tokens": 67,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q43",
+          "seconds": 4.951770651852712,
+          "ttft_first_generated_token_seconds": 0.26391908898949623,
+          "prompt_tokens": 67,
+          "output_tokens": 35,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q44",
+          "seconds": 4.239703641971573,
+          "ttft_first_generated_token_seconds": 0.24464501184411347,
+          "prompt_tokens": 59,
+          "output_tokens": 30,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q45",
+          "seconds": 7.28488976508379,
+          "ttft_first_generated_token_seconds": 0.2526456220075488,
+          "prompt_tokens": 64,
+          "output_tokens": 52,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q46",
+          "seconds": 8.51794237201102,
+          "ttft_first_generated_token_seconds": 0.24813122698105872,
+          "prompt_tokens": 60,
+          "output_tokens": 61,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q47",
+          "seconds": 5.094161510933191,
+          "ttft_first_generated_token_seconds": 0.26477444893680513,
+          "prompt_tokens": 65,
+          "output_tokens": 36,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q48",
+          "seconds": 7.4184669309761375,
+          "ttft_first_generated_token_seconds": 0.25265273987315595,
+          "prompt_tokens": 64,
+          "output_tokens": 53,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "narrative",
+          "seconds": 7.6928483250085264,
+          "ttft_first_generated_token_seconds": 0.34202011302113533,
+          "prompt_tokens": 90,
+          "output_tokens": 54,
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    "pruned": {
+      "factual_questions": 48,
+      "factual_seconds": {
+        "sum": 428.2548187121283,
+        "p50": 8.4989040059736,
+        "p95": 14.152103236305994,
+        "min": 4.757312284084037,
+        "max": 26.692476836964488
+      },
+      "factual_ttft_seconds": {
+        "sum": 12.225686537800357,
+        "p50": 0.24957815697416663,
+        "p95": 0.2688202796271071,
+        "min": 0.21872114413417876,
+        "max": 0.5391147001646459
+      },
+      "factual_inter_token_seconds": {
+        "sum": 416.00333659071475,
+        "p50": 0.17476984695531428,
+        "p95": 0.1850247973226942,
+        "min": 0.1365333420690149,
+        "max": 0.19440784282051027
+      },
+      "factual_output_tokens": 2440,
+      "factual_text_prompt_tokens": 3102,
+      "factual_finish_reasons": {
+        "stop": 48
+      },
+      "narrative": {
+        "seconds": 5.925927696982399,
+        "ttft_first_generated_token_seconds": 0.3170949867926538,
+        "prompt_tokens": 90,
+        "output_tokens": 33,
+        "finish_reason": "stop"
+      },
+      "setup_seconds": 44.055817825952545,
+      "worker_cuda_peak_allocated_bytes": 17414651904,
+      "worker_cuda_peak_reserved_bytes": 17603493888,
+      "host_min_available_bytes": 34977509376,
+      "host_max_swap_used_bytes": 2320908288,
+      "worker_max_process_rss_bytes": 8214568960,
+      "worker_max_cgroup_bytes": 11756584960,
+      "per_question": [
+        {
+          "id": "q01",
+          "seconds": 7.613976817112416,
+          "ttft_first_generated_token_seconds": 0.5391147001646459,
+          "prompt_tokens": 64,
+          "output_tokens": 44,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q02",
+          "seconds": 10.859617037000135,
+          "ttft_first_generated_token_seconds": 0.2623127398546785,
+          "prompt_tokens": 72,
+          "output_tokens": 65,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q03",
+          "seconds": 10.83107224991545,
+          "ttft_first_generated_token_seconds": 0.24856606894172728,
+          "prompt_tokens": 67,
+          "output_tokens": 61,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q04",
+          "seconds": 9.585303345927969,
+          "ttft_first_generated_token_seconds": 0.2557181001175195,
+          "prompt_tokens": 72,
+          "output_tokens": 56,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q05",
+          "seconds": 9.053455363959074,
+          "ttft_first_generated_token_seconds": 0.24164008302614093,
+          "prompt_tokens": 61,
+          "output_tokens": 54,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q06",
+          "seconds": 10.635128099936992,
+          "ttft_first_generated_token_seconds": 0.2531148449052125,
+          "prompt_tokens": 69,
+          "output_tokens": 60,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q07",
+          "seconds": 4.779144398868084,
+          "ttft_first_generated_token_seconds": 0.24941515596583486,
+          "prompt_tokens": 60,
+          "output_tokens": 26,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q08",
+          "seconds": 4.967226209118962,
+          "ttft_first_generated_token_seconds": 0.25426815799437463,
+          "prompt_tokens": 59,
+          "output_tokens": 28,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q09",
+          "seconds": 5.658138273051009,
+          "ttft_first_generated_token_seconds": 0.2586129200644791,
+          "prompt_tokens": 68,
+          "output_tokens": 31,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q10",
+          "seconds": 5.907007209956646,
+          "ttft_first_generated_token_seconds": 0.25365058798342943,
+          "prompt_tokens": 62,
+          "output_tokens": 33,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q11",
+          "seconds": 9.26884374790825,
+          "ttft_first_generated_token_seconds": 0.2369209979660809,
+          "prompt_tokens": 65,
+          "output_tokens": 52,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q12",
+          "seconds": 11.925125445006415,
+          "ttft_first_generated_token_seconds": 0.24308441998437047,
+          "prompt_tokens": 65,
+          "output_tokens": 70,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q13",
+          "seconds": 8.854147935053334,
+          "ttft_first_generated_token_seconds": 0.23731090198270977,
+          "prompt_tokens": 63,
+          "output_tokens": 50,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q14",
+          "seconds": 6.508676553843543,
+          "ttft_first_generated_token_seconds": 0.2467072419822216,
+          "prompt_tokens": 61,
+          "output_tokens": 36,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q15",
+          "seconds": 7.09762820112519,
+          "ttft_first_generated_token_seconds": 0.2437892670277506,
+          "prompt_tokens": 61,
+          "output_tokens": 42,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q16",
+          "seconds": 9.41859209514223,
+          "ttft_first_generated_token_seconds": 0.2587185171432793,
+          "prompt_tokens": 70,
+          "output_tokens": 53,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q17",
+          "seconds": 5.062205439200625,
+          "ttft_first_generated_token_seconds": 0.2591996530536562,
+          "prompt_tokens": 67,
+          "output_tokens": 28,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q18",
+          "seconds": 11.166646501980722,
+          "ttft_first_generated_token_seconds": 0.2371205948293209,
+          "prompt_tokens": 65,
+          "output_tokens": 63,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q19",
+          "seconds": 7.043160825036466,
+          "ttft_first_generated_token_seconds": 0.24893522914499044,
+          "prompt_tokens": 62,
+          "output_tokens": 38,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q20",
+          "seconds": 10.842218403005973,
+          "ttft_first_generated_token_seconds": 0.2521560830064118,
+          "prompt_tokens": 64,
+          "output_tokens": 60,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q21",
+          "seconds": 11.359410075005144,
+          "ttft_first_generated_token_seconds": 0.21872114413417876,
+          "prompt_tokens": 63,
+          "output_tokens": 65,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q22",
+          "seconds": 5.448676503961906,
+          "ttft_first_generated_token_seconds": 0.24271804513409734,
+          "prompt_tokens": 59,
+          "output_tokens": 30,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q23",
+          "seconds": 6.639759072102606,
+          "ttft_first_generated_token_seconds": 0.25184737821109593,
+          "prompt_tokens": 68,
+          "output_tokens": 37,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q24",
+          "seconds": 14.107805335894227,
+          "ttft_first_generated_token_seconds": 0.2680986288469285,
+          "prompt_tokens": 72,
+          "output_tokens": 80,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q25",
+          "seconds": 14.175955951912329,
+          "ttft_first_generated_token_seconds": 0.24957558000460267,
+          "prompt_tokens": 60,
+          "output_tokens": 78,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q26",
+          "seconds": 6.043313609901816,
+          "ttft_first_generated_token_seconds": 0.2433044919744134,
+          "prompt_tokens": 60,
+          "output_tokens": 33,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q27",
+          "seconds": 15.740375926019624,
+          "ttft_first_generated_token_seconds": 0.2789530148729682,
+          "prompt_tokens": 71,
+          "output_tokens": 89,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q28",
+          "seconds": 5.453535201959312,
+          "ttft_first_generated_token_seconds": 0.2535391638521105,
+          "prompt_tokens": 68,
+          "output_tokens": 31,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q29",
+          "seconds": 11.122259261086583,
+          "ttft_first_generated_token_seconds": 0.2555223470553756,
+          "prompt_tokens": 63,
+          "output_tokens": 62,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q30",
+          "seconds": 5.451170259155333,
+          "ttft_first_generated_token_seconds": 0.2311499360948801,
+          "prompt_tokens": 62,
+          "output_tokens": 32,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q31",
+          "seconds": 5.7543500028550625,
+          "ttft_first_generated_token_seconds": 0.2557832368183881,
+          "prompt_tokens": 64,
+          "output_tokens": 32,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q32",
+          "seconds": 10.60718047292903,
+          "ttft_first_generated_token_seconds": 0.2570211470592767,
+          "prompt_tokens": 65,
+          "output_tokens": 61,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q33",
+          "seconds": 13.65795356198214,
+          "ttft_first_generated_token_seconds": 0.25607496011070907,
+          "prompt_tokens": 68,
+          "output_tokens": 78,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q34",
+          "seconds": 10.776203116867691,
+          "ttft_first_generated_token_seconds": 0.24725588294677436,
+          "prompt_tokens": 69,
+          "output_tokens": 62,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q35",
+          "seconds": 7.059046296169981,
+          "ttft_first_generated_token_seconds": 0.2324705570936203,
+          "prompt_tokens": 64,
+          "output_tokens": 41,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q36",
+          "seconds": 6.934500045143068,
+          "ttft_first_generated_token_seconds": 0.23480711900629103,
+          "prompt_tokens": 64,
+          "output_tokens": 41,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q37",
+          "seconds": 4.97725293179974,
+          "ttft_first_generated_token_seconds": 0.24508795188739896,
+          "prompt_tokens": 62,
+          "output_tokens": 28,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q38",
+          "seconds": 5.077302329940721,
+          "ttft_first_generated_token_seconds": 0.23091829288750887,
+          "prompt_tokens": 65,
+          "output_tokens": 30,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q39",
+          "seconds": 8.803150265011936,
+          "ttft_first_generated_token_seconds": 0.25534854596480727,
+          "prompt_tokens": 66,
+          "output_tokens": 50,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q40",
+          "seconds": 10.964191928040236,
+          "ttft_first_generated_token_seconds": 0.2538390699774027,
+          "prompt_tokens": 64,
+          "output_tokens": 62,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q41",
+          "seconds": 5.584134339122102,
+          "ttft_first_generated_token_seconds": 0.22882512700743973,
+          "prompt_tokens": 58,
+          "output_tokens": 35,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q42",
+          "seconds": 26.692476836964488,
+          "ttft_first_generated_token_seconds": 0.269208860816434,
+          "prompt_tokens": 71,
+          "output_tokens": 150,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q43",
+          "seconds": 7.125411278102547,
+          "ttft_first_generated_token_seconds": 0.2637441579718143,
+          "prompt_tokens": 67,
+          "output_tokens": 42,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q44",
+          "seconds": 8.194657746935263,
+          "ttft_first_generated_token_seconds": 0.23143918882124126,
+          "prompt_tokens": 59,
+          "output_tokens": 49,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q45",
+          "seconds": 4.757312284084037,
+          "ttft_first_generated_token_seconds": 0.23502038302831352,
+          "prompt_tokens": 64,
+          "output_tokens": 28,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q46",
+          "seconds": 10.208064456935972,
+          "ttft_first_generated_token_seconds": 0.2495807339437306,
+          "prompt_tokens": 60,
+          "output_tokens": 57,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q47",
+          "seconds": 12.846597010968253,
+          "ttft_first_generated_token_seconds": 0.25754398200660944,
+          "prompt_tokens": 65,
+          "output_tokens": 75,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "q48",
+          "seconds": 5.615458459127694,
+          "ttft_first_generated_token_seconds": 0.24793134513311088,
+          "prompt_tokens": 64,
+          "output_tokens": 32,
+          "finish_reason": "stop"
+        },
+        {
+          "id": "narrative",
+          "seconds": 5.925927696982399,
+          "ttft_first_generated_token_seconds": 0.3170949867926538,
+          "prompt_tokens": 90,
+          "output_tokens": 33,
+          "finish_reason": "stop"
+        }
+      ]
+    }
+  },
+  "quality": {
+    "rag": {
+      "adjudicable": 47,
+      "correctness": {
+        "partial": 15,
+        "incorrect": 15,
+        "abstained": 14,
+        "source_ambiguous": 1,
+        "correct_and_complete": 3
+      },
+      "grounding": {
+        "supported": 25,
+        "unsupported": 22,
+        "unassessed": 1
+      },
+      "grounded_complete": 3,
+      "labels": {
+        "q01": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q02": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q03": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q04": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q05": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q06": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q07": {
+          "correctness": "abstained",
+          "grounding": "unsupported"
+        },
+        "q08": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q09": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q10": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q11": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q12": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q13": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q14": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q15": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q16": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q17": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q18": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q19": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q20": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q21": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q22": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q23": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q24": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q25": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q26": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q27": {
+          "correctness": "partial",
+          "grounding": "unsupported"
+        },
+        "q28": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q29": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q30": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q31": {
+          "correctness": "partial",
+          "grounding": "unsupported"
+        },
+        "q32": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q33": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q34": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q35": {
+          "correctness": "partial",
+          "grounding": "unsupported"
+        },
+        "q36": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q37": {
+          "correctness": "source_ambiguous",
+          "grounding": "unassessed"
+        },
+        "q38": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q39": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "q40": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q41": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "q42": {
+          "correctness": "partial",
+          "grounding": "supported"
+        },
+        "q43": {
+          "correctness": "abstained",
+          "grounding": "unsupported"
+        },
+        "q44": {
+          "correctness": "correct_and_complete",
+          "grounding": "supported"
+        },
+        "q45": {
+          "correctness": "partial",
+          "grounding": "unsupported"
+        },
+        "q46": {
+          "correctness": "abstained",
+          "grounding": "supported"
+        },
+        "q47": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q48": {
+          "correctness": "partial",
+          "grounding": "unsupported"
+        }
+      }
+    },
+    "atlas": {
+      "adjudicable": 47,
+      "correctness": {
+        "incorrect": 46,
+        "source_ambiguous": 1,
+        "partial": 1
+      },
+      "grounding": {
+        "unsupported": 37,
+        "unassessed": 11
+      },
+      "grounded_complete": 0,
+      "labels": {
+        "q01": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q02": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q03": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q04": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q05": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q06": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q07": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q08": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q09": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q10": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q11": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q12": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q13": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q14": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q15": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q16": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q17": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q18": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q19": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q20": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q21": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q22": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q23": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q24": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q25": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q26": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q27": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q28": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q29": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q30": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q31": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q32": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q33": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q34": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q35": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q36": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q37": {
+          "correctness": "source_ambiguous",
+          "grounding": "unassessed"
+        },
+        "q38": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q39": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q40": {
+          "correctness": "incorrect",
+          "grounding": "unassessed"
+        },
+        "q41": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q42": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q43": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q44": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q45": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q46": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q47": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q48": {
+          "correctness": "partial",
+          "grounding": "unsupported"
+        }
+      }
+    },
+    "pruned": {
+      "adjudicable": 47,
+      "correctness": {
+        "incorrect": 47,
+        "source_ambiguous": 1
+      },
+      "grounding": {
+        "unsupported": 47,
+        "unassessed": 1
+      },
+      "grounded_complete": 0,
+      "labels": {
+        "q01": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q02": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q03": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q04": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q05": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q06": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q07": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q08": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q09": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q10": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q11": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q12": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q13": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q14": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q15": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q16": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q17": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q18": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q19": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q20": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q21": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q22": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q23": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q24": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q25": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q26": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q27": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q28": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q29": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q30": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q31": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q32": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q33": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q34": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q35": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q36": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q37": {
+          "correctness": "source_ambiguous",
+          "grounding": "unassessed"
+        },
+        "q38": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q39": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q40": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q41": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q42": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q43": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q44": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q45": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q46": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q47": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        },
+        "q48": {
+          "correctness": "incorrect",
+          "grounding": "unsupported"
+        }
+      }
+    }
+  }
+}

@@ -10,6 +10,21 @@ Hibana fast also ran the general module question in one pass and through an
 agent. Both were faster than the corresponding Qwen runs but retained grounding
 failures. See the [Hibana fast follow-up](#hibana-fast-original-questions-and-module-synthesis-2026-11-21).
 
+The subsequent [Unsloth Inkling DSpark/no-thinking Cognee test](experiments/inkling/dspark/COGNEE.md)
+completed all 48 reader queries at **10.35 s p50 / 15.13 s p95**, with **44/47
+strict** and 515.36 s total query time. Its 221.57 s module agent missed the
+actual Chapter 4-to-5 handoff. The separate report records the effort-setting
+bug, verified thinking-channel suppression, preserved stalled attempts and
+quality limits; historical results below retain their original configurations.
+
+A completed [paired native thinking test](experiments/inkling/native-thinking/RESULTS.md)
+then held the checkpoint, process and reader input constant. Thinking off cut
+factual p50 **10.38 → 4.51 s** and the 48-query sum **564.26 → 222.25 s**.
+Both arms scored **44/47 complete**, but fully grounded complete answers fell
+**44/47 → 43/47**. Agent time fell **579.03 → 164.69 s**, with fewer searches
+and source errors in both answers. DSpark was restored afterward; these native
+results are separate from the GGUF and AtlasKV experiments.
+
 The heading-loss defect is repaired in the experimental Cognee adapter. The
 full corrected follow-up, completed on **2026-11-21**, produced **45/47 complete
 correct answers**, up from **43/47** for raw adaptive chunks. Stock Cognee

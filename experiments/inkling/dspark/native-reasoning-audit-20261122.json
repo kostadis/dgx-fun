@@ -1,0 +1,108 @@
+{
+  "experiment": "Retrospective native Inkling reasoning audit",
+  "complete": true,
+  "arms": {
+    "factual": {
+      "calls": 48,
+      "usage": {
+        "prompt_tokens": 204946,
+        "completion_tokens": 14674,
+        "total_tokens": 219620,
+        "reasoning_tokens": 11497
+      },
+      "reasoning_share_of_output": 0.7834946163281995,
+      "nonreasoning_output_tokens": 3177,
+      "by_phase": {
+        "reader": {
+          "calls": 48,
+          "output_tokens": 14674,
+          "reasoning_tokens": 11497
+        }
+      },
+      "all_requests_used_top_level_none": true,
+      "all_requests_requested_enable_thinking_false": true
+    },
+    "schema_agent": {
+      "calls": 14,
+      "usage": {
+        "prompt_tokens": 90787,
+        "completion_tokens": 14191,
+        "total_tokens": 104978,
+        "reasoning_tokens": 8589
+      },
+      "reasoning_share_of_output": 0.6052427594954549,
+      "nonreasoning_output_tokens": 5602,
+      "by_phase": {
+        "reader": {
+          "calls": 7,
+          "output_tokens": 10481,
+          "reasoning_tokens": 6778
+        },
+        "agent": {
+          "calls": 7,
+          "output_tokens": 3710,
+          "reasoning_tokens": 1811
+        }
+      },
+      "all_requests_used_top_level_none": true,
+      "all_requests_requested_enable_thinking_false": true
+    },
+    "initial_agent_failure": {
+      "calls": 6,
+      "usage": {
+        "prompt_tokens": 26982,
+        "completion_tokens": 3447,
+        "total_tokens": 30429,
+        "reasoning_tokens": 1946
+      },
+      "reasoning_share_of_output": 0.5645488830867421,
+      "nonreasoning_output_tokens": 1501,
+      "by_phase": {
+        "agent": {
+          "calls": 4,
+          "output_tokens": 732,
+          "reasoning_tokens": 397
+        },
+        "reader": {
+          "calls": 2,
+          "output_tokens": 2715,
+          "reasoning_tokens": 1549
+        }
+      },
+      "all_requests_used_top_level_none": true,
+      "all_requests_requested_enable_thinking_false": true
+    }
+  },
+  "native_offline_renderer_check": {
+    "original_vllm_image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+    "native_model_revision": "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+    "request_reasoning_effort": "none",
+    "actual_build_chat_params_kwargs": {
+      "enable_thinking": false,
+      "add_generation_prompt": true,
+      "continue_final_message": false,
+      "reasoning_effort": "none"
+    },
+    "rendered_effort": 0.0,
+    "template_sha256": "53a9035f3255945704b5857657cfb00c1165090c0641c4f782a0cbf268cc16dc",
+    "method": "CPU-only offline native request parser and template render, using the retained image and cached original template; no inference or service changes"
+  },
+  "distinction": "The native vLLM renderer preserves none and renders effort zero. The later Unsloth top-level-none bug renders 0.9; do not attribute that bug to the native run.",
+  "interpretation": "The earlier native latency includes substantial reasoning-token generation despite the lowest requested effort. It is not a no-thinking baseline.",
+  "limits": [
+    "Reasoning share of output tokens is not a measured share of wall time.",
+    "At the time of this retrospective audit, a same-native-runtime/checkpoint no-thinking replay had not yet been performed.",
+    "The newer no-thinking Cognee run also changes runtime, quantization and caching; its timing difference cannot isolate thinking cost.",
+    "The native agent recovered more relevant sources and the actual transition, so removing thinking cannot be assumed to preserve agent quality."
+  ],
+  "follow_up": {
+    "complete": true,
+    "report": "../native-thinking/RESULTS.md",
+    "metrics": "../native-thinking/results-20261122.json",
+    "factual_p50_seconds": {
+      "thinking_permitted": 10.380039256502641,
+      "thinking_blocked": 4.5063328969990835
+    },
+    "interpretation": "Subsequent paired native experiment measures thinking suppression on the same checkpoint and process; historical counts above are unchanged. Complete answers stayed 44/47, while fully grounded complete answers fell 44/47 to 43/47."
+  }
+}
