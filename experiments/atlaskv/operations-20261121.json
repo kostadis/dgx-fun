@@ -1,0 +1,77 @@
+{
+  "experiment": "AtlasKV standalone trial",
+  "scope": "Execution/isolation receipt; no earlier whole-system performance measurements.",
+  "verified_utc": "2026-11-22T03:33:49Z",
+  "complete": true,
+  "worker": {
+    "id": "311167b958747069b84b59528bec3112302911fc5d5a2d72b5c714468f431db4",
+    "image": "sha256:f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d",
+    "running": false,
+    "started": "2026-11-22T03:10:05.693683777Z",
+    "finished": "2026-11-22T03:29:27.639148505Z",
+    "exit_code": 0,
+    "oom_killed": false
+  },
+  "worker_seconds": 1152.1066908836365,
+  "controller_seconds_including_restoration": 1312.7530872821808,
+  "runtime_returncode": 0,
+  "restoration_passed": true,
+  "retained_spark2_services": {
+    "clef-card-train": {
+      "id": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+      "image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+      "running": true,
+      "started": "2026-11-22T01:13:19.868943944Z",
+      "finished": "2026-11-22T01:06:35.511927133Z",
+      "exit_code": 0,
+      "oom_killed": false,
+      "health_status": 200,
+      "health_body": {
+        "ready": true,
+        "loaded": [
+          "clef",
+          "clef-card-tuned"
+        ]
+      }
+    },
+    "inkling2mini": {
+      "id": "b84da56b404df66147bfde69d3fcf6a7b3fb30726673bb06a8a61079912f5ba9",
+      "image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+      "running": true,
+      "started": "2026-11-22T03:29:28.52263299Z",
+      "finished": "2026-11-22T03:10:05.39916965Z",
+      "exit_code": 0,
+      "oom_killed": false,
+      "health_status": 200,
+      "health_body": null
+    }
+  },
+  "spark1_qwen": {
+    "verified_utc": "2026-11-22T03:33:52Z",
+    "id": "d3101a551c95e378fa98b60d69c3dd586ce2ee854c37bf24c98a2ddfa3b0f2b5",
+    "image": "sha256:f4612b72c529a2e899c008b4ecc970445352cc004f38bbe2afe92507ca43167d",
+    "started": "2026-11-16T22:36:25.732245423Z",
+    "running": true,
+    "health_status": 200
+  },
+  "qwen_not_restarted": true,
+  "clef_not_restarted": true,
+  "inkling_container_and_image_retained": true,
+  "serving_endpoint_added": false,
+  "runner_sha256": "cdf87403191be8f80a981d36861d225092e10ebd0335de51322099f03c5cf730",
+  "patched_source_sha256": "369b783199ded9b0e84a67b1c43a64024cce825fcca4337142283d51cd40280c",
+  "protected_cognee_files_unchanged": 30,
+  "host_memory_log": {
+    "samples": 1157,
+    "first_sample_unix": 1795317159.6902726,
+    "first_worker_stage": "rag",
+    "last_sample_unix": 1795318316.7448306,
+    "host_total_bytes": 130663231488,
+    "initial_model_loading_peak_fully_captured": false
+  },
+  "excluded_attempts": [
+    "20261121",
+    "second-20261121",
+    "diagnostics-20261121"
+  ]
+}

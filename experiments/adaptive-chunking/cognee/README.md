@@ -123,6 +123,28 @@ reuse the Qwen-ingested index; Hibana fast changes calibrated weights and
 decoding policy as well as engine. Full quality notes and timing limits are
 in the report.
 
+The [Unsloth GGUF/DSpark Cognee follow-up](../../inkling/dspark/COGNEE.md)
+then completed all 48 identical reader messages at **10.35/15.13 s p50/p95**,
+with **44/47 strict** and 515.36 s summed query time. A runtime compatibility
+bug made top-level effort `none` render effort 0.9; the completed run instead
+uses nested effort zero and blocks the checkpoint's thinking-channel token.
+All 63 factual/agent responses had zero thinking text. Its seven-search agent
+took 221.57 s, but missed the actual Chapter 4 ending and return hook. After a
+finish guard rejected its declared gap, it cleared that gap without searching
+again and kept the same answer. This is not a quality-matched speed win over
+native Inkling. [Metrics](../../inkling/dspark/cognee-results-20261122.json) and
+[client controls](../../inkling/dspark/THINKING.md) preserve the configuration
+and quality limits. The original indexes and historical results remain unchanged.
+
+The [paired native thinking replay](../../inkling/native-thinking/RESULTS.md)
+then held the native checkpoint, process and factual messages constant. Blocking
+thinking reduced factual p50 **10.38 → 4.51 s** and the query sum **564.26 →
+222.25 s**, with **44/47 complete** in both arms and **44/47 → 43/47 fully
+grounded complete**. Agent time fell **579.03 → 164.69 s**, with fewer searches
+and source errors in both answers. The native request controls use `bad_words`
+and the experiment uses `cache_salt` to isolate prefix caches; neither changes
+the reader runner's defaults. DSpark was restored afterward and Clef stayed up.
+
 ## Factual questions with a different reader model
 
 `questions.py` replays the original 48 frozen factual questions against an

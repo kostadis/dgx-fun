@@ -1,6 +1,7 @@
 # Phandelver in Cognee: adaptive chunking and sequential retrieval
 
-Experiment completed November 21, 2026.
+Initial experiment completed November 21, 2026; native thinking follow-up
+completed November 22, 2026 (Pacific).
 
 Adaptive chunking made short factual queries faster in this experiment, but
 answering a question across the adventure required more than a fast first
@@ -17,6 +18,20 @@ Qwen's median query time and showed no factual accuracy gain.
 A later Hibana fast replay reduced that median to 3.41 seconds, with 44/47
 complete factual answers. Its module-question agent finished in 84.51 seconds
 but retained an unsupported transition mechanism.
+
+A subsequent [Unsloth GGUF/DSpark test](experiments/inkling/dspark/COGNEE.md)
+used verified no-thinking controls after finding a runtime effort-setting bug.
+It completed all 48 factual questions at 10.35 s p50 with the same 44/47 strict
+score as native Inkling. Its module agent took 221.57 seconds but missed the
+actual Chapter 4 ending and return hook, so the shorter time is not a
+quality-matched improvement.
+
+A [paired native thinking test](experiments/inkling/native-thinking/RESULTS.md)
+then held the checkpoint, process and factual reader inputs constant. Blocking
+thinking cut factual p50 **10.38 → 4.51 s** and the 48-query sum **564.26 →
+222.25 s**. Both arms scored 44/47 complete; fully grounded complete answers
+fell 44/47 → 43/47. The faster agent chose fewer searches and both fresh
+agent answers retained source errors.
 
 The work began as a trial of
 [Ekimetrics adaptive-chunking](https://github.com/ekimetrics/adaptive-chunking)
@@ -61,6 +76,16 @@ reported 11,497 reasoning tokens despite the lowest requested effort. These
 compare the deployed vLLM configurations: Qwen used MTP-2 and prefix caching,
 while Inkling used eager execution without speculation beside Clef.
 
+A [retrospective audit](experiments/inkling/dspark/native-reasoning-audit-20261122.json)
+confirmed that native Inkling spent **78.35% of factual output tokens** and
+**60.52% of its completed agent output tokens** on reasoning. Its exact pinned
+vLLM renderer correctly turns effort `none` into zero, unlike the later
+Unsloth mapping bug, but zero still permits generated thinking. The earlier
+latency comparison therefore includes this extra reasoning workload. The
+[subsequent paired native test](experiments/inkling/native-thinking/RESULTS.md)
+measured 11,497 → zero reasoning tokens with identical factual reader input,
+and a 2.30× median speedup. Historical rows below remain unchanged.
+
 With Qwen, corrected adaptive recall was approximately 2.28 times faster at p95, while
 stock retained the higher answer score. Adaptive also incurred substantially
 more ingestion work. The original stock and raw-adaptive runs took 64.85 and
@@ -86,6 +111,16 @@ the serving engine, so this does not isolate an engine-only gain.
 | Qwen, Hibana fast | 44/47 | 3.41 s | 4.32 s | 168.99 s |
 | Qwen, pinned vLLM | 45/47 | 4.68 s | 6.16 s | 226.79 s |
 | Inkling, vLLM | 44/47 strict; 45/47 lenient | 12.10 s | 18.60 s | 636.25 s |
+| Inkling, Unsloth DSpark 3, no thinking | 44/47 strict; 45/47 lenient | 10.35 s | 15.13 s | 515.36 s |
+| Inkling, paired native control, thinking permitted | 44/47 strict | 10.38 s | 18.78 s | 564.26 s |
+| Inkling, paired native, thinking blocked | 44/47 strict | **4.51 s** | **6.42 s** | **222.25 s** |
+
+The paired native rows use matched 4,096-token caps and separate cache
+namespaces on the same running vLLM process. None of the 96 answers truncated.
+The off arm abstained on q22 rather than giving an unsupported partial answer,
+but added an unsupported causal claim on q30. Its fully grounded complete
+score is therefore **43/47**, versus the control's **44/47**. This fresh off
+result is close to historical Qwen timing; Qwen was not rerun alongside it.
 
 We then asked a question outside the frozen factual benchmark:
 
@@ -141,12 +176,38 @@ The stored graph and summaries remained from Qwen ingestion in all three runs.
 | Sonnet 5.5 | 3 | 6 | 52.98 s | 61,632 | $0.161656 |
 | Qwen, Hibana fast follow-up | 5 | 10 | 84.51 s | 60,389 | Local compute, unpriced |
 | Inkling, schema-guided follow-up | 7 | 14 | 499.32 s | 104,978 | Local compute, unpriced |
+| Inkling, Unsloth DSpark 3, no thinking | 7 | 15 | 221.57 s | 59,598 | Local compute, unpriced |
+| Inkling, paired native control, thinking permitted | 8 | 18 | 579.03 s | 151,965 | Local compute, unpriced |
+| Inkling, paired native, thinking blocked | 5 | 11 | 164.69 s | 57,729 | Local compute, unpriced |
 
 Client times include Cognee worker startup, retrieval, reader generation,
 agent decisions and protocol corrections. They exclude prior ingestion,
 storage cloning, earlier failed attempts and subsequent source review.
 These are individual observations, without repeated-run latency statistics.
 The DGX server was shared, and runs occurred at different times.
+
+The paired native agents supported the broad level-five Phandalin/goblin
+bridge, but neither retrieved the actual mine-profit/Nundro-homecoming ending
+or Chapter 5's first paragraph. The thinking-permitted answer reversed an
+optional campaign-ending condition; the off answer denied first-half Obelisk
+foreshadowing despite a retrieved cave goblin scouting for shards. The off
+agent rewrote a finish after protocol feedback without searching again, leaving
+three searches unused. Its 3.52× shorter client time also reflects less search
+work, and is not a quality-matched speed gain. [Paired metrics and source review](experiments/inkling/native-thinking/results-20261122.json)
+preserve the separate assessments. DSpark was restored and Clef stayed running.
+
+The Unsloth follow-up applied nested effort zero and blocked the checkpoint's
+thinking-channel token; all 63 factual/agent responses contained zero thinking
+text. It retained the same questions, index, research policy and action schema,
+with explicit 4,096-token reader caps that did not truncate any answers. The
+agent repeatedly reformulated transition queries and retrieved only 12 raw
+passages, versus native Inkling's 31. After a finish guard rejected a declared
+gap, it cleared the gap list and returned the same answer without another
+search. Its supported broad chapter overview omitted the actual mine-profit
+and Nundro-homecoming handoff. The [separate report](experiments/inkling/dspark/COGNEE.md)
+and [audited metrics](experiments/inkling/dspark/cognee-results-20261122.json)
+preserve the incomplete answer assessment, compatibility diagnosis and earlier
+stalled attempts. Runtime, quantization and generation policy all changed.
 
 Qwen recovered the return to Phandalin and Chapter 5 investigation, but its
 final answer invented a note on the goblin corpse explaining the shard hunt.

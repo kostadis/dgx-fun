@@ -1,0 +1,8 @@
+{
+  "chat_template_kwargs": {
+    "enable_thinking": false
+  },
+  "bad_words": [
+    "<|content_thinking|>"
+  ]
+}

@@ -1,0 +1,2 @@
+# Unified-diff context markers require a leading space on otherwise blank lines.
+experiments/atlaskv/pruning-index.patch whitespace=-blank-at-eol

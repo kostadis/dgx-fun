@@ -1,6 +1,18 @@
 # Inkling 2 Mini on Spark 2
 
-This isolated installation uses the original
+> **Selected service, November 22, 2026 (Pacific):** port 8004 serves the
+> retained **native vLLM Inkling**, model `inkling-2-mini`, alongside Clef on
+> port 8002. DSpark and Hibana are stopped. [Native client and restart guide](NATIVE.md).
+> Use the native per-request thinking-token ban for the measured no-thinking
+> behavior; effort `none` alone still permits thinking.
+> The [paired native test](native-thinking/RESULTS.md) reduced factual p50
+> **10.38 → 4.51 s** on the same checkpoint and process. Complete answers stayed
+> 44/47; fully grounded complete answers fell 44/47 → 43/47. DSpark was restored
+> at that experiment's end, then replaced by native vLLM at the user's request.
+> The [DSpark results](dspark/RESULTS.md) and [GGUF Cognee follow-up](dspark/COGNEE.md)
+> remain separate historical measurements.
+
+The original isolated installation uses the
 [Thinking Machines checkpoint](https://huggingface.co/thinkingmachines/Inkling-2-Mini)
 with the ARM64 image from the
 [official vLLM Spark recipe](https://recipes.vllm.ai/thinkingmachines/Inkling-2-Mini).
@@ -37,10 +49,10 @@ ssh spark2 'docker logs --tail 40 inkling2mini'
 
 The endpoint is OpenAI-compatible, with base URL
 `http://192.168.1.121:8004/v1` and model `inkling-2-mini`. No cloud API key is
-used. Supply `reasoning_effort="none"` for the comparison's reasoning setting.
-This is a requested effort level, not a guarantee of zero reasoning tokens:
-the text and JSON smoke checks reported short reasoning segments at this setting.
-Their full native usage counters are retained separately from research timing.
+used. For the tested no-thinking behavior, supply `reasoning_effort="none"`
+and the native thinking-token ban shown below. Effort alone is not a guarantee
+of zero reasoning tokens. The full [native client guide](NATIVE.md) includes
+Cognee options and operations instructions.
 
 ```python
 from openai import OpenAI
@@ -50,6 +62,10 @@ response = client.chat.completions.create(
     model="inkling-2-mini",
     messages=[{"role": "user", "content": "Explain the Phandelver Pact briefly."}],
     reasoning_effort="none",
+    extra_body={
+        "chat_template_kwargs": {"enable_thinking": False},
+        "bad_words": ["<|content_thinking|>"],
+    },
     temperature=0,
     max_tokens=256,
 )
@@ -67,7 +83,9 @@ trial=experiments/adaptive-chunking/raw/pabtso/cognee-20261120
   --source "$trial/adaptive-context-8" --output "$trial/inkling-new/adaptive" \
   --question-file "$trial/sonnet-sequential-20261121/question.json" \
   --provider openai --backend http://192.168.1.121:8004 \
-  --model inkling-2-mini --reasoning-effort none --top-k 15 --max-searches 8
+  --model inkling-2-mini --reasoning-effort none \
+  --extra-body-file experiments/inkling/no-thinking-options.json \
+  --action-format json_schema --top-k 15 --max-searches 8
 ```
 
 Installation, first-load kernel preparation and smoke-test time are separate
@@ -161,6 +179,17 @@ configurations: Qwen has MTP-2 and prefix caching, whereas this Inkling service
 uses eager execution without speculation alongside Clef. The
 [question-only instructions](../adaptive-chunking/cognee/README.md#factual-questions-with-a-different-reader-model)
 replay the frozen questions on a fresh index copy without reingestion.
+
+A [retrospective reasoning audit](dspark/native-reasoning-audit-20261122.json)
+found that reasoning made up **78.35%** of native Inkling's factual output and
+**60.52%** of its completed agent output. Its exact pinned vLLM image correctly
+renders effort `none` as zero; it did not have the subsequent Unsloth mapping
+bug. Those historical native timings include generated thinking. The subsequent
+[same-runtime paired test](native-thinking/RESULTS.md) measured p50 **10.38 s
+with thinking / 4.51 s without**, and 48-query sums **564.26 / 222.25 s**.
+Both scored 44/47 complete; the off arm added one unsupported claim, leaving
+43/47 fully grounded complete answers versus 44/47. The faster agent chose
+less search work, and both fresh agent answers had source errors.
 
 A subsequent [Hibana fast comparison](../../phandelver-cognee-chunking-results.md#hibana-fast-original-questions-and-module-synthesis-2026-11-21)
 completed the same 48 questions at 3.41 s p50 / 4.32 s p95, with 44/47 complete

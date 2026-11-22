@@ -23,6 +23,39 @@ SYSTEM_PROMPT = ("Answer using only the retrieved evidence. Preserve negation. S
                  "the evidence does not establish the answer. Be concise (at most 120 words).")
 
 
+def reader_extra_body(reasoning_effort, max_output_tokens=None, overrides=None):
+    body = {"chat_template_kwargs": {"enable_thinking": False}}
+    if reasoning_effort is not None:
+        body["reasoning_effort"] = reasoning_effort
+    if max_output_tokens is not None:
+        if max_output_tokens <= 0:
+            raise ValueError("Output token budget must be positive")
+        body["max_tokens"] = max_output_tokens
+    if overrides:
+        allowed = {"chat_template_kwargs", "logit_bias", "reasoning_budget_tokens", "bad_words", "cache_salt"}
+        if not isinstance(overrides, dict) or set(overrides) - allowed:
+            raise ValueError("Unsupported generation override")
+        kwargs = overrides.get("chat_template_kwargs", {})
+        if not isinstance(kwargs, dict):
+            raise ValueError("Template kwargs must be an object")
+        if reasoning_effort is not None and "reasoning_effort" in kwargs:
+            raise ValueError("Choose top-level or nested reasoning effort, not both")
+        body.update(overrides)
+        body["chat_template_kwargs"] = {"enable_thinking": False, **kwargs}
+    return body
+
+
+def validate_reader_call(calls, answers, continue_on_truncation=False):
+    if len(calls) != 1 or calls[0]["status"] != 200:
+        raise RuntimeError("Expected exactly one successful reader HTTP call")
+    finish = calls[0]["finish_reasons"]
+    if finish == ["length"] and continue_on_truncation:
+        return False
+    if finish != ["stop"] or not answers:
+        raise RuntimeError("Expected exactly one successful, untruncated reader call")
+    return True
+
+
 async def execute(a, capture, embedding, manifest, state):
     import cognee
     from cognee.base_config import get_base_config
@@ -35,9 +68,7 @@ async def execute(a, capture, embedding, manifest, state):
                             ("cache_root_directory", "cache")):
         assert Path(getattr(config, name)).resolve() == a.output / directory
     model, endpoint = "openai/" + capture.model, capture.base + "/native/v1"
-    extra_body = {"chat_template_kwargs": {"enable_thinking": False}}
-    if a.reasoning_effort is not None:
-        extra_body["reasoning_effort"] = a.reasoning_effort
+    extra_body = reader_extra_body(a.reasoning_effort, a.max_output_tokens, a.generation_overrides)
     reader = LLMConfig(
         llm_provider="custom", llm_model=model, llm_endpoint=endpoint,
         llm_api_key="local-shadow-test", llm_temperature=0, llm_seed=604,
@@ -54,17 +85,21 @@ async def execute(a, capture, embedding, manifest, state):
         capture.phase = "recall-isolated-" + case["id"]
         session = f"questions-{case['id']}-{uuid.uuid4().hex}"
         tick, unix, offset = time.monotonic(), time.time(), len(capture.rows)
-        answers = await cognee.recall(
-            case["question"], datasets=["pabtso_chunking_trial"],
-            query_type=cognee.SearchType.GRAPH_COMPLETION, auto_route=False,
-            top_k=15, system_prompt=SYSTEM_PROMPT, include_references=True,
-            llm_config=reader, session_id=session)
+        answers, reader_error = [], None
+        try:
+            answers = await cognee.recall(
+                case["question"], datasets=["pabtso_chunking_trial"],
+                query_type=cognee.SearchType.GRAPH_COMPLETION, auto_route=False,
+                top_k=15, system_prompt=SYSTEM_PROMPT, include_references=True,
+                llm_config=reader, session_id=session)
+        except Exception as error:
+            reader_error = error
         seconds = time.monotonic() - tick
         rows = capture.rows[offset:]
         calls = R.audit_calls(capture, rows)
-        if not answers or len(rows) != 1 or any(
-                r["status"] != 200 or r["finish_reasons"] != ["stop"] for r in calls):
-            raise RuntimeError("Expected exactly one successful, untruncated reader call")
+        successful_reader = validate_reader_call(calls, answers, a.continue_on_truncation)
+        if reader_error is not None and successful_reader:
+            raise reader_error
         for row in rows:
             prompt = "\n".join(m.get("content", "") for m in row["forwarded"]["messages"])
             if any(c["question"] in prompt for c in cases if c["id"] != case["id"]):
@@ -73,7 +108,10 @@ async def execute(a, capture, embedding, manifest, state):
         R.save(a.output / "recall" / (case["id"] + ".json"), {
             "id": case["id"], "question": case["question"], "seconds": seconds,
             "started_unix": unix, "session_id": session, "history_audit_captured": True,
-            "answers": serialized, "llm_calls": calls})
+            "answers": serialized, "llm_calls": calls, "successful_reader": successful_reader,
+            "reader_error": repr(reader_error) if reader_error is not None else None})
+        if not successful_reader:
+            state.setdefault("truncated_questions", []).append(case["id"])
         state["completed_questions"] = len(list((a.output / "recall").glob("*.json")))
         R.save(a.output / "progress.json", state)
         print("recalled", case["id"], round(seconds, 3), flush=True)
@@ -96,7 +134,18 @@ def main():
     p.add_argument("--backend", required=True)
     p.add_argument("--model", required=True)
     p.add_argument("--reasoning-effort", choices=("none", "minimal", "low", "medium", "high"))
+    p.add_argument("--max-output-tokens", type=int, help="Optional explicit reader output cap")
+    p.add_argument("--continue-on-truncation", action="store_true",
+                   help="Record capped generations as failures and continue the frozen questions")
+    p.add_argument("--extra-body-file", type=Path,
+                   help="Explicit template/sampling overrides, recorded in the protocol")
     a = p.parse_args()
+    a.generation_overrides = json.loads(a.extra_body_file.read_text()) if a.extra_body_file else {}
+    reader_extra_body(a.reasoning_effort, a.max_output_tokens, a.generation_overrides)
+    if a.max_output_tokens is not None and a.max_output_tokens <= 0:
+        p.error("Output token budget must be positive")
+    if a.continue_on_truncation and a.max_output_tokens is None:
+        p.error("Continuing on truncation requires an explicit output cap")
     for name in ("source", "output", "cases"):
         setattr(a, name, getattr(a, name).resolve())
     if not a.output.is_relative_to(HERE.parent / "raw") or a.output.is_relative_to(a.source):
@@ -113,9 +162,7 @@ def main():
     capture.limit = threading.BoundedSemaphore(1)
     embedding = R.Embeddings(a.output, manifest["embedding_endpoint"], manifest["embedding_model"])
     assert embedding.identity == manifest["embedding_digest"]
-    extra_body = {"chat_template_kwargs": {"enable_thinking": False}}
-    if a.reasoning_effort is not None:
-        extra_body["reasoning_effort"] = a.reasoning_effort
+    extra_body = reader_extra_body(a.reasoning_effort, a.max_output_tokens, a.generation_overrides)
     settings = {k: json.loads(v) for line in (a.source / ".env").read_text().splitlines()
                 if line for k, v in [line.split("=", 1)]}
     settings.update(
@@ -140,6 +187,8 @@ def main():
         "model": a.model, "backend": capture.backend, "top_k": 15,
         "system_prompt": SYSTEM_PROMPT, "temperature": 0, "seed": 604,
         "reasoning_effort": a.reasoning_effort, "question_concurrency": 1,
+        "max_output_tokens": a.max_output_tokens, "continue_on_truncation": a.continue_on_truncation,
+        "generation_extra_body": extra_body,
         "fresh_session_per_question": True, "auto_feedback": False,
         "agent_calls": 0, "ingestion_calls": 0}
     R.save(a.output / "protocol.json", protocol)

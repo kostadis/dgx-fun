@@ -1,0 +1,116 @@
+{
+  "checked_utc": "2026-11-22T17:05:21.121809+00:00",
+  "passed": true,
+  "backend": "native-vllm",
+  "base_url": "http://192.168.1.121:8004/v1",
+  "model": "inkling-2-mini",
+  "model_revision": "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+  "native": {
+    "id": "b84da56b404df66147bfde69d3fcf6a7b3fb30726673bb06a8a61079912f5ba9",
+    "image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+    "running": true,
+    "started": "2026-11-22T17:01:48.124739386Z",
+    "command": [
+      "thinkingmachines/Inkling-2-Mini",
+      "--revision",
+      "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+      "--served-model-name",
+      "inkling-2-mini",
+      "--tensor-parallel-size",
+      "1",
+      "--max-model-len",
+      "65536",
+      "--gpu-memory-utilization",
+      "0.26",
+      "--max-num-seqs",
+      "1",
+      "--max-num-batched-tokens",
+      "4096",
+      "--enforce-eager",
+      "--reasoning-parser",
+      "inkling",
+      "--enable-auto-tool-choice",
+      "--tool-call-parser",
+      "inkling",
+      "--limit-mm-per-prompt",
+      "{\"image\":0}",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8000"
+    ]
+  },
+  "clef": {
+    "id": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+    "image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+    "running": true,
+    "started": "2026-11-22T03:39:25.061558771Z",
+    "command": [
+      "/trial/clef_train_and_serve.py"
+    ]
+  },
+  "clef_unchanged": true,
+  "services": {
+    "inkling-gguf-active": "inactive",
+    "inkling-gguf-active-memory": "inactive",
+    "inkling-native-thinking-memory": "active",
+    "hibana-shadow-fast": "inactive",
+    "hibana-shadow-exact": "inactive"
+  },
+  "model_discovery": {
+    "inkling": [
+      "inkling-2-mini"
+    ],
+    "clef": [
+      "clef",
+      "clef-card-tuned"
+    ],
+    "qwen": [
+      "qwen3.8-flash-next"
+    ]
+  },
+  "startup_seconds": 142.9695599079132,
+  "memory": {
+    "started_unix": 1795366908.4946532,
+    "samples": 106,
+    "floor_tripped": false,
+    "min_host_available_bytes": 16930766848,
+    "max_swap_used_bytes": 1796116480,
+    "last_host_available_bytes": 19357188096,
+    "updated_unix": 1795367119.8680644
+  },
+  "thinking_control_scope": "per request; native launch command unchanged",
+  "smoke_checks": [
+    {
+      "check": "arithmetic",
+      "passed": true,
+      "seconds": 0.2771719009615481,
+      "usage": {
+        "prompt_tokens": 26,
+        "total_tokens": 31,
+        "completion_tokens": 5,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "finish_reason": "stop"
+    },
+    {
+      "check": "json",
+      "passed": true,
+      "seconds": 1.0499669420532882,
+      "usage": {
+        "prompt_tokens": 27,
+        "total_tokens": 39,
+        "completion_tokens": 12,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "finish_reason": "stop"
+    }
+  ],
+  "remote_receipts": "/home/kostadis/inkling-native-active-20261122"
+}

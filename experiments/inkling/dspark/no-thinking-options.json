@@ -1,0 +1,9 @@
+{
+  "chat_template_kwargs": {
+    "enable_thinking": false,
+    "reasoning_effort": 0.0
+  },
+  "logit_bias": {
+    "200008": false
+  }
+}

@@ -1,0 +1,37 @@
+--- a/src/atlaskv/models/llama3_model.py
++++ b/src/atlaskv/models/llama3_model.py
+@@ -208,14 +208,14 @@
+                 top_idx = torch.topk(attn_weights_prob.sum((1, 2)), min(layer_kb_len, topk_size), dim=-1)[1]
+                 # filter out the indices that are not in layer_kb_indices
+                 # top_idx = top_idx % 5
+-            return layer_kb_indices[top_idx.squeeze().to('cpu')]
++            return layer_kb_indices[top_idx.reshape(-1).to('cpu')]
+         else:
+             if topk_size >= layer_kb_len:
+                 return range(layer_kb_len)
+             with torch.autograd.no_grad():
+                 # top_idx = attn_weights_prob.sum((1, 2), dtype=torch.float32).topk(min(layer_kb_len, topk_size), -1)[1]
+                 top_idx = torch.topk(attn_weights_prob.sum((1, 2)), min(layer_kb_len, topk_size), dim=-1)[1]
+-            return top_idx.squeeze().to('cpu')
++            return top_idx.reshape(-1).to('cpu')
+ 
+     def forward(
+         self,
+@@ -535,7 +535,7 @@
+                                 query_states_2, select_inter_kb_keys.transpose(2, 3)
+                             ) / math.sqrt(self.head_dim)    # [bs, num_heads, max_len, inter_kb_len]
+                             # prune inter layer keys and get top-k indices
+-                            top_idx = self.prune_key(attn_weights_2_inter, inter_kb_indices, kb_config.inter_top_k_kb)
++                            top_idx = self.prune_key(attn_weights_2_inter, torch.as_tensor(select_inter_kb_indices, dtype=torch.long), kb_config.inter_top_k_kb)
+                             select_leaf_key_idx = []
+                             for i in np.array(top_idx.cpu()):
+                                 select_leaf_key_idx.extend(inter_c2id[str(i)])
+@@ -562,7 +562,7 @@
+                             top_idx = self.prune_key(attn_weights_2_leaf, None, kb_config.leaf_top_k_kb)
+                             # get final leaf layer logits
+                             select_attn_weights_2_leaf = attn_weights_2_leaf[:,:,:,top_idx]
+-                            select_leaf_kb_values_cpu = kb_values[:,:,top_idx,:]
++                            select_leaf_kb_values_cpu = kb_values[:,:,np.asarray(select_leaf_local_key_idx)[top_idx],:]
+                             # ============offloading before-pruned leaf layer keys and logits to CPU============
+                             attn_weights_2_leaf_cpu = attn_weights_2_leaf.to('cpu', non_blocking=True)
+                             select_leaf_kb_keys_cpu = select_leaf_kb_keys.to('cpu', non_blocking=True)

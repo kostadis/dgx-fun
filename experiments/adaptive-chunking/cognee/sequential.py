@@ -120,9 +120,9 @@ async def execute(a, capture, embedding, manifest, state):
     assert Path(get_base_config().system_root_directory).resolve() == a.output / "system"
     endpoint = capture.base + "/native/v1"
     model = "openai/" + capture.model
-    reader_args = {"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}}
-    if a.reasoning_effort is not None:
-        reader_args["extra_body"]["reasoning_effort"] = a.reasoning_effort
+    from questions import reader_extra_body
+    reader_args = {"extra_body": reader_extra_body(
+        a.reasoning_effort, a.reader_max_output_tokens, a.generation_overrides)}
     reader = LLMConfig(
         llm_provider="custom", llm_model=model, llm_endpoint=endpoint,
         llm_api_key="local-shadow-test", llm_temperature=0, llm_seed=604,
@@ -145,6 +145,7 @@ async def execute(a, capture, embedding, manifest, state):
                 "response_format": action_response_format(a.action_format), "messages": messages}
         if a.reasoning_effort is not None:
             body["reasoning_effort"] = a.reasoning_effort
+        body.update(a.generation_overrides)
         result = await asyncio.to_thread(R.request, capture.base + "/native/v1/chat/completions", body)
         if result["choices"][0]["finish_reason"] != "stop":
             raise RuntimeError("Truncated research-agent action")
@@ -279,7 +280,16 @@ def main():
     p.add_argument("--action-format", choices=("json_object", "json_schema"), default="json_object",
                    help="Opt-in schema-guided agent actions; search readers stay unchanged")
     p.add_argument("--api-key-file", type=Path, default=Path("~/.anthropic-key"))
+    p.add_argument("--extra-body-file", type=Path,
+                   help="Explicit template/sampling overrides for both reader and agent")
+    p.add_argument("--reader-max-output-tokens", type=int,
+                   help="Optional explicit Cognee reader cap; agent actions retain their 2800-token cap")
     a = p.parse_args()
+    from questions import reader_extra_body
+    a.generation_overrides = json.loads(a.extra_body_file.read_text()) if a.extra_body_file else {}
+    reader_extra_body(a.reasoning_effort, a.reader_max_output_tokens, a.generation_overrides)
+    if a.provider == "anthropic" and (a.generation_overrides or a.reader_max_output_tokens):
+        p.error("These explicit decoding overrides require an OpenAI-compatible backend")
     if a.provider == "anthropic" and a.action_format == "json_schema":
         p.error("Schema-guided actions require an OpenAI-compatible backend in this harness")
     for name in ("source", "output", "question_file"):
@@ -317,6 +327,8 @@ def main():
            "agent_model": capture.model, "cognee_reader_model": capture.model,
            "generation_provider": a.provider, "generation_backend": capture.backend,
            "action_response_format": a.action_format,
+           "generation_overrides": a.generation_overrides,
+           "reader_max_output_tokens": a.reader_max_output_tokens,
            "action_schema": ACTION_SCHEMA if a.action_format == "json_schema" else None,
            "sampling": ({"thinking": capture.thinking_mode, "temperature": "provider default", "seed": None,
                          "json_object_mode": "prompt instruction only", "reader_max_tokens": 4096}

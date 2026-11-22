@@ -1,0 +1,158 @@
+{
+  "experiment": "Inkling thinking-control compatibility diagnostic",
+  "complete": true,
+  "runtime": "Unsloth b12588-mix-c0c3de8",
+  "model_revision": "ae9327c5fbc7333116ba32eee78bb5d2bbefae4f",
+  "template_verified": {
+    "top_level_none_effort_rendered": 0.9,
+    "nested_zero_effort_rendered": 0.0,
+    "nested_zero_with_top_level_none_effort_rendered": 0.9
+  },
+  "no_thinking_controls": {
+    "chat_template_kwargs": {
+      "enable_thinking": false,
+      "reasoning_effort": 0.0
+    },
+    "logit_bias": {
+      "200008": false
+    }
+  },
+  "thinking_token_verified_via_tokenize": 200008,
+  "observations": {
+    "nested-zero-arithmetic": {
+      "seconds": 1.450002974990639,
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 45,
+        "prompt_tokens": 28,
+        "total_tokens": 73,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 119,
+      "answer_characters": 3,
+      "tool_calls": 0,
+      "passed": true
+    },
+    "zero-budget-auto-arithmetic": {
+      "seconds": 6.350480237000738,
+      "finish_reason": "length",
+      "usage": {
+        "completion_tokens": 256,
+        "prompt_tokens": 28,
+        "total_tokens": 284,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "answer_characters": 4437,
+      "tool_calls": 0,
+      "passed": null
+    },
+    "zero-budget-native-tags-arithmetic": {
+      "seconds": 6.3310672029911075,
+      "finish_reason": "length",
+      "usage": {
+        "completion_tokens": 256,
+        "prompt_tokens": 28,
+        "total_tokens": 284,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "answer_characters": 4437,
+      "tool_calls": 0,
+      "passed": null
+    },
+    "ban-thinking-channel-arithmetic": {
+      "seconds": 0.5355173389980337,
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 5,
+        "prompt_tokens": 28,
+        "total_tokens": 33,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "answer_characters": 3,
+      "tool_calls": 0,
+      "passed": true
+    },
+    "no-thinking-structured": {
+      "seconds": 1.5975340690056328,
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 51,
+        "prompt_tokens": 52,
+        "total_tokens": 103,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "answer_characters": 88,
+      "tool_calls": 0,
+      "passed": true
+    },
+    "no-thinking-negation": {
+      "seconds": 0.9054007439990528,
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 25,
+        "prompt_tokens": 57,
+        "total_tokens": 82,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "answer_characters": 48,
+      "tool_calls": 0,
+      "passed": true
+    },
+    "no-thinking-tool": {
+      "seconds": 1.4679666650044965,
+      "finish_reason": "tool_calls",
+      "usage": {
+        "completion_tokens": 47,
+        "prompt_tokens": 123,
+        "total_tokens": 170,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "answer_characters": 39,
+      "tool_calls": 1,
+      "passed": true
+    },
+    "no-thinking-flood-question": {
+      "seconds": 9.889356225001393,
+      "finish_reason": "stop",
+      "usage": {
+        "completion_tokens": 131,
+        "prompt_tokens": 3709,
+        "total_tokens": 3840,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "reasoning_characters": 0,
+      "answer_characters": 492,
+      "tool_calls": 0,
+      "passed": null,
+      "source_review": "Incorrect flood origin and missing timing; no claim of quality parity."
+    }
+  },
+  "zero_budget_outcome": "Repeated empty native thinking blocks until the 256-token cap; not a successful answer.",
+  "limitations": [
+    "Single observations, not repeated latency measurements.",
+    "Channel suppression changes generation policy and needs task quality evaluation.",
+    "This blocks generated thinking-channel tokens, not the model architecture's internal computation."
+  ]
+}
