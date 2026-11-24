@@ -1,7 +1,101 @@
 # Current DGX Spark Setup
 
+<!-- llm-wiki-clef-comparison-20261123 -->
+**Current services — verified November 23, 2026, 18:09 Pacific.**
+
+| Host | Service | Base URL | Status |
+|---|---|---|---|
+| Spark 1 (`192.168.1.147`) | Qwen `qwen3.8-flash-next`, pinned vLLM | `http://192.168.1.147:8001/v1` | Healthy |
+| Spark 2 (`192.168.1.121`) | Native Inkling `inkling-2-mini` | `http://192.168.1.121:8004/v1` | Healthy; 411,520-token context, FP8 KV, fixed 13 GiB cache |
+| Spark 2 (`192.168.1.121`) | Stock Clef plus retained experimental head | `http://192.168.1.121:8002/v1/systemone` | Ready; stock model `clef` used for CROW |
+| Ollama (`192.168.56.1`) | `qwen3-embedding:0.6b` | `http://192.168.56.1:11434` | Model and digest verified |
+
+The [LLM Wiki/CROW comparison](experiments/llm-wiki/RESULTS.md) used these
+existing services without restarting Inkling or Clef or changing clients.
+The specialized `clef-card-tuned` head was not used. Native/Clef IDs, images,
+start times and commands stayed unchanged. The existing memory guard remained
+active without tripping; final sampled headroom was **13.12 GiB**.
+
+The full-module wiki took **54 min 23 s** to prepare. Factual results were
+**21.74 s p50, 21/47 complete/grounded** with Clef reranking and
+**19.33 s, 22/47** without reranking, versus saved stock Cognee's **10.87 s,
+46/47 complete and 44/47 grounded**, and adaptive's **6.03 s, 44/47 in both**.
+The wiki module agent's research loop took **300.62 s** with four searches;
+it covered the broad transition but omitted the Nundro escort and early
+psionic-goblin foreshadowing. Its notes were Inkling-ingested, whereas the
+saved Cognee graphs were Qwen-ingested; this is a system comparison.
+Both bounded local benchmark workers exited successfully. No new serving
+process or boot startup was installed. [Metrics](experiments/llm-wiki/results-20261123.json).
+
+Earlier snapshots follow.
+<!-- /llm-wiki-clef-comparison-20261123 -->
+
+<!-- inkling-context-adjustment-20261122 -->
+**Current services — verified November 22, 2026, 14:17 Pacific.**
+
+| Host | Service | OpenAI-compatible base URL | Status |
+|---|---|---|---|
+| Spark 1 (`192.168.1.147`) | Qwen `qwen3.8-flash-next`, pinned vLLM | `http://192.168.1.147:8001/v1` | Healthy |
+| Spark 2 (`192.168.1.121`) | Inkling `inkling-2-mini`, native vLLM | `http://192.168.1.121:8004/v1` | **Healthy; 411,520-token context** |
+| Spark 2 (`192.168.1.121`) | Clef and `clef-card-tuned` | `http://192.168.1.121:8002/v1` | Healthy; unchanged during large-context and stock Cognee benchmarks |
+| Spark 2 | Retained native BF16 containers: 64K and 182K | — | Stopped and retained |
+| Spark 2 | Unsloth GGUF / DSpark and Hibana exact/fast | — | Stopped |
+
+Native Inkling now uses **FP8 KV**, **13 GiB fixed KV memory** and automatic
+context fitting, with one active request, a 4,096-token prefill batch, eager
+execution, prefix caching and no speculation. The context limit covers input
+and output together. Image and model revision are unchanged. The explicit KV
+budget overrides utilization-derived cache sizing and disables the default
+extensible allocator in this image.
+
+The selected container is `inkling2mini`, ID beginning `871df85ebc62`.
+Guard **`inkling-native-context-memory`** is active and stops only Inkling
+below the **12 GiB host-memory floor**. During the capacity test, minimum
+sampled FP8 headroom was **14.56 GiB**; final headroom after the subsequent
+Cognee replay was **13.49 GiB**. The guard did not trip. A **410,496-token
+archive prompt** returned all three requested codes correctly in **355.12 s**,
+with zero reasoning tokens. Clef identity, image, start time and command were
+unchanged. The native per-request no-thinking controls still apply.
+
+The old 64K container is stopped as `inkling2mini-64k-20261122` for rollback.
+This is the largest validated window within the conservative 13 GiB cache
+budget. The completed **411K FP8 Cognee replay** measured **6.03 s p50 / 8.41 s
+p95**, **300.32 s** over 48 factual questions and **44/47 complete/grounded**.
+Historical Qwen was 4.68/6.16 s and 45/47; old native 64K BF16 thinking-off
+was 4.51/6.42 s and 44/47 complete, 43/47 grounded. The new **180.03 s** agent
+used six searches and recovered the actual handoff, with a remaining
+belief-attribution error. Inkling's process and Clef were unchanged. Native
+Inkling and its guard still have no boot autostart.
+
+The subsequent **182K BF16 benchmark** measured **6.10/8.71 s p50/p95**,
+**301.10 s** across 48 questions, **44/47 complete and 43/47 grounded**,
+and a **170.57 s** five-search agent. Its answer text and full agent trace
+reproduced the earlier 64K BF16 off run. A **181,116-token BF16 extraction
+passed** in **103.76 s**. After this temporary test, the original selected
+FP8 container was restarted with the same image and command; port 8004 again
+advertises **411,520 tokens**. Clef stayed unchanged. Final headroom after
+FP8 restoration was **15.65 GiB**, with its guard active.
+
+The subsequent **stock Cognee benchmark** reused this FP8 service without
+restarting Inkling or Clef. Stock measured **10.87/14.72 s p50/p95**, **514.61 s**
+over 48 questions and **46/47 complete, 44/47 fully grounded**, versus
+adaptive's 6.03/8.41 s, 300.32 s and 44/47 in both quality measures. Its
+six-search module agent took **263.71 s** versus 180.03 s and gave a more
+consistently supported transition answer, with minor wording caveats. Final
+headroom was **14.81 GiB**, the guard did not trip, and Qwen remained healthy.
+
+[Current native client and restart guide](experiments/inkling/NATIVE.md) ·
+[Context results and limits](experiments/inkling/context/RESULTS.md) ·
+[Verified context receipt](experiments/inkling/context/results-20261122.json) ·
+[FP8 Cognee results](experiments/inkling/fp8-cognee/RESULTS.md) ·
+[182K BF16 benchmark and capacity results](experiments/inkling/bf16-cognee/RESULTS.md) ·
+[Stock versus adaptive Inkling results](experiments/inkling/stock-cognee/RESULTS.md).
+
+The snapshots below describe earlier configurations.
+<!-- /inkling-context-adjustment-20261122 -->
+
 <!-- inkling-native-selected-20261122 -->
-**Current services — verified November 22, 2026, 09:05 Pacific.**
+**Previous services — verified November 22, 2026, 09:05 Pacific.**
 
 | Host | Service | OpenAI-compatible base URL | Status |
 |---|---|---|---|

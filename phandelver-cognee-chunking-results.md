@@ -25,6 +25,39 @@ Both arms scored **44/47 complete**, but fully grounded complete answers fell
 and source errors in both answers. DSpark was restored afterward; these native
 results are separate from the GGUF and AtlasKV experiments.
 
+The subsequent [411K FP8 native replay](experiments/inkling/fp8-cognee/RESULTS.md)
+measured **6.03/8.41 s p50/p95**, **300.32 s** over all 48 questions and
+**44/47 complete and fully grounded**. It was slower than the historical
+Qwen and 64K native BF16 runs. The **180.03 s**, six-search module agent
+recovered the actual Chapter 4 ending and Chapter 5 opening, with a remaining
+belief-attribution error. The report separates that fuller handoff from the
+agent's different search work and the serving configuration changes.
+
+The [182K BF16 replay](experiments/inkling/bf16-cognee/RESULTS.md) subsequently
+measured **6.10/8.71 s**, **301.10 s** total and **44/47 complete, 43/47
+grounded**, with all answer texts matching old 64K BF16. Its 170.57 s agent
+also reproduced the old incomplete trace. A separate **181,116-token
+extraction passed** in 103.76 s. FP8 was restored afterward. Both larger
+fixed-cache configurations show similar standard-query timing; this does not
+isolate KV precision as the source of the earlier latency difference.
+
+A [stock-versus-adaptive test with native Inkling](experiments/inkling/stock-cognee/RESULTS.md)
+then reused the selected 411K FP8 configuration. Stock measured **10.87/14.72 s
+p50/p95**, versus adaptive's 6.03/8.41 s, with **46/47 versus 44/47 complete**
+and **44/47 fully grounded in both**. Stock supplied 4.12× as many factual
+input tokens. Its six-search module agent took **263.71 s** versus 180.03 s,
+recovered the exact ending earlier and gave a more consistently supported
+transition explanation, with minor wording caveats. Inkling and Clef stayed up.
+
+A separate [LLM Wiki/CROW comparison](experiments/llm-wiki/RESULTS.md) used
+existing Spark Clef and native Inkling on the same full module. It scored
+**21/47 complete at 21.74 s median**, or **22/47 at 19.33 s** with reranking
+off, despite representing the required chapter in 47/48 selections. Its
+four-search module agent took **300.62 s of research time** and omitted concrete
+connections already present in its notes. The wiki was newly Inkling-ingested;
+the historical Cognee graphs were Qwen-ingested. Those results are recorded
+separately from these chunking and AtlasKV experiments.
+
 The heading-loss defect is repaired in the experimental Cognee adapter. The
 full corrected follow-up, completed on **2026-11-21**, produced **45/47 complete
 correct answers**, up from **43/47** for raw adaptive chunks. Stock Cognee

@@ -1,0 +1,280 @@
+{
+  "experiment": "Native Inkling context fitting alongside Clef",
+  "complete": true,
+  "verified_utc": "2026-11-22T17:40:57.774507+00:00",
+  "context_tokens": 411520,
+  "previous_context_tokens": 65536,
+  "kv_cache_dtype": "fp8",
+  "kv_budget_bytes": 13958643712,
+  "host_floor_bytes": 12884901888,
+  "native": {
+    "id": "871df85ebc629c2e4b590952554ecad1118ac0b50839a6ff9b76d0795a5887d4",
+    "image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+    "running": true,
+    "started": "2026-11-22T17:31:01.464298355Z",
+    "name": "/inkling2mini",
+    "command": [
+      "thinkingmachines/Inkling-2-Mini",
+      "--revision",
+      "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+      "--served-model-name",
+      "inkling-2-mini",
+      "--tensor-parallel-size",
+      "1",
+      "--max-model-len",
+      "auto",
+      "--gpu-memory-utilization",
+      "0.26",
+      "--max-num-seqs",
+      "1",
+      "--max-num-batched-tokens",
+      "4096",
+      "--enforce-eager",
+      "--reasoning-parser",
+      "inkling",
+      "--enable-auto-tool-choice",
+      "--tool-call-parser",
+      "inkling",
+      "--limit-mm-per-prompt",
+      "{\"image\":0}",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8000",
+      "--kv-cache-memory-bytes",
+      "13958643712",
+      "--kv-cache-dtype",
+      "fp8"
+    ]
+  },
+  "rollback": {
+    "id": "b84da56b404df66147bfde69d3fcf6a7b3fb30726673bb06a8a61079912f5ba9",
+    "image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+    "running": false,
+    "started": "2026-11-22T17:01:48.124739386Z",
+    "name": "/inkling2mini-64k-20261122",
+    "command": [
+      "thinkingmachines/Inkling-2-Mini",
+      "--revision",
+      "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+      "--served-model-name",
+      "inkling-2-mini",
+      "--tensor-parallel-size",
+      "1",
+      "--max-model-len",
+      "65536",
+      "--gpu-memory-utilization",
+      "0.26",
+      "--max-num-seqs",
+      "1",
+      "--max-num-batched-tokens",
+      "4096",
+      "--enforce-eager",
+      "--reasoning-parser",
+      "inkling",
+      "--enable-auto-tool-choice",
+      "--tool-call-parser",
+      "inkling",
+      "--limit-mm-per-prompt",
+      "{\"image\":0}",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8000"
+    ]
+  },
+  "clef": {
+    "id": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+    "image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+    "running": true,
+    "started": "2026-11-22T03:39:25.061558771Z",
+    "name": "/clef-card-train",
+    "command": [
+      "/trial/clef_train_and_serve.py"
+    ]
+  },
+  "clef_unchanged": true,
+  "source_sha256": {
+    "run.py": "dd19654b8e826f2eaacc496139255b1c284b3d7ac6e89fec2331b4d5b029abcc",
+    "monitor.py": "e6befbc1310462319161e2f3bdc759ad217f8545b34a54347b9d03b17ca50fae"
+  },
+  "guard_unit": "inkling-native-context-memory",
+  "candidate_capacities": [
+    {
+      "profile": "bf16-13g",
+      "passed": true,
+      "context_tokens": 182144,
+      "dtype": "auto",
+      "startup_seconds": 172.44065962196328,
+      "smoke": [
+        {
+          "check": "arithmetic",
+          "passed": true,
+          "seconds": 9.745595562038943,
+          "usage": {
+            "prompt_tokens": 26,
+            "total_tokens": 31,
+            "completion_tokens": 5,
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          "reasoning_characters": 0
+        },
+        {
+          "check": "json",
+          "passed": true,
+          "seconds": 1.1914248468820006,
+          "usage": {
+            "prompt_tokens": 27,
+            "total_tokens": 39,
+            "completion_tokens": 12,
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          "reasoning_characters": 0
+        },
+        {
+          "check": "negation",
+          "passed": true,
+          "seconds": 2.00039514596574,
+          "usage": {
+            "prompt_tokens": 47,
+            "total_tokens": 61,
+            "completion_tokens": 14,
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          "reasoning_characters": 0
+        }
+      ]
+    },
+    {
+      "profile": "fp8-13g",
+      "passed": true,
+      "context_tokens": 411520,
+      "dtype": "fp8",
+      "startup_seconds": 151.2485525449738,
+      "smoke": [
+        {
+          "check": "arithmetic",
+          "passed": true,
+          "seconds": 9.730325425975025,
+          "usage": {
+            "prompt_tokens": 26,
+            "total_tokens": 31,
+            "completion_tokens": 5,
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          "reasoning_characters": 0
+        },
+        {
+          "check": "json",
+          "passed": true,
+          "seconds": 1.1873640699777752,
+          "usage": {
+            "prompt_tokens": 27,
+            "total_tokens": 39,
+            "completion_tokens": 12,
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          "reasoning_characters": 0
+        },
+        {
+          "check": "negation",
+          "passed": true,
+          "seconds": 1.9581016341689974,
+          "usage": {
+            "prompt_tokens": 47,
+            "total_tokens": 61,
+            "completion_tokens": 14,
+            "completion_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          "reasoning_characters": 0
+        }
+      ]
+    }
+  ],
+  "long_probe": {
+    "advertised_context": 411520,
+    "tokenized_prompt_tokens": 410496,
+    "output_cap": 128,
+    "prompt_sha256": "9b3fc334ddf516bc549962a380a4d33cb8dfa8a6e1f048f6e642129db148dd01",
+    "sentinel_placement": "approximately 1%, 50%, and 99% of the archive",
+    "passed": true,
+    "seconds": 355.11881127604283,
+    "usage": {
+      "prompt_tokens": 410496,
+      "total_tokens": 410534,
+      "completion_tokens": 38,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "reasoning_characters": 0,
+    "finish_reason": "stop"
+  },
+  "memory": {
+    "bf16-13g-memory.json": {
+      "container_id": "743603c0b16f0d00a55654f79ff1bfb9fbbe22847a78ce97b6e827d597385d90",
+      "floor_bytes": 12884901888,
+      "floor_tripped": false,
+      "samples": 93,
+      "min_available_bytes": 15511629824,
+      "max_swap_used_bytes": 1936461824,
+      "started_unix": 1795368474.297552,
+      "updated_unix": 1795368659.4582233,
+      "last_available_bytes": 15511629824
+    },
+    "fp8-13g-memory.json": {
+      "container_id": "871df85ebc629c2e4b590952554ecad1118ac0b50839a6ff9b76d0795a5887d4",
+      "floor_bytes": 12884901888,
+      "floor_tripped": false,
+      "samples": 296,
+      "min_available_bytes": 15630864384,
+      "max_swap_used_bytes": 2015551488,
+      "started_unix": 1795368661.7562127,
+      "updated_unix": 1795369256.3937747,
+      "last_available_bytes": 15814410240
+    }
+  },
+  "final_health": {
+    "checked_utc": "2026-11-22T17:40:57.774507+00:00",
+    "available_bytes": 15799627776,
+    "guard_active": true,
+    "qwen_model_ids": [
+      "qwen3.8-flash-next"
+    ],
+    "clef_model_ids": [
+      "clef",
+      "clef-card-tuned"
+    ]
+  },
+  "post_promotion_smoke": {
+    "seconds": 0.201396499061957,
+    "usage": {
+      "prompt_tokens": 26,
+      "total_tokens": 31,
+      "completion_tokens": 5,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "reasoning_characters": 0,
+    "finish_reason": "stop"
+  },
+  "limits": [
+    "Automatic fit within a conservative 13 GiB KV budget; not an absolute hardware maximum.",
+    "One synthetic near-limit extraction with three exact codes, not a long-context accuracy benchmark.",
+    "KV precision changes can affect answers; original Cognee speed/quality results are not rerun.",
+    "Shared-host headroom can change with Clef and other activity."
+  ]
+}

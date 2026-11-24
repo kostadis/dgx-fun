@@ -3,12 +3,27 @@
 > **Selected service, November 22, 2026 (Pacific):** port 8004 serves the
 > retained **native vLLM Inkling**, model `inkling-2-mini`, alongside Clef on
 > port 8002. DSpark and Hibana are stopped. [Native client and restart guide](NATIVE.md).
+> The selected window is now **411,520 tokens**, using FP8 KV and a fixed
+> 13 GiB cache budget. A 410,496-token extraction passed while Clef stayed
+> unchanged. [Separate context results](context/RESULTS.md).
+> The completed [411K FP8 Cognee replay](fp8-cognee/RESULTS.md) measured **6.03 s
+> factual p50 and 44/47 complete/grounded**, versus historical Qwen's 4.68 s
+> and 45/47. Its 180.03 s agent recovered the actual handoff with a remaining
+> belief-attribution error. Inkling and Clef stayed running throughout.
+> The subsequent [182K BF16 test](bf16-cognee/RESULTS.md) measured **6.10 s p50,
+> 44/47 complete and 43/47 grounded**, with a successful 181,116-token extraction.
+> The **411K FP8 service was restored afterward**; the BF16 candidate is retained.
+> A [stock Cognee comparison](stock-cognee/RESULTS.md) then measured **10.87 s
+> median and 46/47 complete**, versus adaptive's 6.03 s and 44/47. Both scored
+> 44/47 fully grounded. Stock's better-supported module answer took **263.71 s**,
+> versus 180.03 s. Inkling and Clef stayed running.
 > Use the native per-request thinking-token ban for the measured no-thinking
 > behavior; effort `none` alone still permits thinking.
 > The [paired native test](native-thinking/RESULTS.md) reduced factual p50
 > **10.38 → 4.51 s** on the same checkpoint and process. Complete answers stayed
 > 44/47; fully grounded complete answers fell 44/47 → 43/47. DSpark was restored
 > at that experiment's end, then replaced by native vLLM at the user's request.
+> Those Cognee timings/scores used the original 64K BF16 configuration.
 > The [DSpark results](dspark/RESULTS.md) and [GGUF Cognee follow-up](dspark/COGNEE.md)
 > remain separate historical measurements.
 
