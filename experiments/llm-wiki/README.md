@@ -104,7 +104,7 @@ git clone https://github.com/crow-hq/llm-wiki-v2 /tmp/dgx-llmwiki-v2-20261124
 git -C /tmp/dgx-llmwiki-v2-20261124 checkout 3333c71485bf271a89544090647a91abe25c70ca
 uv venv /tmp/llmwiki-env-20261124
 uv pip install --python /tmp/llmwiki-env-20261124/bin/python /tmp/dgx-llmwiki-v2-20261124
-/tmp/llmwiki-env-20261124/bin/python experiments/llm-wiki/test_query_config.py
+/tmp/llmwiki-env-20261124/bin/python -m unittest discover -s experiments/llm-wiki -p 'test_*.py'
 ```
 
 The bounded workers were `llmwiki-clef-ingest-20261124.service` and
@@ -117,8 +117,11 @@ in `calls/`. A daemon/chat restart does not require restarting these workers.
 The common answer policy and caps match the Cognee benchmark; evidence
 packing and formatting differ by backend. Requests are not byte-identical.
 
-Validation: the offline eight-note regression passed, and the repository suite
-passed **115 tests** with its documented tokenizer cache:
+Clean committed-tree validation passed **100 repository tests** and **two
+adapter regressions**, covering the actual eight-note budget and failure of the
+final ingestion service check. The original experiment working tree passed
+115 tests, including separately pending chunker tests; that historical receipt
+is retained separately in the metrics. Use the documented tokenizer cache:
 
 ```bash
 TIKTOKEN_CACHE_DIR="$PWD/experiments/adaptive-chunking/raw/tiktoken-cache" python3 -m pytest -q tests
@@ -127,3 +130,7 @@ TIKTOKEN_CACHE_DIR="$PWD/experiments/adaptive-chunking/raw/tiktoken-cache" pytho
 `analyze.py --root <completed-directory> --output <metrics.json>` audits the
 captures and private source-review labels before exporting metrics. It requires
 the final service receipt and reviewer flags retained with this completed run.
+Measured source files are preserved under the ignored run's `executed-source/`
+directory, with their recorded hashes. The audit verifies those exact files
+when a later replay fix changes the current harness. The post-run failure-status
+fix changes no benchmark measurements and requires no model rerun.

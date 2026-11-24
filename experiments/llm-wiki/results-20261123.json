@@ -169,7 +169,7 @@
     "corpus": "415f55e8cd9bf8ea9f60b0d53c9b1bb3e78f50db67c6358c38afcc1e0a861df0",
     "cases": "0d346af78ffc9dd18cc9ca0b3ba12a62a6ed7793a98597c633a11faf5d296359"
   },
-  "analysis_sha256": "2ec8c3da527552beed70ddf35fcf1294ff1f488f28479b2cc832d0b018ab97c6",
+  "analysis_sha256": "57e19a1eb3f06be7e5f46234ec36dc74da87f87e86239663c359e1611af128f5",
   "ingestion": {
     "seconds": 3263.3390544810027,
     "llm_calls": 18,
@@ -1318,6 +1318,15 @@
     "historical_files": 11868,
     "factual_note_context_appearances_verified": 768,
     "wiki_text_unchanged": true,
+    "executed_source_sha256": {
+      "experiments/llm-wiki/query.py": "3c766cee8101d62fdc652eaaee9d9e937b9f9ce23ceb41c7cadc351b224367da",
+      "experiments/llm-wiki/ingest.py": "2a70d15644286071eecb8fedc569b86c640ff91836dc2a2041db89ab8792a37d",
+      "experiments/llm-wiki/runtime.py": "8309fc77684c7ee923da4d65369e10ef6d40d7ccf108d42df6c92e77d86b9ef2",
+      "experiments/llm-wiki/test_query_config.py": "431243a75746c591b90542359a0599de51e3bc6e40de20dd5d98bdf48a88e504"
+    },
+    "executed_source_archive_used": [
+      "experiments/llm-wiki/ingest.py"
+    ],
     "generation_controls_verified": true,
     "zero_reasoning_tokens": true,
     "services_unchanged": true
@@ -1327,7 +1336,8 @@
       "command": "TIKTOKEN_CACHE_DIR=$PWD/experiments/adaptive-chunking/raw/tiktoken-cache python3 -m pytest -q tests --tb=short",
       "passed": 115,
       "failed": 0,
-      "exit_code": 0
+      "exit_code": 0,
+      "scope": "Original experiment working tree, including separately pending chunker tests."
     },
     "adapter_regression": {
       "command": "/tmp/llmwiki-env-20261124/bin/python experiments/llm-wiki/test_query_config.py",
@@ -1336,7 +1346,19 @@
       "exit_code": 0
     },
     "upstream_worktree_clean": true,
-    "environment_note": "The first broad test attempt could not download the tokenizer; the documented existing local cache resolved it without code changes."
+    "environment_note": "The first broad test attempt could not download the tokenizer; the documented existing local cache resolved it without code changes.",
+    "clean_export_repository_tests": {
+      "revision": "5501d04",
+      "passed": 100,
+      "failed": 0,
+      "exit_code": 0
+    },
+    "replay_regressions": {
+      "passed": 2,
+      "failed": 0,
+      "exit_code": 0,
+      "final_service_failure_red_green_verified": true
+    }
   },
   "operations": {
     "native": {

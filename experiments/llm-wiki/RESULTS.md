@@ -208,6 +208,14 @@ embedding-only Ollama inventory was present. The memory guard remained active
 without tripping; final sampled headroom was **13.12 GiB**. Neither application
 clients nor model launch settings were changed.
 
+Pre-merge review independently reproduced the export and found a future replay
+failure-status bug: a failed final service check could still leave ingestion
+marked successful. The fix now assigns success only after that check passes;
+a synthetic regression demonstrated failure before the fix and success after.
+The measured run had passed its final check, so its results are unchanged.
+The original measured source hashes remain verifiable through archived copies.
+The clean committed tree passed 100 repository tests plus two adapter regressions.
+
 ## Interpretation limits
 
 This is one run per question and arm, and one module agent, on shared hardware.

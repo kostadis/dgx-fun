@@ -47,8 +47,9 @@ try:
         assert not any(isinstance(r, Exception) for _,r in report.results)
         notes = wiki.store.load().all_notes()
         save(root / 'notes.json', [{'path':n.rel, 'id':n.id, 'text':n.full_text(), 'body':n.main_body(), 'frontmatter':n.frontmatter} for n in notes])
-        state.update(notes=len(notes), passed=True)
+        state.update(notes=len(notes))
     capture.check('after-ingest')
+    state['passed'] = True
 except Exception:
     state['error'] = traceback.format_exc(); print(state['error'], flush=True)
 finally:

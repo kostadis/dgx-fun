@@ -38,7 +38,14 @@ for f in root.glob('services-*.json'):
  assert s['clef_health']['ready'] and s['guard_active'] and not s['guard_stats']['floor_tripped']
  assert s['available_bytes']>=12*1024**3 and s['guard_stats']['container_id']==s['native']['id']
 for name,h in load(root/'protected-inputs.json').items():assert sha(TRIAL/name)==h
-for name,h in load(root/'query-source-sha256.json').items():assert sha(REPO/name)==h
+executed_hashes=load(root/'query-source-sha256.json');archived_sources=[]
+for name,h in executed_hashes.items():
+ assert not Path(name).is_absolute() and '..' not in Path(name).parts
+ current=REPO/name
+ if current.is_file() and sha(current)==h:continue
+ # Later replay fixes must not rewrite the code provenance of the measured run.
+ assert sha(root/'executed-source'/name)==h
+ archived_sources.append(name)
 for name,h in load(root/'wiki-source-sha256.json').items():assert sha(root/'wiki'/name)==h
 for name,h in protocol['input_sha256'].items():assert sha(TRIAL/'frozen'/(name+'.json'))==h
 rows=[load(f) for f in (root/'calls').glob('*.json')];byid={r['id']:r for r in rows}
@@ -143,6 +150,7 @@ export={'experiment':'Full Phandelver CROW/Clef versus saved Cognee indexes',
     'source_review':load(root/'agent-review-public.json')},
  'audit':{'historical_inputs_unchanged':True,'historical_files':len(load(root/'protected-inputs.json')),
     'factual_note_context_appearances_verified':evidence_checks,'wiki_text_unchanged':True,
+    'executed_source_sha256':executed_hashes,'executed_source_archive_used':archived_sources,
     'generation_controls_verified':True,'zero_reasoning_tokens':True,'services_unchanged':True},
  'verification':verification,
  'operations':{'native':before['native'],'clef':before['clef'],'final_available_bytes':last['available_bytes'],
