@@ -1,0 +1,1428 @@
+{
+  "experiment": "Full Phandelver CROW/Clef versus saved Cognee indexes",
+  "complete": true,
+  "verified_utc": "2026-11-24T02:09:40.175909+00:00",
+  "upstream_commit": "3333c71485bf271a89544090647a91abe25c70ca",
+  "upstream_license": "AGPL-3.0-or-later",
+  "source_documents": 13,
+  "wiki_notes": 13,
+  "baselines": {
+    "stock": {
+      "path": "experiments/inkling/stock-cognee/results-20261122.json",
+      "sha256": "f147a970caf8514d77250f750880b73641fc4f4d624f3538139c346db92706ea",
+      "factual": {
+        "p50_seconds": 10.867838301506708,
+        "p95_seconds": 14.715736200200626,
+        "query_sum_seconds": 514.6148054011283,
+        "usage": {
+          "prompt_tokens": 844840,
+          "completion_tokens": 3355,
+          "total_tokens": 848195
+        },
+        "quality": {
+          "adjudicable": 47,
+          "excluded": [
+            "q37"
+          ],
+          "correct_and_complete": 46,
+          "grounded_complete": 44,
+          "counts": {
+            "correct_and_complete": 46,
+            "partial": 1,
+            "source_ambiguous": 1
+          },
+          "review_methods": {
+            "Codex review against frozen gold and actual supplied context": 47,
+            "Existing predeclared exclusion": 1
+          }
+        }
+      },
+      "agent": {
+        "client_seconds": 263.7077796459198,
+        "research_seconds": 259.2372393659898,
+        "searches": 6,
+        "llm_calls": 13,
+        "usage": {
+          "prompt_tokens": 290123,
+          "completion_tokens": 4324,
+          "total_tokens": 294447
+        },
+        "source_review": {
+          "reviewer": "Codex source review, not blinded human adjudication",
+          "outcome": "Complete core handoff supported by the retrieved raw sources, with minor scouting-paraphrase imprecision",
+          "core_transition_complete": true,
+          "actual_chapter4_ending_and_nundro_return_hook_retrieved": true,
+          "mine_profit_award_covered": true,
+          "chapter5_first_opening_paragraph_retrieved": true,
+          "broad_level5_and_phandalin_goblin_bridge_supported": true,
+          "ending_source_recovered_on_search": 3,
+          "chapter5_opening_source_recovered_on_search": 2,
+          "optional_chapter4_ending_condition_correct": true,
+          "first_half_psionic_goblin_foreshadowing_supported": true,
+          "unsupported_fanatics_believe_they_are_gods_claim": false,
+          "forge_obelisk_causal_link_invented": false,
+          "corpse_note_invented": false,
+          "fully_grounded_complete_answer": true,
+          "grounding_scope": "Substantive answer claims assessed against the accumulated raw-source union, rather than exact wording or every immediately adjacent citation.",
+          "minor_scouting_paraphrase_imprecision": true,
+          "scouting_paraphrase_note": "The answer says the scouting group left no obelisk shards. Source S004 says the cave contained none and the surviving scouts left their companion's corpse. Read as absence of shards, this is supported; it should be phrased as finding none, and gives no evidence of removing shards.",
+          "three_fanatics_count_support": "The count is explicit in retrieved S001; S008 and S011 immediately cited near that sentence do not themselves give the count. S001 is also cited later in the same paragraph.",
+          "searches_used": 6,
+          "unused_searches": 2,
+          "raw_sources": 18,
+          "protocol_corrections": 1,
+          "finish_gap_removed_without_new_search": false,
+          "quality_matched_speed_comparison": false,
+          "interpretation": "The stock index supplied the exact ending earlier and produced a more consistently supported transition answer in this single run, at greater prompt volume and elapsed cost. This does not establish a general quality advantage."
+        }
+      }
+    },
+    "adaptive": {
+      "path": "experiments/inkling/fp8-cognee/results-20261122.json",
+      "sha256": "f92ee1e6e29346729affbb6cc9420ee8e6b6a99bfad1b138f458c4b48f750c99",
+      "factual": {
+        "p50_seconds": 6.032931195484707,
+        "p95_seconds": 8.414872390578966,
+        "query_sum_seconds": 300.323550165951,
+        "usage": {
+          "prompt_tokens": 204946,
+          "completion_tokens": 3069,
+          "total_tokens": 208015
+        },
+        "quality": {
+          "adjudicable": 47,
+          "excluded": [
+            "q37"
+          ],
+          "correct_and_complete": 44,
+          "grounded_complete": 44,
+          "counts": {
+            "correct_and_complete": 44,
+            "abstained": 1,
+            "incorrect": 2,
+            "source_ambiguous": 1
+          },
+          "review_methods": {
+            "Exact answer and reader-message match to gguf-no-thinking": 9,
+            "Exact answer and reader-message match to native-bf16-off": 14,
+            "Codex review against frozen gold and identical captured reader context": 11,
+            "Codex source review": 1,
+            "Codex source review using existing strict belief-direction rubric": 1,
+            "Codex source review against frozen gold and supplied context": 5,
+            "Codex source review of requested facts and extra claims in captured context": 6,
+            "Existing predeclared exclusion": 1
+          }
+        }
+      },
+      "agent": {
+        "client_seconds": 180.0261731147766,
+        "research_seconds": 175.72282885300228,
+        "searches": 6,
+        "llm_calls": 12,
+        "usage": {
+          "prompt_tokens": 78419,
+          "completion_tokens": 4263,
+          "total_tokens": 82682
+        },
+        "source_review": {
+          "reviewer": "Codex source review, not blinded human adjudication",
+          "outcome": "Actual Chapter 4-to-5 handoff recovered, with a remaining belief-attribution error",
+          "core_transition_complete": true,
+          "actual_chapter4_ending_and_nundro_return_hook_retrieved": true,
+          "mine_profit_award_covered": true,
+          "chapter5_first_opening_paragraph_retrieved": true,
+          "broad_level5_and_phandalin_goblin_bridge_supported": true,
+          "ending_source_recovered_on_search": 6,
+          "chapter5_opening_source_recovered_on_search": 4,
+          "unsupported_fanatics_believe_they_are_gods_claim": true,
+          "belief_error": "Attributes the belief that the mind flayers are gods to the fanatics, whereas source S014 assigns it to Ruxithid.",
+          "interpretive_handoff_framing": "Calling the transition explicitly narrative rather than mechanical is the answer's interpretation; the sources also supply levels and rewards.",
+          "fully_grounded_complete_answer": false,
+          "forge_obelisk_causal_link_invented": false,
+          "corpse_note_invented": false,
+          "searches_used": 6,
+          "unused_searches": 2,
+          "raw_sources": 25,
+          "protocol_corrections": 0,
+          "finish_gap_removed_without_new_search": false,
+          "quality_matched_speed_comparison": false,
+          "interpretation": "More specific transition coverage than the previous thinking-blocked native run, after one additional search; output was preserved unchanged."
+        }
+      }
+    }
+  },
+  "all_local": true,
+  "models": {
+    "writer": "inkling-2-mini",
+    "reader": "inkling-2-mini",
+    "classifier": "clef",
+    "embedder": "qwen3-embedding:0.6b"
+  },
+  "embedding": {
+    "digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+    "dimensions": 1024,
+    "api_truncation": false,
+    "wiki_note_body_prefix_characters": 3000,
+    "rerank_passage_characters": 600
+  },
+  "input_sha256": {
+    "corpus": "415f55e8cd9bf8ea9f60b0d53c9b1bb3e78f50db67c6358c38afcc1e0a861df0",
+    "cases": "0d346af78ffc9dd18cc9ca0b3ba12a62a6ed7793a98597c633a11faf5d296359"
+  },
+  "analysis_sha256": "57e19a1eb3f06be7e5f46234ec36dc74da87f87e86239663c359e1611af128f5",
+  "ingestion": {
+    "seconds": 3263.3390544810027,
+    "llm_calls": 18,
+    "llm_seconds": 3218.784315255005,
+    "llm_finish_reasons": {
+      "stop": 17,
+      "length": 1
+    },
+    "llm_usage": {
+      "prompt_tokens": 220186,
+      "completion_tokens": 104017,
+      "total_tokens": 324203
+    },
+    "classifier_calls": 25,
+    "classifier_seconds": 43.65120838200528,
+    "classifier_usage": {
+      "input_tokens": 45425,
+      "output_tokens": 0
+    },
+    "embedding_calls": 0,
+    "embedding_seconds": 0,
+    "http_failures": 0
+  },
+  "index_preparation_seconds": 2.725421624003502,
+  "factual": {
+    "questions-crow": {
+      "llm_calls": 48,
+      "llm_seconds": 811.9154516499693,
+      "llm_finish_reasons": {
+        "stop": 48
+      },
+      "llm_usage": {
+        "prompt_tokens": 1669743,
+        "completion_tokens": 3852,
+        "total_tokens": 1673595
+      },
+      "classifier_calls": 96,
+      "classifier_seconds": 218.68185539599654,
+      "classifier_usage": {
+        "input_tokens": 233563,
+        "output_tokens": 0
+      },
+      "embedding_calls": 48,
+      "embedding_seconds": 0.7593285490002017,
+      "http_failures": 0,
+      "source_document_hit_count": 47,
+      "query_sum_seconds": 1034.962202157003,
+      "p50_seconds": 21.73788369599788,
+      "p95_seconds": 25.287558037953566,
+      "quality": {
+        "adjudicable": 47,
+        "excluded": [
+          "q37"
+        ],
+        "correct_and_complete": 21,
+        "grounded_complete": 21,
+        "counts": {
+          "source_ambiguous": 1,
+          "incorrect": 2,
+          "correct_and_complete": 21,
+          "abstained": 12,
+          "partial": 12
+        }
+      },
+      "per_question": [
+        {
+          "id": "q01",
+          "seconds": 28.04737252999621,
+          "notes": 8,
+          "quality": {
+            "correctness": "incorrect",
+            "grounding": "unsupported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q02",
+          "seconds": 24.971518468002614,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q03",
+          "seconds": 21.37232340099581,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q04",
+          "seconds": 16.932382489998417,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q05",
+          "seconds": 23.29318074400362,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "unsupported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q06",
+          "seconds": 18.08278968599916,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q07",
+          "seconds": 16.109437191000325,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q08",
+          "seconds": 23.808067120000487,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q09",
+          "seconds": 21.004449449996173,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q10",
+          "seconds": 17.94896850299847,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q11",
+          "seconds": 20.041431593999732,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q12",
+          "seconds": 23.062764812995738,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": false
+        },
+        {
+          "id": "q13",
+          "seconds": 26.079712343998835,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q14",
+          "seconds": 17.616906055998697,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q15",
+          "seconds": 20.774458747997414,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q16",
+          "seconds": 16.718675055999483,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q17",
+          "seconds": 23.661400758006494,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q18",
+          "seconds": 21.34562342100253,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q19",
+          "seconds": 18.026984845004336,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q20",
+          "seconds": 20.787680521003495,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q21",
+          "seconds": 22.362896905004163,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "unsupported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q22",
+          "seconds": 22.908837079994555,
+          "notes": 8,
+          "quality": {
+            "correctness": "incorrect",
+            "grounding": "unsupported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q23",
+          "seconds": 24.182772733998718,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q24",
+          "seconds": 22.89991372499935,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q25",
+          "seconds": 21.4156529460015,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q26",
+          "seconds": 22.976022017996,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q27",
+          "seconds": 24.087046872002247,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q28",
+          "seconds": 22.995072749996325,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q29",
+          "seconds": 24.14242260299943,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q30",
+          "seconds": 21.4387094670019,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q31",
+          "seconds": 18.030436400003964,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q32",
+          "seconds": 23.709641132001707,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q33",
+          "seconds": 23.98231188700447,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q34",
+          "seconds": 21.544952098003705,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q35",
+          "seconds": 21.69905253899924,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q36",
+          "seconds": 20.961328377998143,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q37",
+          "seconds": 22.63848426900222,
+          "notes": 8,
+          "quality": {
+            "correctness": "source_ambiguous",
+            "grounding": "unassessed"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q38",
+          "seconds": 17.614979348996712,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q39",
+          "seconds": 19.276179362997937,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q40",
+          "seconds": 25.45773319100408,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "unsupported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q41",
+          "seconds": 23.582787440995162,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q42",
+          "seconds": 19.942270726998686,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q43",
+          "seconds": 22.238098501999048,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q44",
+          "seconds": 21.77671485299652,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q45",
+          "seconds": 20.22608380800375,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q46",
+          "seconds": 17.63695934200223,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q47",
+          "seconds": 23.750385995001125,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q48",
+          "seconds": 21.79832804400212,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        }
+      ]
+    },
+    "questions-search": {
+      "llm_calls": 48,
+      "llm_seconds": 864.75371502302,
+      "llm_finish_reasons": {
+        "stop": 48
+      },
+      "llm_usage": {
+        "prompt_tokens": 1801276,
+        "completion_tokens": 3790,
+        "total_tokens": 1805066
+      },
+      "classifier_calls": 48,
+      "classifier_seconds": 71.25559308195807,
+      "classifier_usage": {
+        "input_tokens": 74650,
+        "output_tokens": 0
+      },
+      "embedding_calls": 48,
+      "embedding_seconds": 0.7916469250121736,
+      "http_failures": 0,
+      "source_document_hit_count": 47,
+      "query_sum_seconds": 938.2282141680116,
+      "p50_seconds": 19.327660043498327,
+      "p95_seconds": 22.969821710998804,
+      "quality": {
+        "adjudicable": 47,
+        "excluded": [
+          "q37"
+        ],
+        "correct_and_complete": 22,
+        "grounded_complete": 22,
+        "counts": {
+          "source_ambiguous": 1,
+          "incorrect": 1,
+          "correct_and_complete": 22,
+          "abstained": 12,
+          "partial": 12
+        }
+      },
+      "per_question": [
+        {
+          "id": "q01",
+          "seconds": 25.511590124006034,
+          "notes": 8,
+          "quality": {
+            "correctness": "incorrect",
+            "grounding": "unsupported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q02",
+          "seconds": 23.79845750000095,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q03",
+          "seconds": 20.874512533999223,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q04",
+          "seconds": 18.408847372003947,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q05",
+          "seconds": 19.00873509200028,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "unsupported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q06",
+          "seconds": 21.77900775499438,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q07",
+          "seconds": 16.052820871998847,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q08",
+          "seconds": 18.9451556310014,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q09",
+          "seconds": 17.097717487995396,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q10",
+          "seconds": 15.995772219997889,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q11",
+          "seconds": 21.05499697799678,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q12",
+          "seconds": 20.6196052209998,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q13",
+          "seconds": 21.886769124001148,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q14",
+          "seconds": 20.676576947000285,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q15",
+          "seconds": 21.511754822000512,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q16",
+          "seconds": 19.10407091899833,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q17",
+          "seconds": 18.582614364997426,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q18",
+          "seconds": 21.76440628900309,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q19",
+          "seconds": 17.507274461000634,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q20",
+          "seconds": 20.698849357002473,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q21",
+          "seconds": 17.30042819800292,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q22",
+          "seconds": 20.193670863998705,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q23",
+          "seconds": 16.690099675004603,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q24",
+          "seconds": 22.577058672999556,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q25",
+          "seconds": 15.567031234000751,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q26",
+          "seconds": 12.846896843002469,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q27",
+          "seconds": 17.99814972999593,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q28",
+          "seconds": 19.022918128997844,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q29",
+          "seconds": 22.840998904001026,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q30",
+          "seconds": 17.140088976004336,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q31",
+          "seconds": 17.912820227997145,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q32",
+          "seconds": 22.32497649799916,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q33",
+          "seconds": 18.979152229003375,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q34",
+          "seconds": 19.372319221998623,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q35",
+          "seconds": 20.88642787400022,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q36",
+          "seconds": 20.923039591005363,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q37",
+          "seconds": 23.03087284800131,
+          "notes": 8,
+          "quality": {
+            "correctness": "source_ambiguous",
+            "grounding": "unassessed"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q38",
+          "seconds": 18.192641866997292,
+          "notes": 8,
+          "quality": {
+            "correctness": "partial",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q39",
+          "seconds": 18.77564148100646,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q40",
+          "seconds": 15.006645345005381,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": false
+        },
+        {
+          "id": "q41",
+          "seconds": 19.28300086499803,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q42",
+          "seconds": 21.28305523999734,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q43",
+          "seconds": 20.98827799800347,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q44",
+          "seconds": 16.533908757999598,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q45",
+          "seconds": 22.85644102799415,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q46",
+          "seconds": 18.825860359000217,
+          "notes": 8,
+          "quality": {
+            "correctness": "correct_and_complete",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q47",
+          "seconds": 19.950716068000474,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        },
+        {
+          "id": "q48",
+          "seconds": 20.04554037199705,
+          "notes": 8,
+          "quality": {
+            "correctness": "abstained",
+            "grounding": "supported"
+          },
+          "required_source_documents_represented": true
+        }
+      ]
+    }
+  },
+  "bm25_selection": {
+    "questions": 48,
+    "k": 8,
+    "required_source_documents_represented": 48,
+    "meaning": "Source representation only; does not verify that requested facts survived into a generated note."
+  },
+  "agent": {
+    "research_seconds": 300.6245173339994,
+    "client_seconds": 300.6383971249961,
+    "searches": 4,
+    "notes": 11,
+    "protocol_corrections": 3,
+    "stop_reason": "agent_finished",
+    "llm_calls": 11,
+    "llm_seconds": 283.6668909979999,
+    "llm_finish_reasons": {
+      "stop": 11
+    },
+    "llm_usage": {
+      "prompt_tokens": 456331,
+      "completion_tokens": 4468,
+      "total_tokens": 460799
+    },
+    "classifier_calls": 8,
+    "classifier_seconds": 16.55478909100202,
+    "classifier_usage": {
+      "input_tokens": 18041,
+      "output_tokens": 0
+    },
+    "embedding_calls": 4,
+    "embedding_seconds": 0.06804702400404494,
+    "http_failures": 0,
+    "source_review": {
+      "reviewer": "Codex source review, not blinded human adjudication",
+      "outcome": "Broad transition recovered; concrete Nundro escort hook and early psionic-goblin foreshadowing omitted, with wording caveats",
+      "broad_transition_explained": true,
+      "detailed_handoff_complete": false,
+      "fully_grounded_complete_answer": false,
+      "chapter4_ending_note_selected_on_search": 1,
+      "chapter5_opening_note_selected_on_search": 1,
+      "original_raw_chapters_supplied_to_agent": false,
+      "mine_profit_award_covered": true,
+      "level4_to5_progression_covered": true,
+      "return_to_phandalin_and_goblin_investigation_covered": true,
+      "optional_chapter4_ending_condition_correct": true,
+      "nundro_escort_hook_covered": false,
+      "nundro_escort_hook_available_in_supplied_note": true,
+      "first_half_psionic_goblin_foreshadowing_explained": false,
+      "first_half_psionic_goblin_foreshadowing_available_in_supplied_note": true,
+      "forge_obelisk_causal_link_invented": false,
+      "corpse_note_invented": false,
+      "unsupported_fanatics_believe_they_are_gods_claim": false,
+      "direct_spider_fanatic_link_claimed": false,
+      "qunbraxel_coordination_wording_overbroad": true,
+      "coordination_scope_note": "The answer says the fanatics are coordinated by Qunbraxel. Both the supplied introductory note and book narrow his coordination to the obelisk-retrieval efforts and call the fanatics his overlords. Do not infer that Qunbraxel leads the fanatics.",
+      "goblin_kidnapping_grammar_slip": true,
+      "grammar_note": "One sentence literally describes the goblins as kidnapped townsfolk rather than kidnapping townsfolk. The intended kidnapping relationship is clear from surrounding material, but the measured wording is retained unchanged.",
+      "avenge_gundren_wording_in_original_and_note": true,
+      "grounding_scope": "Original module plus actual accumulated derived-note union; intended broad story distinguished from omitted handoff details and wording issues.",
+      "searches_used": 4,
+      "unused_searches": 4,
+      "derived_notes": 11,
+      "protocol_corrections": 3,
+      "correction_types": {
+        "exact_duplicate_query": 2,
+        "finish_with_remaining_gaps": 1
+      },
+      "finish_gap_removed_without_new_search": true,
+      "gap_acknowledged_in_final": true,
+      "quality_matched_speed_comparison": false,
+      "interpretation": "The answer gave the high-level transition, but four searches over chapter notes did not recover all the concrete connections already available in its first observation. Research-loop time exceeded both historical Cognee agents."
+    }
+  },
+  "audit": {
+    "historical_inputs_unchanged": true,
+    "historical_files": 11868,
+    "factual_note_context_appearances_verified": 768,
+    "wiki_text_unchanged": true,
+    "executed_source_sha256": {
+      "experiments/llm-wiki/query.py": "3c766cee8101d62fdc652eaaee9d9e937b9f9ce23ceb41c7cadc351b224367da",
+      "experiments/llm-wiki/ingest.py": "2a70d15644286071eecb8fedc569b86c640ff91836dc2a2041db89ab8792a37d",
+      "experiments/llm-wiki/runtime.py": "8309fc77684c7ee923da4d65369e10ef6d40d7ccf108d42df6c92e77d86b9ef2",
+      "experiments/llm-wiki/test_query_config.py": "431243a75746c591b90542359a0599de51e3bc6e40de20dd5d98bdf48a88e504"
+    },
+    "executed_source_archive_used": [
+      "experiments/llm-wiki/ingest.py"
+    ],
+    "generation_controls_verified": true,
+    "zero_reasoning_tokens": true,
+    "services_unchanged": true
+  },
+  "verification": {
+    "repository_tests": {
+      "command": "TIKTOKEN_CACHE_DIR=$PWD/experiments/adaptive-chunking/raw/tiktoken-cache python3 -m pytest -q tests --tb=short",
+      "passed": 115,
+      "failed": 0,
+      "exit_code": 0,
+      "scope": "Original experiment working tree, including separately pending chunker tests."
+    },
+    "adapter_regression": {
+      "command": "/tmp/llmwiki-env-20261124/bin/python experiments/llm-wiki/test_query_config.py",
+      "passed": 1,
+      "failed": 0,
+      "exit_code": 0
+    },
+    "upstream_worktree_clean": true,
+    "environment_note": "The first broad test attempt could not download the tokenizer; the documented existing local cache resolved it without code changes.",
+    "clean_export_repository_tests": {
+      "revision": "5501d04",
+      "passed": 100,
+      "failed": 0,
+      "exit_code": 0
+    },
+    "replay_regressions": {
+      "passed": 2,
+      "failed": 0,
+      "exit_code": 0,
+      "final_service_failure_red_green_verified": true
+    }
+  },
+  "operations": {
+    "native": {
+      "id": "871df85ebc629c2e4b590952554ecad1118ac0b50839a6ff9b76d0795a5887d4",
+      "image": "sha256:f95362fc89f98d28a429d7047caa9090ccab881e1c4ffd0385f643627211c6de",
+      "running": true,
+      "started": "2026-11-22T21:41:47.228013481Z",
+      "name": "/inkling2mini",
+      "command": [
+        "thinkingmachines/Inkling-2-Mini",
+        "--revision",
+        "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+        "--served-model-name",
+        "inkling-2-mini",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "auto",
+        "--gpu-memory-utilization",
+        "0.26",
+        "--max-num-seqs",
+        "1",
+        "--max-num-batched-tokens",
+        "4096",
+        "--enforce-eager",
+        "--reasoning-parser",
+        "inkling",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser",
+        "inkling",
+        "--limit-mm-per-prompt",
+        "{\"image\":0}",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--kv-cache-memory-bytes",
+        "13958643712",
+        "--kv-cache-dtype",
+        "fp8"
+      ]
+    },
+    "clef": {
+      "id": "e084e49a1451631a0599e9ae0931eddd983d679836ca4821aaba6c0721f692f4",
+      "image": "sha256:f7545c5a290d4f107fafc15cf02590887f0e418c59c91631afc784b3e237c470",
+      "running": true,
+      "started": "2026-11-22T03:39:25.061558771Z",
+      "name": "/clef-card-train",
+      "command": [
+        "/trial/clef_train_and_serve.py"
+      ]
+    },
+    "final_available_bytes": 14091153408,
+    "guard_floor_tripped": false,
+    "qwen_model_ids": [
+      "qwen3.8-flash-next"
+    ]
+  },
+  "limits": [
+    "The wiki was ingested by Inkling; saved Cognee graphs were ingested by Qwen.",
+    "Controlled answer step uses the shared benchmark policy rather than the native wiki answer prompt.",
+    "Wiki agent evidence consists of generated notes; Cognee supplied original module chunks.",
+    "One observation per question/arm and one module agent; historical baselines ran at other times.",
+    "Clef custom-model thresholds were not calibrated against these questions.",
+    "Codex source review, not blinded human adjudication."
+  ]
+}

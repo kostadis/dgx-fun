@@ -33,6 +33,39 @@ thinking cut factual p50 **10.38 → 4.51 s** and the 48-query sum **564.26 →
 fell 44/47 → 43/47. The faster agent chose fewer searches and both fresh
 agent answers retained source errors.
 
+The selected larger context was then tested in a separate
+[411K FP8 replay](experiments/inkling/fp8-cognee/RESULTS.md). Factual p50/p95
+were **6.03/8.41 s**, with **44/47 complete and fully grounded** and a
+**300.32 s** query sum. This is slower than the historical Qwen and native
+64K BF16 timings. Its six-search agent took **180.03 s** and recovered the
+actual Chapter 4 ending and Chapter 5 opening, while retaining a mistaken
+belief attribution. Services and stored graph content stayed unchanged.
+
+A [larger BF16 follow-up](experiments/inkling/bf16-cognee/RESULTS.md) then
+measured **6.10/8.71 s p50/p95**, **301.10 s** across 48 questions and
+**44/47 complete, 43/47 grounded**, essentially matching FP8's timing.
+Every factual answer and the full agent trace reproduced the prior 64K BF16
+off run. The 182K window also passed a 181,116-token extraction. The selected
+411K FP8 service was restored afterward and Clef stayed unchanged.
+
+A [stock-index Inkling comparison](experiments/inkling/stock-cognee/RESULTS.md)
+then kept the selected 411K FP8 serving configuration and test controls fixed.
+Stock was slower (**10.87 s median versus 6.03 s**) but recovered two more
+complete factual answers (**46/47 versus 44/47**). Both had **44/47 fully
+grounded complete**. Stock's six-search module agent took **263.71 s** versus
+180.03 s, recovered the actual ending earlier, and avoided the adaptive
+answer's belief-attribution error, with minor wording caveats.
+
+A separate [LLM Wiki/CROW comparison with existing Spark Clef](experiments/llm-wiki/RESULTS.md)
+then tested the full module with native Inkling and the same frozen questions.
+Wiki scored **21/47 complete/grounded at 21.74 s median**; disabling reranking
+scored **22/47 at 19.33 s**. Both represented the required chapter in 47/48
+selections, while generated notes had omitted many requested details. Its
+four-search module agent took **300.62 s of research time**, covered the broad
+transition and omitted the Nundro escort hook and early foreshadowing. Neither
+Inkling nor Clef was restarted. This new wiki was Inkling-ingested, while the
+saved Cognee graphs were Qwen-ingested; the result does not isolate architecture.
+
 The work began as a trial of
 [Ekimetrics adaptive-chunking](https://github.com/ekimetrics/adaptive-chunking)
 on *Phandelver and Below: The Shattered Obelisk*. The
@@ -54,7 +87,7 @@ the existing heading breadcrumb into extraction, summarization and embeddings
 repaired the observed effect-owner error. It did not establish complete graph
 correctness: one separate item-rarity description remained wrong.
 
-The factual comparison used 48 frozen questions, with one predeclared ambiguous
+The original Qwen factual comparison used 48 frozen questions, with one predeclared ambiguous
 question excluded from scoring:
 
 | Configuration | Complete correct answers | Recall p50 | Recall p95 |
@@ -114,6 +147,8 @@ the serving engine, so this does not isolate an engine-only gain.
 | Inkling, Unsloth DSpark 3, no thinking | 44/47 strict; 45/47 lenient | 10.35 s | 15.13 s | 515.36 s |
 | Inkling, paired native control, thinking permitted | 44/47 strict | 10.38 s | 18.78 s | 564.26 s |
 | Inkling, paired native, thinking blocked | 44/47 strict | **4.51 s** | **6.42 s** | **222.25 s** |
+| Inkling, native 411K FP8 KV, thinking blocked | 44/47 strict | 6.03 s | 8.41 s | 300.32 s |
+| Inkling, native 182K BF16 KV, thinking blocked | 44/47 strict | 6.10 s | 8.71 s | 301.10 s |
 
 The paired native rows use matched 4,096-token caps and separate cache
 namespaces on the same running vLLM process. None of the 96 answers truncated.
@@ -121,6 +156,44 @@ The off arm abstained on q22 rather than giving an unsupported partial answer,
 but added an unsupported causal claim on q30. Its fully grounded complete
 score is therefore **43/47**, versus the control's **44/47**. This fresh off
 result is close to historical Qwen timing; Qwen was not rerun alongside it.
+
+The FP8 replay's actual factual reader bodies matched the paired BF16 off
+control except for the cache namespace. Both counted 204,946 input tokens;
+outputs were 3,069 versus 3,071 tokens with zero reasoning. Upstream request
+time rose 157.44 → 237.53 s, while non-upstream query time stayed close at
+64.81 versus 62.79 s. The FP8 configuration retained 44/47 complete answers
+and avoided the prior q30 extra causal claim, yielding 44/47 fully grounded.
+One run per configuration, different device activity, and changes to cache
+allocation/context as well as precision prevent attributing the increase to
+FP8 alone. The [public metrics](experiments/inkling/fp8-cognee/results-20261122.json)
+preserve all source/request checks.
+
+The 182K BF16 replay retained the same 13 GiB fixed budget and ordinary cache
+allocator as the 411K FP8 service, with automatic fitting producing the smaller
+BF16 window. Its request bodies and answer texts matched old 64K BF16 exactly,
+including the q30 unsupported extra claim. Input/output totals stayed at
+204,946/3,071 tokens; upstream time was 239.21 s. Similar timing in both larger
+configurations leaves the allocator, budget, nominal context and shared-host
+conditions unresolved rather than identifying FP8 alone as the cause.
+
+The subsequent Inkling stock-index replay gives a direct chunking comparison
+under the selected 411K FP8 configuration, with generated thinking blocked:
+
+| Index with native Inkling | Complete / fully grounded complete | Query p50 | Query p95 | All 48 queries |
+|---|---:|---:|---:|---:|
+| Stock Cognee, 78 chunks | **46/47 / 44/47** | 10.87 s | 14.72 s | 514.61 s |
+| Corrected adaptive, 759 chunks | 44/47 / 44/47 | **6.03 s** | **8.41 s** | **300.32 s** |
+
+Stock supplied 844,840 input tokens versus 204,946, a **4.12×** difference.
+It recovered Ruxithid's belief and clairvoyance answers; the flood timing
+remained a partial answer. Extra unsupported hovering-device and treat-demand
+claims reduced its fully grounded complete count to the same 44/47 as adaptive.
+All 48 stock reader messages matched the original Qwen stock run, while model,
+generation controls and question hashes matched the adaptive FP8 replay.
+The learned graphs/summaries differ between indexes. Runs occurred at different
+times, with an intervening BF16 test and FP8 restart; no service was restarted
+for the stock replay. [Protocol, source review and metrics](experiments/inkling/stock-cognee/RESULTS.md)
+retain these limits.
 
 We then asked a question outside the frozen factual benchmark:
 
@@ -179,6 +252,9 @@ The stored graph and summaries remained from Qwen ingestion in all three runs.
 | Inkling, Unsloth DSpark 3, no thinking | 7 | 15 | 221.57 s | 59,598 | Local compute, unpriced |
 | Inkling, paired native control, thinking permitted | 8 | 18 | 579.03 s | 151,965 | Local compute, unpriced |
 | Inkling, paired native, thinking blocked | 5 | 11 | 164.69 s | 57,729 | Local compute, unpriced |
+| Inkling, native 411K FP8 KV, thinking blocked | 6 | 12 | 180.03 s | 82,682 | Local compute, unpriced |
+| Inkling, native 182K BF16 KV, thinking blocked | 5 | 11 | 170.57 s | 57,729 | Local compute, unpriced |
+| Inkling, native 411K FP8 KV, **stock Cognee**, thinking blocked | 6 | 13 | 263.71 s | 294,447 | Local compute, unpriced |
 
 Client times include Cognee worker startup, retrieval, reader generation,
 agent decisions and protocol corrections. They exclude prior ingestion,
@@ -195,6 +271,35 @@ agent rewrote a finish after protocol feedback without searching again, leaving
 three searches unused. Its 3.52× shorter client time also reflects less search
 work, and is not a quality-matched speed gain. [Paired metrics and source review](experiments/inkling/native-thinking/results-20261122.json)
 preserve the separate assessments. DSpark was restored and Clef stayed running.
+
+The later 411K FP8 agent retrieved Chapter 5's actual opening on search 4 and
+Chapter 4's mine-profit/Nundro-homecoming handoff on search 6, then finished
+without protocol corrections. It avoided the Forge/Obelisk causal invention
+and the corpse-note claim, but assigned the gods belief to the mind flayer
+fanatics when the cited passage assigns it to Ruxithid. Its main handoff is
+more complete than the prior native off run, with a remaining source error.
+The 180.03 s client time includes more search work than either that run or
+historical Qwen and is not a quality-matched decoder comparison.
+
+The 182K BF16 agent reproduced the 64K BF16 off run's full request/output
+trace, final answer and 17-source union, except for cache salts. Its 170.57 s
+client time was 3.6% higher for identical work. The same incomplete exact
+handoff, unsupported denial of first-half Obelisk foreshadowing, and finish-gap
+retry remain. The measured answer was preserved; the source review was reused
+after exact matching. The separate near-limit extraction passed after the
+measured benchmark and is not included in that time.
+
+The stock-index Inkling agent found Chapter 5's opening on search 2 and the
+actual Chapter 4 ending on search 3, then continued checking the goblin/shard
+connection and later transition. Its final answer covered the mine-profit
+award, Nundro homecoming, optional stopping point and genuine first-half
+foreshadowing, without the adaptive answer's mistaken belief attribution.
+Substantive claims were supported by the raw-source union under Codex review;
+the scouting paraphrase and adjacent citation specificity retain minor
+caveats. It used 3.56× as many total model tokens and took 46.5% longer than
+adaptive, with six searches in both runs and one duplicate-query correction.
+This is a different research trajectory and quality outcome, not an equal-work
+decoder comparison. [Stock replay details](experiments/inkling/stock-cognee/RESULTS.md).
 
 The Unsloth follow-up applied nested effort zero and blocked the checkpoint's
 thinking-channel token; all 63 factual/agent responses contained zero thinking
